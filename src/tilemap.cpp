@@ -93,20 +93,19 @@ static Image *pad(Image *image)
 void Tilemap::reload_sheets(bool load_from_filesystem)
 {
 	for (int i = 0; i < 256; i++) {
-		std::string filename = std::string("tiles/tiles" + util::itos(i) + ".tga");
 		Image *image;
+		std::string filename = std::string("tiles/tiles" + util::itos(i) + ".tga");
 		try {
 			image = new Image(filename, false, load_from_filesystem);
 		}
 		catch (util::Error &e) {
-			/*
-			if (i == 0) {
-				throw util::LoadError("no tile sheets!");
+			std::string filename = std::string("tiles/tiles" + util::itos(i) + ".png");
+			try {
+				image = new Image(filename, false, load_from_filesystem);
 			}
-			else {
-			*/
+			catch (util::Error &e) {
 				break;
-			//}
+			}
 		}
 
 		if (load_from_filesystem) {
