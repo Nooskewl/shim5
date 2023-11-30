@@ -403,8 +403,8 @@ bool static_start(int sdl_init_flags)
 	depth_buffer_size.h = root->get_nested_int("shim>gfx>depth_buffer_size.h", &depth_buffer_size.h, -1);
 	scale_mouse_cursor = root->get_nested_bool("shim>gfx>scale_mouse_cursor", &scale_mouse_cursor, false, true, false);
 	hide_window = root->get_nested_bool("shim>gfx>hide_window", &hide_window, false, true, true);
-	music_volume = root->get_nested_float("shim>audio>music_volume", &music_volume, 1.0f);
-	sfx_volume = root->get_nested_float("shim>audio>sfx_volume", &sfx_volume, 1.0f);
+	music_volume = root->get_nested_double("shim>audio>music_volume", &music_volume, 1.0f);
+	sfx_volume = root->get_nested_double("shim>audio>sfx_volume", &sfx_volume, 1.0f);
 	samplerate = root->get_nested_int("shim>audio>samplerate", &samplerate, 0, true, true);
 	// these are for devsettings
 	key_l = TGUIK_LEFT;

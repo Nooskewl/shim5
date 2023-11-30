@@ -97,11 +97,11 @@ bool JSON::Node::as_bool()
 	return value == "true";
 }
 
-float JSON::Node::as_float()
+double JSON::Node::as_double()
 {
 	update_value();
 
-	return (float)atof(value.c_str());
+	return (double)atof(value.c_str());
 }
 
 Uint8 JSON::Node::as_byte()
@@ -159,13 +159,13 @@ void JSON::Node::set_bool(bool b)
 	}
 }
 
-void JSON::Node::set_float(float f)
+void JSON::Node::set_double(double f)
 {
 	value = string_printf("%f", f);
 	if (userdata != NULL) {
-		assert(type == NONE || type == FLOAT);
+		assert(type == NONE || type == DOUBLE);
 		
-		float *u = static_cast<float *>(userdata);
+		double *u = static_cast<double *>(userdata);
 		if (u) {
 			*u = f;
 		}
@@ -222,11 +222,11 @@ void JSON::Node::set_type_bool(void *userdata, bool b)
 	set_bool(b);
 }
 
-void JSON::Node::set_type_float(void *userdata, float f)
+void JSON::Node::set_type_double(void *userdata, double f)
 {
-	type = FLOAT;
+	type = DOUBLE;
 	this->userdata = userdata;
-	set_float(f);
+	set_double(f);
 }
 
 void JSON::Node::set_type_byte(void *userdata, Uint8 b)
@@ -284,17 +284,17 @@ bool JSON::Node::get_nested_bool(std::string loc, void *userdata, bool def, bool
 	return ret;
 }
 
-float JSON::Node::get_nested_float(std::string loc, void *userdata, float def, bool add, bool readonly)
+double JSON::Node::get_nested_double(std::string loc, void *userdata, double def, bool add, bool readonly)
 {
 	Node *n = find(loc);
 	if (n == NULL) {
 		if (add) {
-			add_nested_float(loc, userdata, def, NULL, readonly);
+			add_nested_double(loc, userdata, def, NULL, readonly);
 		}
 		return def;
 	}
-	float ret = n->as_float();
-	n->type = FLOAT;
+	double ret = n->as_double();
+	n->type = DOUBLE;
 	n->userdata = userdata;
 	n->readonly = readonly;
 	return ret;
@@ -452,13 +452,13 @@ void JSON::Node::add_nested_bool(std::string loc, void *userdata, bool val, Trig
 	add_nested(loc, add);
 }
 
-void JSON::Node::add_nested_float(std::string loc, void *userdata, float val, Trigger *trigger, bool readonly)
+void JSON::Node::add_nested_double(std::string loc, void *userdata, double val, Trigger *trigger, bool readonly)
 {
 	Node *existing = find(loc);
 	if (existing != NULL) {
-		existing->set_type(FLOAT);
+		existing->set_type(DOUBLE);
 		existing->set_userdata(userdata);
-		existing->set_float(val);
+		existing->set_double(val);
 		existing->readonly = readonly;
 		return;
 	}
@@ -474,7 +474,7 @@ void JSON::Node::add_nested_float(std::string loc, void *userdata, float val, Tr
 	Node *add = new Node;
 	add->key = last;
 	add->value = util::string_printf("%f", val);
-	add->type = FLOAT;
+	add->type = DOUBLE;
 	add->userdata = userdata;
 	add->trigger = trigger;
 	add->readonly = readonly;
@@ -554,8 +554,8 @@ void JSON::Node::update_value()
 		case BOOL:
 			value = *static_cast<bool *>(userdata) == true ? "true" : "false";
 			break;
-		case FLOAT:
-			value = util::string_printf("%f", *static_cast<float *>(userdata));
+		case DOUBLE:
+			value = util::string_printf("%f", *static_cast<double *>(userdata));
 			break;
 		case BYTE:
 			value = util::string_printf("%d", *static_cast<Uint8 *>(userdata));

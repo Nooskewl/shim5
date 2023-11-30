@@ -20,7 +20,7 @@ public:
 			HASH,
 			INT,
 			BOOL,
-			FLOAT,
+			DOUBLE,
 			STRING,
 			BYTE
 		};
@@ -50,14 +50,14 @@ public:
 		// these do not trim quotes before conversion, so e.g. "74" will not be correct
 		int as_int();
 		bool as_bool();
-		float as_float();
+		double as_double();
 		Uint8 as_byte();
 
 		// If userdata is set, these expect it to be the correct type. these also call trigger->run if trigger != NULL
 		void set_string(std::string s);
 		void set_int(int i);
 		void set_bool(bool b);
-		void set_float(float f);
+		void set_double(double f);
 		void set_byte(Uint8 b);
 
 		void set_type(Type t);
@@ -67,20 +67,20 @@ public:
 		void set_type_string(void *userdata, std::string s);
 		void set_type_int(void *userdata, int i);
 		void set_type_bool(void *userdata, bool b);
-		void set_type_float(void *userdata, float f);
+		void set_type_double(void *userdata, double f);
 		void set_type_byte(void *userdata, Uint8 b);
 
 		// returns value at loc of given type, sets type and userdata. If loc doesn't exist, it just returns the default value passed in and/or adds it if add is true
 		std::string get_nested_string(std::string loc, void *userdata, std::string def, bool add = true, bool readonly = false);
 		int get_nested_int(std::string loc, void *userdata, int def, bool add = true, bool readonly = false);
 		bool get_nested_bool(std::string loc, void *userdata, bool def, bool add = true, bool readonly = false);
-		float get_nested_float(std::string loc, void *userdata, float def, bool add = true, bool readonly = false);
+		double get_nested_double(std::string loc, void *userdata, double def, bool add = true, bool readonly = false);
 		Uint8 get_nested_byte(std::string loc, void *userdata, Uint8 def, bool add = true, bool readonly = false);
 
 		void add_nested_string(std::string loc, void *userdata, std::string val, Trigger *trigger = NULL, bool readonly = false);
 		void add_nested_int(std::string loc, void *userdata, int val, Trigger *trigger = NULL, bool readonly = false);
 		void add_nested_bool(std::string loc, void *userdata, bool val, Trigger *trigger = NULL, bool readonly = false);
-		void add_nested_float(std::string loc, void *userdata, float val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_double(std::string loc, void *userdata, double val, Trigger *trigger = NULL, bool readonly = false);
 		void add_nested_byte(std::string loc, void *userdata, Uint8 val, Trigger *trigger = NULL, bool readonly = false);
 
 		bool remove_child(Node *child, bool del = true); // del = delete also

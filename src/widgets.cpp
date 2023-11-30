@@ -238,8 +238,8 @@ void DevSettings_List::handle_event(TGUI_Event *event)
 								if (use_numgetter && n->type != util::JSON::Node::STRING) {
 									std::string initial;
 									bool decimals_allowed = false;
-									if (n->type == util::JSON::Node::FLOAT) {
-										float f = n->as_float();
+									if (n->type == util::JSON::Node::DOUBLE) {
+										float f = n->as_double();
 										char s[1000];
 										snprintf(s, 1000, "%f", f);
 										initial = s;
@@ -340,7 +340,7 @@ void DevSettings_List::handle_event(TGUI_Event *event)
 			}
 		}
 		else {
-			if (n->type == util::JSON::Node::FLOAT && tmpval.find('.') == std::string::npos && event->text.text[0] == '.') {
+			if (n->type == util::JSON::Node::DOUBLE && tmpval.find('.') == std::string::npos && event->text.text[0] == '.') {
 				insert_text(event->text.text);
 			}
 			else if (isdigit(event->text.text[0])) {
@@ -449,8 +449,8 @@ void DevSettings_List::save_edit()
 		case util::JSON::Node::INT:
 			n->set_int(atoi(tmpval.c_str()));
 			break;
-		case util::JSON::Node::FLOAT:
-			n->set_float(atof(tmpval.c_str()));
+		case util::JSON::Node::DOUBLE:
+			n->set_double(atof(tmpval.c_str()));
 			break;
 		case util::JSON::Node::BYTE:
 			n->set_byte(atoi(tmpval.c_str()));
@@ -525,9 +525,9 @@ bool DevSettings_List::is_editing()
 void DevSettings_List::set_value(std::string text)
 {
 	util::JSON::Node *n = node->children[selected];
-	if (n->type == util::JSON::Node::FLOAT) {
+	if (n->type == util::JSON::Node::DOUBLE) {
 		float v = atof(text.c_str());
-		n->set_float(v);
+		n->set_double(v);
 	}
 	else if (n->type == util::JSON::Node::BYTE) {
 		int v = atoi(text.c_str());
