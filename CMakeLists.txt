@@ -15,7 +15,7 @@ option(WANT_ALLEGRO_TOOLS "Need Allegro to build these tools" OFF)
 option(USE_VORBIS "Use libogg/libvorbis (needed for OGG/Vorbis)" ON)
 option(USE_VORBISFILE "Use libvorbisfile on top of libogg/libvorbis" OFF)
 option(USE_FLAC "Use FLAC for samples" ON)
-option(STEAMWORKS "Build for Steam" on)
+option(STEAMWORKS "Build for Steam" off)
 option(MAS "Build for Mac App Store" off)
 option(USE_PNG "Support PNG images" on)
 

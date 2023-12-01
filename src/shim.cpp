@@ -453,7 +453,7 @@ bool static_start_all(int sdl_init_flags)
 
 #ifdef STEAMWORKS
 	steam_overlay_activated_callback = nullptr;
-	//util::start_steamworks();
+	util::start_steamworks();
 #endif
 
 	if (audio::static_start() == false) {
