@@ -205,7 +205,7 @@ static void audit()
 static void set_opengl()
 {
 #ifdef _WIN32
-	shim::opengl = util::bool_arg(false, shim::argc, shim::argv, "opengl");
+	shim::opengl = util::bool_arg(true, shim::argc, shim::argv, "opengl");
 #else
 	shim::opengl = true;
 #endif
