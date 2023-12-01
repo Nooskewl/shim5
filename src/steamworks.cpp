@@ -264,7 +264,7 @@ bool start_steamworks()
 		return true;
 	}
 	else {
-		util::infomsg("Steam init failed!\n");
+		util::errormsg("Steam init failed!\n");
 		shim::steam_init_failed = true;
 		return false;
 	}
