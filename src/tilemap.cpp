@@ -179,6 +179,18 @@ Tilemap::Tilemap(std::string map_filename, bool load_from_filesystem)
 			}
 		}
 	}
+
+	int num_groups = SDL_ReadLE16(f);
+
+	for (int i = 0; i < num_groups; i++) {
+		Group g;
+		g.type = SDL_ReadLE32(f);
+		g.x = SDL_ReadLE16(f);
+		g.y = SDL_ReadLE16(f);
+		g.w = SDL_ReadLE16(f);
+		g.h = SDL_ReadLE16(f);
+		groups.push_back(g);
+	}
 	
 	util::close_file(f);
 }
@@ -465,7 +477,7 @@ void Tilemap::save(std::string filename)
 	
 	util::SDL_fputc('W', file);
 	util::SDL_fputc('M', file);
-	util::SDL_fputc('2', file);
+	util::SDL_fputc('3', file);
 	util::SDL_fputc('!', file);
 
 	SDL_WriteLE16(file, size.w);
@@ -529,6 +541,17 @@ void Tilemap::save(std::string filename)
 		}
 	}
 
+	SDL_WriteLE16(file, groups.size());
+
+	for (size_t i = 0; i < groups.size(); i++) {
+		Group &g = groups[i];
+		SDL_WriteLE32(file, g.type);
+		SDL_WriteLE16(file, g.x);
+		SDL_WriteLE16(file, g.y);
+		SDL_WriteLE16(file, g.w);
+		SDL_WriteLE16(file, g.h);
+	}
+
 	SDL_RWclose(file);
 }
 
@@ -570,6 +593,11 @@ bool Tilemap::all_clear(int col, int row)
 	}
 	
 	return true;
+}
+
+std::vector<Tilemap::Group> &Tilemap::get_groups()
+{
+	return groups;
 }
 
 } // End namespace gfx

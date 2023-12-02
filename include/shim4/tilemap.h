@@ -20,6 +20,12 @@ public:
 		std::vector< util::Point<int> > frames;
 	};
 
+	struct Group
+	{
+		unsigned int type;
+		int x, y, w, h;
+	};
+
 	static float elapsed;
 
 	static void static_start();
@@ -54,6 +60,8 @@ public:
 	
 	SHIM4_EXPORT util::Point<int> get_animated_tile(util::Point<int> tile);
 
+	SHIM4_EXPORT std::vector<Group> &get_groups();
+
 private:
 	struct Layer
 	{
@@ -72,6 +80,8 @@ private:
 	Layer *layers;
 
 	std::vector<Animation_Data> animation_data;
+
+	std::vector<Group> groups;
 };
 
 } // End namespace gfx
