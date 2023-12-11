@@ -205,7 +205,7 @@ static void audit()
 static void set_opengl()
 {
 #ifdef _WIN32
-	shim::opengl = util::bool_arg(false, shim::argc, shim::argv, "opengl");
+	shim::opengl = util::bool_arg(true, shim::argc, shim::argv, "opengl");
 #else
 	shim::opengl = true;
 #endif
@@ -971,7 +971,7 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 	}
 
 #ifdef _WIN32
-	if (util::bool_arg(false, shim::argc, shim::argv, "opengl") == false) {
+	if (util::bool_arg(true, shim::argc, shim::argv, "opengl") == false) {
 		if ((d3d = Direct3DCreate9(D3D_SDK_VERSION)) == 0) {
 			throw util::Error("Direct3D9Create failed");
 		}
