@@ -55,6 +55,8 @@ HICON win_create_icon(HWND wnd, Uint8 *data, util::Size<int> size, int xfocus, i
 Cursor x_create_cursor(Display *display, Uint8 *data, util::Size<int> size, int xfocus, int yfocus);
 #endif
 
+void premultiply_surface(SDL_Surface *surface);
+
 } // End namespace internal
 
 } // End namespace gfx

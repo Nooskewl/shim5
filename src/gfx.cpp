@@ -1097,6 +1097,7 @@ static void set_window_icon()
 		memcpy(flip_buf+y*size.w*4, pixels+((size.h-1)-y)*size.w*4, size.w*4);
 	}
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(flip_buf, size.w, size.h, 32, size.w * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
+	gfx::internal::premultiply_surface(surface);
 	SDL_SetWindowIcon(internal::gfx_context.window, surface);
 	SDL_FreeSurface(surface);
 	delete[] flip_buf;
@@ -3323,6 +3324,30 @@ void recreate_work_image()
 	gfx::Image::create_depth_buffer = true;
 	internal::gfx_context.work_image = new Image(util::Size<int>(shim::real_screen_size.w, shim::real_screen_size.h));
 	gfx::Image::create_depth_buffer = old_create_depth_buffer;
+}
+
+void premultiply_surface(SDL_Surface *surface)
+{
+	SDL_LockSurface(surface);
+
+	for (int y = 0; y < surface->h; y++) {
+		unsigned char *p = (unsigned char *)surface->pixels + y * surface->pitch;
+		for (int x = 0; x < surface->w; x++) {
+			int r = p[0];
+			int g = p[1];
+			int b = p[2];
+			int a = p[3];
+			float f = a / 255.0f;
+			r *= f;
+			g *= f;
+			b *= f;
+			p[0] = r;
+			p[1] = g;
+			p[2] = b;
+		}
+	}
+
+	SDL_UnlockSurface(surface);
 }
 
 } // End namespace internal

@@ -180,6 +180,8 @@ gfx::Image *TTF::load_glyph_image(Uint32 ch)
 		return 0;
 	}
 
+	gfx::internal::premultiply_surface(surface);
+
 	bool cdb = Image::create_depth_buffer;
 	Image::create_depth_buffer = false;
 	Image *glyph_image = new Image(surface);
