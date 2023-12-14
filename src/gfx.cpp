@@ -3328,26 +3328,19 @@ void recreate_work_image()
 
 void premultiply_surface(SDL_Surface *surface)
 {
-	SDL_LockSurface(surface);
-
-	for (int y = 0; y < surface->h; y++) {
-		unsigned char *p = (unsigned char *)surface->pixels + y * surface->pitch;
-		for (int x = 0; x < surface->w; x++) {
-			int r = p[0];
-			int g = p[1];
-			int b = p[2];
-			int a = p[3];
-			float f = a / 255.0f;
-			r *= f;
-			g *= f;
-			b *= f;
-			p[0] = r;
-			p[1] = g;
-			p[2] = b;
-		}
-	}
-
-	SDL_UnlockSurface(surface);
+	// Fonts definitely look better without calling this below:
+	/*
+	SDL_PremultiplyAlpha(
+		surface->w,
+		surface->h,
+		surface->format->format,
+		surface->pixels,
+		surface->pitch,
+		surface->format->format,
+		surface->pixels,
+		surface->pitch
+	);
+	*/
 }
 
 } // End namespace internal
