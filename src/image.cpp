@@ -723,7 +723,7 @@ bool Image::merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_H
 			*pixel++ = (p[1] & 0x7c) << 1;
 			*pixel++ = ((p[1] & 0x03) << 6) | ((p[0] & 0xe0) >> 2);
 			*pixel++ = (p[0] & 0x1f) << 3;
-			*pixel++ = (p[1] & 0x80);
+			*pixel++ = (p[1] & 0x80) ? 255 : 0;
 			*alpha = false;
 			return (p[1] & 0x80) == 0;
 		}
