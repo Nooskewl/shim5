@@ -11,8 +11,6 @@ class Trigger;
 
 class SHIM4_EXPORT JSON {
 public:
-	static std::string trim_quotes(std::string s);
-
 	struct SHIM4_EXPORT Node {
 		enum Type {
 			NONE,

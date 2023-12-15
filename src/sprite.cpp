@@ -212,11 +212,11 @@ void Sprite::load(std::string json_filename, std::string image_directory, bool a
 					break;
 				}
 				util::Tokenizer t2(line, ',');
-				std::string delay = util::JSON::trim_quotes(t2.next());
-				std::string x = util::JSON::trim_quotes(t2.next());
-				std::string y = util::JSON::trim_quotes(t2.next());
-				std::string w = util::JSON::trim_quotes(t2.next());
-				std::string h = util::JSON::trim_quotes(t2.next());
+				std::string delay = util::remove_quotes(t2.next());
+				std::string x = util::remove_quotes(t2.next());
+				std::string y = util::remove_quotes(t2.next());
+				std::string w = util::remove_quotes(t2.next());
+				std::string h = util::remove_quotes(t2.next());
 				if (delay == "" || x == "" || y == "" || w == "" || h == "") {
 					break;
 				}

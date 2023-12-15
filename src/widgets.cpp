@@ -135,9 +135,9 @@ void DevSettings_List::draw()
 	for (int i = 0; i < nr; i++) {
 		int r = i + top;
 		util::JSON::Node *n = node->children[r];
-		std::string key = util::JSON::trim_quotes(n->key);
+		std::string key = util::remove_quotes(n->key);
 		n->update_value();
-		std::string value = util::JSON::trim_quotes(n->value);
+		std::string value = util::remove_quotes(n->value);
 		if (r == selected) {
 			draw_text_scroll(shim::interface_text, key, util::Point<int>(calculated_x, calculated_y) + util::Point<int>(1, i*row_h), shim::devsettings_max_width-(val_width+8));
 			if (editing) {
@@ -259,7 +259,7 @@ void DevSettings_List::handle_event(TGUI_Event *event)
 								else if (use_numgetter == false) {
 									editing = true;
 									if (n->type == util::JSON::Node::STRING) {
-										tmpval = util::JSON::trim_quotes(n->value);
+										tmpval = util::remove_quotes(n->value);
 									}
 									else {
 										tmpval = n->value;
