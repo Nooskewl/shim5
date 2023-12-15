@@ -6,8 +6,9 @@
 #include "shim4/shader.h"
 #include "shim4/shim.h"
 #include "shim4/ttf.h"
-#include "shim4/utf8.h"
 #include "shim4/util.h"
+
+#include "libutil/utf8.h"
 
 #include "shim4/internal/gfx.h"
 

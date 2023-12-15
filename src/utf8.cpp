@@ -1,5 +1,8 @@
-#include "shim4/utf8.h"
-#include "shim4/util.h"
+#include <string>
+
+#include <cstdint>
+
+#include "libutil/utf8.h"
 
 namespace noo {
 
@@ -27,11 +30,11 @@ static inline int utf8_size(unsigned const char *p)
 	}
 }
 
-static inline Uint32 utf8_next(unsigned const char *ptr, int &offset)
+static inline uint32_t utf8_next(unsigned const char *ptr, int &offset)
 {
 	unsigned const char *p = ptr + offset;
 	unsigned char ch = *p;
-	Uint32 result = 0;
+	uint32_t result = 0;
 
 	if ((ch & 0x80) == 0) {
 		result = *p;
@@ -95,25 +98,25 @@ int utf8_len_bytes(std::string s, int char_count)
 	return utf8_len_bytes_ptr((unsigned const char *)s.c_str(), char_count);
 }
 
-Uint32 utf8_char_next(std::string text, int &offset)
+uint32_t utf8_char_next(std::string text, int &offset)
 {
 	unsigned const char *p = (unsigned const char *)text.c_str();
 
-	Uint32 result = utf8_next(p, offset);
+	uint32_t result = utf8_next(p, offset);
 
 	return result;
 }
 
-Uint32 utf8_char_offset(std::string text, int o)
+uint32_t utf8_char_offset(std::string text, int o)
 {
 	unsigned const char *p = (unsigned const char *)text.c_str();
 
-	Uint32 result = utf8_next(p, o);
+	uint32_t result = utf8_next(p, o);
 
 	return result;
 }
 
-Uint32 utf8_char(std::string text, int i)
+uint32_t utf8_char(std::string text, int i)
 {
 	unsigned const char *p = (unsigned const char *)text.c_str();
 
@@ -130,7 +133,7 @@ Uint32 utf8_char(std::string text, int i)
 	return utf8_next(p, o);
 }
 
-std::string utf8_char_to_string(Uint32 ch)
+std::string utf8_char_to_string(uint32_t ch)
 {
 	unsigned char buf[5];
 

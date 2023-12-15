@@ -5,6 +5,8 @@
 
 #include "shim4/main.h"
 
+#include "libutil/libutil.h"
+
 namespace noo {
 
 namespace util {
@@ -17,8 +19,6 @@ bool start();
 void end();
 
 template <typename T> T sign(T v) { return (T(0) < v) - (v < T(0)); }
-
-void SHIM4_EXPORT mkdir(std::string path);
 
 void SHIM4_EXPORT errormsg(const char *fmt, ...);
 void SHIM4_EXPORT errormsg(std::string s);
@@ -34,25 +34,6 @@ void SHIM4_EXPORT printGLerror(const char *fmt, ...);
 #else
 #define PRINT_GL_ERROR(...)
 #endif
-
-class List_Directory {
-public:
-	List_Directory(std::string filespec);
-	~List_Directory();
-
-	std::string next();
-
-private:
-#ifdef _WIN32
-	bool got_first;
-	bool done;
-	HANDLE handle;
-	WIN32_FIND_DATA ffd;
-#elif !defined ANDROID
-	int i;
-	glob_t gl;
-#endif
-};
 
 // some functions SDL doesn't have that are handy
 int SHIM4_EXPORT SDL_fgetc(SDL_RWops *file);
@@ -72,21 +53,11 @@ SHIM4_EXPORT std::string string_printf(const char *fmt, ...);
 
 SHIM4_EXPORT std::string itos(int i);
 
-std::string SHIM4_EXPORT uppercase(std::string);
-std::string SHIM4_EXPORT lowercase(std::string);
-
 std::string SHIM4_EXPORT escape_string(std::string s, char c); // add backslashes before c characters in s
-std::string SHIM4_EXPORT unescape_string(std::string);
 
 std::string SHIM4_EXPORT load_text(std::string filename);
-std::string SHIM4_EXPORT load_text_from_filesystem(std::string filename);
 char SHIM4_EXPORT *slurp_file(std::string filename, int *sz);
 char SHIM4_EXPORT *slurp_file_from_filesystem(std::string filename, int *sz);
-
-// For trimming whitespace from left, right or both
-std::string SHIM4_EXPORT &ltrim(std::string &s);
-std::string SHIM4_EXPORT &rtrim(std::string &s);
-std::string SHIM4_EXPORT &trim(std::string &s);
 
 enum Path_Type {
 	DOCUMENTS = 1,
@@ -107,8 +78,6 @@ void SHIM4_EXPORT open_url(std::string url);
 #ifdef ANDROID
 bool SHIM4_EXPORT is_chromebook();
 #endif
-
-std::string SHIM4_EXPORT get_system_language(); // returns language in Steam format like "english", "french" etc
 
 Uint64 file_date(std::string filename);
 

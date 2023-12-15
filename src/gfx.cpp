@@ -12,9 +12,10 @@
 #include "shim4/sprite.h"
 #include "shim4/tilemap.h"
 #include "shim4/ttf.h"
-#include "shim4/utf8.h"
 #include "shim4/util.h"
 #include "shim4/vertex_cache.h"
+
+#include "libutil/utf8.h"
 
 #include "shim4/internal/gfx.h"
 #include "shim4/internal/shim.h"

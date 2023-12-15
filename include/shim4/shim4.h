@@ -31,7 +31,6 @@
 #ifdef USE_TTF
 #include "shim4/ttf.h"
 #endif
-#include "shim4/utf8.h"
 #include "shim4/util.h"
 #include "shim4/vertex_cache.h"
 #include "shim4/vorbis.h"
@@ -40,5 +39,8 @@
 #ifdef STEAMWORKS
 #include "shim4/steamworks.h"
 #endif
+
+#include "libutil/libutil.h"
+#include "libutil/utf8.h"
 
 #endif // SHIM4_H

@@ -2,8 +2,9 @@
 #include "shim4/gfx.h"
 #include "shim4/image.h"
 #include "shim4/shim.h"
-#include "shim4/utf8.h"
 #include "shim4/util.h"
+
+#include "libutil/utf8.h"
 
 using namespace noo;
 

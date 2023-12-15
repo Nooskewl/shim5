@@ -1,8 +1,9 @@
 #include "shim4/pixel_font.h"
 #include "shim4/image.h"
 #include "shim4/tokenizer.h"
-#include "shim4/utf8.h"
 #include "shim4/util.h"
+
+#include "libutil/utf8.h"
 
 #define PAD 2
 
