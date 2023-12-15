@@ -567,17 +567,6 @@ void JSON::Node::update_value()
 
 //--
 
-std::string JSON::trim_quotes(std::string s)
-{
-	if (s[0] == '"') {
-		s = s.substr(1);
-	}
-	if (s[s.length()-1] == '"') {
-		s = s.substr(0, s.length()-1);
-	}
-	return s;
-}
-
 JSON::JSON(std::string filename, bool load_from_filesystem) :
 	root(NULL),
 	ungot(-1),
@@ -892,7 +881,7 @@ void JSON::read_hash(Node *node, SDL_RWops *file)
 		json->type = Node::NONE;
 		json->userdata = NULL;
 
-		json->key = trim_quotes(read_string(file));
+		json->key = util::remove_quotes(read_string(file));
 
 		json->trigger = NULL;
 		json->readonly = false;
