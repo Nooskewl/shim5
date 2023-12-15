@@ -8,7 +8,7 @@
 #include "shim4/ttf.h"
 #include "shim4/util.h"
 
-#include "libutil/utf8.h"
+#include "libutil/libutil.h"
 
 #include "shim4/internal/gfx.h"
 
