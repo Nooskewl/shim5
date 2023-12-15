@@ -517,6 +517,23 @@ std::string load_text_from_filesystem(std::string filename)
 	return text;
 }
 
+std::string remove_quotes(std::string s)
+{
+       int start = 0;
+       int count = s.length();
+
+       if (s[0] == '"') {
+               start++;
+               count--;
+       }
+
+       if (s[s.length()-1] == '"') {
+               count--;
+       }
+
+       return s.substr(start, count);
+}
+
 } // End namespace util
 
 } // End namespace noo

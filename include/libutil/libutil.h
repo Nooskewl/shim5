@@ -49,6 +49,8 @@ std::string unescape_string(std::string);
 
 std::string load_text_from_filesystem(std::string filename);
 
+std::string remove_quotes(std::string s);
+
 } // End namespace util
 
 } // End namespace noo
