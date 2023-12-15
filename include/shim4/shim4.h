@@ -41,6 +41,5 @@
 #endif
 
 #include "libutil/libutil.h"
-#include "libutil/utf8.h"
 
 #endif // SHIM4_H
