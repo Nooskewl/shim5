@@ -1,7 +1,14 @@
-#include "shim4/shim4.h"
+#include <vector>
+#include <string>
+
 #include "shim4/savetool.h"
 
+#include "libutil/libutil.h"
+using namespace noo;
+
 #ifdef _WIN32
+#include <windows.h>
+#include <direct.h>
 #define chdir _chdir
 #define getcwd _getcwd
 #endif
@@ -55,14 +62,6 @@ int go(std::string path, bool print_only)
 
 int main(int argc, char **argv)
 {
-	if (shim::static_start_all() == false) {
-		return 1;
-	}
-
-	if (util::start() == false) {
-		return 1;
-	}
-
 	out = fopen("../data.cpa", "wb");
 
 	fputc('C', out);
@@ -114,10 +113,6 @@ int main(int argc, char **argv)
 #endif
 
 	fclose(out);
-
-	util::end();
-
-	shim::static_end();
 
 	return 0;
 }
