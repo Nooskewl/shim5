@@ -2,6 +2,10 @@
 
 #include <cstdint>
 
+#ifdef __linux__
+#include <unistd.h>
+#endif
+
 #include "libutil/utf8.h"
 
 namespace noo {

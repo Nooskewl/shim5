@@ -13,10 +13,6 @@
 #include <sys/types.h>
 #endif
 
-#ifdef __linux__
-#include <unistd.h>
-#endif
-
 #ifdef ANDROID
 #include <jni.h>
 #endif

@@ -7,6 +7,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __linux__
+#include <glob.h>
+#endif
+
 namespace noo {
 
 namespace util {
