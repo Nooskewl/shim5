@@ -11,14 +11,17 @@
 #include <glob.h>
 #endif
 
+#include <shim4/main.h>
+
 namespace noo {
 
 namespace util {
 
-void mkdir(std::string path);
+SHIM4_EXPORT void mkdir(std::string path);
 
-std::string get_system_language(); // returns language in Steam format like "english", "french" etc
-class List_Directory {
+SHIM4_EXPORT std::string get_system_language(); // returns language in Steam format like "english", "french" etc
+
+class SHIM4_EXPORT List_Directory {
 public:
 	List_Directory(std::string filespec);
 	~List_Directory();
@@ -37,27 +40,27 @@ private:
 #endif
 };
 
-std::string uppercase(std::string);
-std::string lowercase(std::string);
+SHIM4_EXPORT std::string uppercase(std::string);
+SHIM4_EXPORT std::string lowercase(std::string);
 
 // For trimming whitespace from left, right or both
-std::string &ltrim(std::string &s);
-std::string &rtrim(std::string &s);
-std::string &trim(std::string &s);
+SHIM4_EXPORT std::string &ltrim(std::string &s);
+SHIM4_EXPORT std::string &rtrim(std::string &s);
+SHIM4_EXPORT std::string &trim(std::string &s);
 
-std::string unescape_string(std::string);
+SHIM4_EXPORT std::string unescape_string(std::string);
 
-std::string load_text_from_filesystem(std::string filename);
+SHIM4_EXPORT std::string load_text_from_filesystem(std::string filename);
 
-std::string remove_quotes(std::string s);
+SHIM4_EXPORT std::string remove_quotes(std::string s);
 
-int utf8_len(std::string text);
-int utf8_len_bytes(std::string text, int char_count);
-uint32_t utf8_char_next(std::string text, int &offset);
-uint32_t utf8_char_offset(std::string text, int o);
-uint32_t utf8_char(std::string text, int i);
-std::string utf8_char_to_string(uint32_t ch);
-std::string utf8_substr(std::string s, int start, int count = -1);
+SHIM4_EXPORT int utf8_len(std::string text);
+SHIM4_EXPORT int utf8_len_bytes(std::string text, int char_count);
+SHIM4_EXPORT uint32_t utf8_char_next(std::string text, int &offset);
+SHIM4_EXPORT uint32_t utf8_char_offset(std::string text, int o);
+SHIM4_EXPORT uint32_t utf8_char(std::string text, int i);
+SHIM4_EXPORT std::string utf8_char_to_string(uint32_t ch);
+SHIM4_EXPORT std::string utf8_substr(std::string s, int start, int count = -1);
 
 } // End namespace util
 

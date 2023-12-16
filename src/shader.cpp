@@ -1036,7 +1036,7 @@ GLuint Shader::compile_opengl_fragment_shader(std::string source)
 
 std::string Shader::add_opengl_header(bool is_vertex, Precision precision, std::string source)
 {
-#if defined ANDROID || defined IOS || defined RASPBERRYPI
+#if defined ANDROID || defined IOS
 	std::string p;
 	if (is_vertex) {
 		if (precision == LOW) {

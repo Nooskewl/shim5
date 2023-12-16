@@ -178,7 +178,7 @@ static IDirect3D9 *d3d;
 static HICON icon_small, icon_big;
 #endif
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32)
+#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 static bool use_custom_cursor;
 SDL_Surface *mouse_cursor_surface;
 SDL_Cursor *mouse_cursor;
@@ -594,8 +594,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 #if defined IOS || defined ANDROID
 	flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALLOW_HIGHDPI;
 	centre_y = 0;
-#elif defined RASPBERRYPI
-	flags |= SDL_WINDOW_FULLSCREEN;
 #else
 	util::Size<int> desktop_size = get_desktop_resolution();
 	if (window_h <= 0) {
@@ -1165,7 +1163,7 @@ static void set_window_icon()
 }
 #endif
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32)
+#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 void create_mouse_cursors()
 {
 	// Note: this needs to be a specific size on Windows, 32x32 works for me
@@ -1388,7 +1386,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-#if defined IOS || defined ANDROID || defined RASPBERRYPI
+#if defined IOS || defined ANDROID
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -1397,7 +1395,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 		if (::create_depth_buffer) {
-#if defined ANDROID || defined RASPBERRYPI || defined RASPBERRYPI_NORMAL
+#if defined ANDROID
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 #else
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -1455,7 +1453,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		util::infomsg(e.error_message + "\n");
 	}
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32)
+#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	use_custom_cursor = util::bool_arg(true, shim::argc, shim::argv, "custom-cursor");
 	if (use_custom_cursor) {
 		create_mouse_cursors();
@@ -1570,7 +1568,7 @@ void end()
 
 	Tilemap::release_sheets();
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32)
+#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	delete_mouse_cursors();
 #endif
 
@@ -2762,7 +2760,7 @@ std::vector< util::Size<int> > get_supported_video_modes()
 
 void set_custom_mouse_cursor()
 {
-#if defined ANDROID || defined RASPBERRYPI || defined IOS
+#if defined ANDROID || defined IOS
 	return;
 #else
 	if (internal::gfx_context.inited == false) {

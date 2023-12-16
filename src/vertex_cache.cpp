@@ -169,7 +169,7 @@ bool Vertex_Cache::is_started()
 void Vertex_Cache::maybe_resize_cache(int increase)
 {
 	// Some GPUs can't handle a lot of vertices
-#if defined IOS || defined ANDROID || defined RASPBERRYPI
+#if defined IOS || defined ANDROID //???|| defined RASPBERRYPI
 	if (*_count + increase > 0x8000) {
 		gfx::Image *img = *_image;
 		bool rep = *_repeat;

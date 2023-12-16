@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
 		shim::static_end();
 	}
-	catch (util::Error e) {
+	catch (util::Error &e) {
 		util::errormsg("Fatal error: %s\n", e.error_message.c_str());
 	}
 
