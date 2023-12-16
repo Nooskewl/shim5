@@ -414,8 +414,8 @@ bool start()
 		desired.userdata = 0;
 
 		// resampling sounds REALLY bad with 48000 Hz isn't used, so don't allow freq changes
-		audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-		//audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+		//audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+		audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
 		if (audio_device == 0) {
 			SDL_DestroyMutex(internal::audio_context.mixer_mutex);
