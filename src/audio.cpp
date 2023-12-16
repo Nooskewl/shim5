@@ -395,32 +395,27 @@ bool start()
 			desired.freq = atoi(shim::argv[arg+1]);
 		}
 		else {
-/*#if defined IOS
 			desired.freq = 44100;
-#else
-*/
-			desired.freq = 44100;
-//#endif
 		}
 		if ((arg = util::check_args(shim::argc, shim::argv, "+samples")) > 0) {
 			desired.samples = atoi(shim::argv[arg+1]);
 		}
 		else {
-			desired.samples = 4096;
+			desired.samples = 512;
 		}
-		if (util::bool_arg(false, shim::argc, shim::argv, "float-samples")) {
+		if (util::bool_arg(true, shim::argc, shim::argv, "float-samples")) {
 			desired.format = AUDIO_F32;
 		}
 		else {
 			desired.format = AUDIO_S16;
 		}
-		desired.channels = 2;
+		desired.channels = 1;
 		desired.callback = audio_callback;
 		desired.userdata = 0;
 
 		// resampling sounds REALLY bad with 48000 Hz isn't used, so don't allow freq changes
-		//audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-		audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+		audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+		//audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
 		if (audio_device == 0) {
 			SDL_DestroyMutex(internal::audio_context.mixer_mutex);
