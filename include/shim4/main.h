@@ -324,6 +324,9 @@ extern SHIM4_EXPORT glDrawArrays_func glDrawArrays_ptr;
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_CTOR_INIT
+#ifdef RASPBERRYPI
+#define GLM_FORCE_NEON
+#endif
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
