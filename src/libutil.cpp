@@ -511,7 +511,7 @@ std::string load_text_from_filesystem(std::string filename)
 	std::ifstream f(filename);
 
 	while (std::getline(f, line)) {
-		text += line;
+		text += line + "\n";
 	}
 
 	return text;
