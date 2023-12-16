@@ -1395,7 +1395,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 		if (::create_depth_buffer) {
-#if defined ANDROID
+#if defined ANDROID || defined RASPBERRYPI
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 #else
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);

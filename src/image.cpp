@@ -1683,7 +1683,7 @@ void Image::Internal::upload(unsigned char *pixels)
 				else {
 					format = GL_DEPTH_COMPONENT16;
 				}
-#if defined ANDROID || defined IOS
+#if defined ANDROID || defined IOS || defined RASPBERRYPI
 				if (strstr((const char *)glGetString(GL_EXTENSIONS), "GL_OES_packed_depth_stencil") != 0) {
 					glGenRenderbuffers_ptr(1, &depth_buffer); // use a combined depth and stencil as it must be supported
 					PRINT_GL_ERROR("glGenRenderbuffers\n");
