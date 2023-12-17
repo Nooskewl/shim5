@@ -594,6 +594,8 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 #if defined IOS || defined ANDROID
 	flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALLOW_HIGHDPI;
 	centre_y = 0;
+#elif defined RASPBERRYPI_NOX
+	flags |= SDL_WINDOW_FULLSCREEN;
 #else
 	util::Size<int> desktop_size = get_desktop_resolution();
 	if (window_h <= 0) {
@@ -1382,20 +1384,21 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 	set_opengl();
 
 	if (shim::opengl) {
-		SDL_GL_SetAttribute(SDL_GL_RETAINED_BACKING, 0);
+		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-#if defined IOS || defined ANDROID || defined RASPBERRYPI
+#if defined IOS || defined ANDROID || defined RASPBERRYPI_NOX
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #else
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 		if (::create_depth_buffer) {
-#if defined ANDROID || defined RASPBERRYPI
+#if defined ANDROID || defined RASPBERRYPI_NOX
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 #else
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -2760,7 +2763,7 @@ std::vector< util::Size<int> > get_supported_video_modes()
 
 void set_custom_mouse_cursor()
 {
-#if defined ANDROID || defined IOS
+#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	return;
 #else
 	if (internal::gfx_context.inited == false) {
