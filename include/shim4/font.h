@@ -31,7 +31,7 @@ public:
 	SHIM4_EXPORT virtual int get_height() = 0;
 
 	// If interpret_colour_codes is true, this returns the last colour used. Otherwise, it returns the colour passed in.
-	SHIM4_EXPORT SDL_Colour draw(SDL_Colour colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes = true, bool centre = false, bool interpret_extra_glyphs = true);
+	SHIM4_EXPORT SDL_Colour draw(SDL_Colour colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes = true, bool centre = false, bool interpret_extra_glyphs = true, bool rtl = false);
 
 	// Returns number of characters drawn, plus whether or not it filled the max in bool &full
 	SHIM4_EXPORT int draw_wrapped(SDL_Colour colour, std::string text, util::Point<float> dest_position, int w, int line_height, int max_lines, int elapsed, int delay, bool dry_run, bool &full, int &num_lines, int &width, bool interpret_colour_codes = true, bool centre = false, int first_line_indent = 0, bool interpret_extra_glyphs = true);

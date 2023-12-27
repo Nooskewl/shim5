@@ -187,7 +187,7 @@ int Font::get_text_width(std::string text, bool interpret_colour_codes, bool int
 	return width - 1; // glyph size includes advance, subtract 1 because no advance is needed on the final character
 }
 
-SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes, bool centre, bool interpret_extra_glyphs)
+SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes, bool centre, bool interpret_extra_glyphs, bool rtl)
 {
 	if (text == "") {
 		return colour;
@@ -363,6 +363,10 @@ SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> de
 			std::pair<Uint32, Glyph *> pair = *it;
 			Glyph *glyph = pair.second;
 
+			if (rtl) {
+				pos.x -= glyph->size.w;
+			}
+
 			if (glyph->sheet == (int)sheet) {
 				util::Point<int> shadow[9] = {
 					{ -1, -1 },
@@ -392,7 +396,9 @@ SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> de
 				}
 			}
 
-			pos.x += glyph->size.w;
+			if (rtl == false) {
+				pos.x += glyph->size.w;
+			}
 			
 			if (glyph->sheet != (int)sheet) {
 				continue;
