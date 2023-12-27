@@ -337,15 +337,20 @@ SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> de
 
 				std::map<int, Image *>::iterator it = extra_glyphs.find(extra_glyph);
 				if (it == extra_glyphs.end()) {
-					pos.x += 5;
+					pos.x += 5 * (rtl ? -1 : 1);
 				}
 				else {
 					sheets[sheet]->end_batch();
 					std::pair<int, Image *> p = *it;
+					if (rtl) {
+						pos.x -= p.second->size.w + 1;
+					}
 					p.second->start_batch();
 					p.second->draw_tinted(colour, pos+extra_glyph_offset);
 					p.second->end_batch();
-					pos.x += p.second->size.w + 1;
+					if (rtl == false) {
+						pos.x += p.second->size.w + 1;
+					}
 					sheets[sheet]->start_batch();
 				}
 				
