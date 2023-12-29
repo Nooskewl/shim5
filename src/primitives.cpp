@@ -1,3 +1,4 @@
+#include "shim4/cd.h"
 #include "shim4/primitives.h"
 #include "shim4/shim.h"
 #include "shim4/util.h"
@@ -178,6 +179,246 @@ void draw_filled_triangle(SDL_Colour colour, util::Point<float> a, util::Point<f
 	vertex_colours[1] = colour;
 	vertex_colours[2] = colour;
 	draw_filled_triangle(vertex_colours, a, b, c);
+}
+
+static bool get_pts(double thick, double x1, double y1, double x2, double y2, double x3, double y3, double xx1, double yy1, double xx2, double yy2, double xx3, double yy3, double xx4, double yy4, double *outx1, double *outy1, double *outx2, double *outy2)
+{
+	double xxx1, yyy1, xxx2, yyy2;
+
+	xxx1 = (xx1 + xx2) / 2;
+	yyy1 = (yy1 + yy2) / 2;
+	xxx2 = (xx3 + xx4) / 2;
+	yyy2 = (yy3 + yy4) / 2;
+
+	double a1, a2;
+
+	a1 = atan2(yy2-yy1, xx2-xx1);
+	a2 = atan2(yy4-yy3, xx4-xx3);
+
+	double aa11, aa12, aa21, aa22;
+
+	aa11 = a1 + (M_PI/2.0);
+	aa12 = a1 - (M_PI/2.0);
+	aa21 = a2 - (M_PI/2.0);
+	aa22 = a2 + (M_PI/2.0);
+
+	double _x1, _y1, _x2, _y2, _x3, _y3, _x4, _y4;
+
+	_x1 = xxx1 + cos(aa11) * (thick / 2.0);
+	_y1 = yyy1 + sin(aa11) * (thick / 2.0);
+	_x2 = xxx1 + cos(aa12) * (thick / 2.0);
+	_y2 = yyy1 + sin(aa12) * (thick / 2.0);
+	_x3 = xxx2 + cos(aa21) * (thick / 2.0);
+	_y3 = yyy2 + sin(aa21) * (thick / 2.0);
+	_x4 = xxx2 + cos(aa22) * (thick / 2.0);
+	_y4 = yyy2 + sin(aa22) * (thick / 2.0);
+
+	double __x1, __y1, __x2, __y2, __x3, __y3, __x4, __y4;
+
+	const double BIGNUM = 1000000000.0;
+
+	__x1 = _x1 + cos(a1) * BIGNUM;
+	__y1 = _y1 + sin(a1) * BIGNUM;
+	__x2 = _x2 + cos(a1) * BIGNUM;
+	__y2 = _y2 + sin(a1) * BIGNUM;
+	__x3 = _x3 + cos(a2) * BIGNUM;
+	__y3 = _y3 + sin(a2) * BIGNUM;
+	__x4 = _x4 + cos(a2) * BIGNUM;
+	__y4 = _y4 + sin(a2) * BIGNUM;
+
+	util::Point<float> p1, p2, p3, p4;
+
+	p1.x = _x1;
+	p1.y = _y1;
+	p2.x = __x1;
+	p2.y = __y1;
+	p3.x = _x3;
+	p3.y = _y3;
+	p4.x = __x3;
+	p4.y = __y3;
+
+	util::Point<float> result;
+
+	if (cd::line_line(&p1, &p2, &p3, &p4, &result) == false) {
+		return false;
+	}
+
+	*outx1 = result.x;
+	*outy1 = result.y;
+
+	p1.x = _x2;
+	p1.y = _y2;
+	p2.x = __x2;
+	p2.y = __y2;
+	p3.x = _x4;
+	p3.y = _y4;
+	p4.x = __x4;
+	p4.y = __y4;
+
+	if (cd::line_line(&p1, &p2, &p3, &p4, &result) == false) {
+		return false;
+	}
+
+	*outx2 = result.x;
+	*outy2 = result.y;
+
+	return true;
+}
+
+void draw_triangle(SDL_Colour colour, util::Point<float> a, util::Point<float> b, util::Point<float> c, float thickness)
+{
+	double x1 = a.x;
+	double y1 = a.y;
+	double x2 = b.x;
+	double y2 = b.y;
+	double x3 = c.x;
+	double y3 = c.y;
+
+	double results[6][2];
+	double xx1, yy1, xx2, yy2, xx3, yy3, xx4, yy4;
+
+	xx1 = x1;
+	yy1 = y1;
+	xx2 = x2;
+	yy2 = y2;
+	xx3 = x3;
+	yy3 = y3;
+	xx4 = x2;
+	yy4 = y2;
+
+	if (get_pts(thickness, x1, y1, x2, y2, x3, y3, xx1, yy1, xx2, yy2, xx3, yy3, xx4, yy4, &results[0][0], &results[0][1], &results[1][0], &results[1][1]) == false) {
+		double xx1, yy1, xx2, yy2, xx3, yy3;
+		double _x, _y;
+		double dx, dy;
+		float a;
+		_x = (x2 + x3) / 2.0;
+		_y = (y2 + y3) / 2.0;
+		dx = x1 - _x;
+		dy = y1 - _y;
+		a = atan2(dy, dx);
+		xx1 = x1 + cos(a) * (thickness / 2.0);
+		yy1 = y1 + sin(a) * (thickness / 2.0);
+		_x = (x1 + x3) / 2.0;
+		_y = (y1 + y3) / 2.0;
+		dx = x2 - _x;
+		dy = y2 - _y;
+		a = atan2(dy, dx);
+		xx2 = x2 + cos(a) * (thickness / 2.0);
+		yy2 = y2 + sin(a) * (thickness / 2.0);
+		_x = (x1 + x2) / 2.0;
+		_y = (y1 + y2) / 2.0;
+		dx = x3 - _x;
+		dy = y3 - _y;
+		a = atan2(dy, dx);
+		xx3 = x3 + cos(a) * (thickness / 2.0);
+		yy3 = y3 + sin(a) * (thickness / 2.0);
+		gfx::draw_filled_triangle(colour, util::Point<float>(xx1, yy1), util::Point<float>(xx2, yy2), util::Point<float>(xx3, yy3));
+		return;
+	}
+
+	xx1 = x2;
+	yy1 = y2;
+	xx2 = x3;
+	yy2 = y3;
+	xx3 = x1;
+	yy3 = y1;
+	xx4 = x3;
+	yy4 = y3;
+
+	if (get_pts(thickness, x1, y1, x2, y2, x3, y3, xx1, yy1, xx2, yy2, xx3, yy3, xx4, yy4, &results[2][0], &results[2][1], &results[3][0], &results[3][1]) == false) {
+		double xx1, yy1, xx2, yy2, xx3, yy3;
+		double _x, _y;
+		double dx, dy;
+		float a;
+		_x = (x2 + x3) / 2.0;
+		_y = (y2 + y3) / 2.0;
+		dx = x1 - _x;
+		dy = y1 - _y;
+		a = atan2(dy, dx);
+		xx1 = x1 + cos(a) * (thickness / 2.0);
+		yy1 = y1 + sin(a) * (thickness / 2.0);
+		_x = (x1 + x3) / 2.0;
+		_y = (y1 + y3) / 2.0;
+		dx = x2 - _x;
+		dy = y2 - _y;
+		a = atan2(dy, dx);
+		xx2 = x2 + cos(a) * (thickness / 2.0);
+		yy2 = y2 + sin(a) * (thickness / 2.0);
+		_x = (x1 + x2) / 2.0;
+		_y = (y1 + y2) / 2.0;
+		dx = x3 - _x;
+		dy = y3 - _y;
+		a = atan2(dy, dx);
+		xx3 = x3 + cos(a) * (thickness / 2.0);
+		yy3 = y3 + sin(a) * (thickness / 2.0);
+		gfx::draw_filled_triangle(colour, util::Point<float>(xx1, yy1), util::Point<float>(xx2, yy2), util::Point<float>(xx3, yy3));
+		return;
+	}
+
+	xx1 = x3;
+	yy1 = y3;
+	xx2 = x1;
+	yy2 = y1;
+	xx3 = x2;
+	yy3 = y2;
+	xx4 = x1;
+	yy4 = y1;
+
+	if (get_pts(thickness, x1, y1, x2, y2, x3, y3, xx1, yy1, xx2, yy2, xx3, yy3, xx4, yy4, &results[4][0], &results[4][1], &results[5][0], &results[5][1]) == false) {
+		double xx1, yy1, xx2, yy2, xx3, yy3;
+		double _x, _y;
+		double dx, dy;
+		float a;
+		_x = (x2 + x3) / 2.0;
+		_y = (y2 + y3) / 2.0;
+		dx = x1 - _x;
+		dy = y1 - _y;
+		a = atan2(dy, dx);
+		xx1 = x1 + cos(a) * (thickness / 2.0);
+		yy1 = y1 + sin(a) * (thickness / 2.0);
+		_x = (x1 + x3) / 2.0;
+		_y = (y1 + y3) / 2.0;
+		dx = x2 - _x;
+		dy = y2 - _y;
+		a = atan2(dy, dx);
+		xx2 = x2 + cos(a) * (thickness / 2.0);
+		yy2 = y2 + sin(a) * (thickness / 2.0);
+		_x = (x1 + x2) / 2.0;
+		_y = (y1 + y2) / 2.0;
+		dx = x3 - _x;
+		dy = y3 - _y;
+		a = atan2(dy, dx);
+		xx3 = x3 + cos(a) * (thickness / 2.0);
+		yy3 = y3 + sin(a) * (thickness / 2.0);
+		gfx::draw_filled_triangle(colour, util::Point<float>(xx1, yy1), util::Point<float>(xx2, yy2), util::Point<float>(xx3, yy3));
+		return;
+	}
+	
+	bool prim_held = primitives_held;
+	if (prim_held == false) {
+		draw_primitives_start();
+	}
+	
+	gfx::draw_filled_triangle(colour, util::Point<float>(x2, y2), util::Point<float>(results[0][0], results[0][1]), util::Point<float>(x1, y1));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x1, y1), util::Point<float>(results[4][0], results[4][1]), util::Point<float>(results[0][0], results[0][1]));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x2, y2), util::Point<float>(results[1][0], results[1][1]), util::Point<float>(x1, y1));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x1, y1), util::Point<float>(results[5][0], results[5][1]), util::Point<float>(results[1][0], results[1][1]));
+
+
+	gfx::draw_filled_triangle(colour, util::Point<float>(x3, y3), util::Point<float>(results[2][0], results[2][1]), util::Point<float>(x1, y1));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x1, y1), util::Point<float>(results[4][0], results[4][1]), util::Point<float>(results[2][0], results[2][1]));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x3, y3), util::Point<float>(results[3][0], results[3][1]), util::Point<float>(x1, y1));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x1, y1), util::Point<float>(results[5][0], results[5][1]), util::Point<float>(results[3][0], results[3][1]));
+
+
+	gfx::draw_filled_triangle(colour, util::Point<float>(x3, y3), util::Point<float>(results[2][0], results[2][1]), util::Point<float>(x2, y2));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x2, y2), util::Point<float>(results[0][0], results[0][1]), util::Point<float>(results[2][0], results[2][1]));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x3, y3), util::Point<float>(results[3][0], results[3][1]), util::Point<float>(x2, y2));
+	gfx::draw_filled_triangle(colour, util::Point<float>(x2, y2), util::Point<float>(results[1][0], results[1][1]), util::Point<float>(results[3][0], results[3][1]));
+	
+	if (prim_held == false) {
+		draw_primitives_end();
+	}
 }
 
 void draw_rectangle(SDL_Colour colour, util::Point<float> pos, util::Size<float> size, float thickness)
