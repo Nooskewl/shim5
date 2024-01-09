@@ -2764,8 +2764,6 @@ std::vector< util::Size<int> > get_supported_video_modes()
 void set_custom_mouse_cursor()
 {
 #if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
-	return;
-#else
 	if (internal::gfx_context.inited == false) {
 		return;
 	}
