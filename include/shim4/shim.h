@@ -111,8 +111,8 @@ extern SHIM4_EXPORT IDirect3DDevice9 *d3d_device;
 // audio
 extern SHIM4_EXPORT audio::MML *music;
 extern SHIM4_EXPORT audio::MML *widget_sfx;
-extern SHIM4_EXPORT float music_volume;
-extern SHIM4_EXPORT float sfx_volume;
+extern SHIM4_EXPORT double music_volume;
+extern SHIM4_EXPORT double sfx_volume;
 extern SHIM4_EXPORT int samplerate;
 // input
 extern SHIM4_EXPORT int xbox_l;

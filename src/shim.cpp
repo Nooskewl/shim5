@@ -98,8 +98,8 @@ IDirect3DDevice9 *d3d_device;
 #endif
 audio::MML *music;
 audio::MML *widget_sfx;
-float music_volume;
-float sfx_volume;
+double music_volume;
+double sfx_volume;
 int samplerate;
 int key_l;
 int key_r;

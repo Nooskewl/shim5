@@ -867,19 +867,20 @@ Image::Image(util::Size<int> size) :
 	flipped(false),
 	data_to_destroy(0)
 {
-	unsigned char *pixels = (unsigned char *)calloc(1, size.w * size.h * 4);
+	unsigned char *pixels = new unsigned char[size.w * size.h * 4];
+	memset(pixels, 0, size.w * size.h * 4);
 
 	try {
 		internal = new Internal(pixels, size, true); // support render to texture
 	}
 	catch (util::Error &) {
-		free(pixels);
+		delete[] pixels;
 		throw;
 	}
 
 	internal->has_alpha = true;
 
-	free(pixels);
+	delete[] pixels;
 }
 
 Image::Image(util::Size<int> size, unsigned char *pixels) :
@@ -893,7 +894,7 @@ Image::Image(util::Size<int> size, unsigned char *pixels) :
 		internal = new Internal(pixels, size, true); // support render to texture
 	}
 	catch (util::Error &) {
-		free(pixels);
+		delete[] pixels;
 		throw;
 	}
 
@@ -1601,7 +1602,7 @@ unsigned char *Image::Internal::reload(bool keep_data, bool load_from_filesystem
 #endif
 
 	if (pixels == 0) {
-		return 0;
+		throw util::LoadError("Could not read " + filename);
 	}
 
 	try {
@@ -1683,7 +1684,7 @@ void Image::Internal::upload(unsigned char *pixels)
 				else {
 					format = GL_DEPTH_COMPONENT16;
 				}
-#if defined ANDROID || defined IOS || defined RASPBERRYPI_NOX
+#if defined ANDROID || defined IOS || defined RASPBERRYPI
 				if (strstr((const char *)glGetString(GL_EXTENSIONS), "GL_OES_packed_depth_stencil") != 0) {
 					glGenRenderbuffers_ptr(1, &depth_buffer); // use a combined depth and stencil as it must be supported
 					PRINT_GL_ERROR("glGenRenderbuffers\n");

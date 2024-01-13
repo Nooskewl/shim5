@@ -99,6 +99,7 @@ void Tilemap::reload_sheets(bool load_from_filesystem)
 			image = new Image(filename, false, load_from_filesystem);
 		}
 		catch (util::Error &e) {
+#ifdef USE_PNG
 			std::string filename = std::string("tiles/tiles" + util::itos(i) + ".png");
 			try {
 				image = new Image(filename, false, load_from_filesystem);
@@ -106,6 +107,9 @@ void Tilemap::reload_sheets(bool load_from_filesystem)
 			catch (util::Error &e) {
 				break;
 			}
+#else
+			break;
+#endif
 		}
 
 		if (load_from_filesystem) {
@@ -142,7 +146,7 @@ Tilemap::Tilemap(std::string map_filename, bool load_from_filesystem)
 		f = util::open_file(map_filename, 0);
 	}
 
-	(void)SDL_ReadLE32(f); // Skip "WM2!"
+	(void)SDL_ReadLE32(f); // Skip "WM3!"
 
 	size.w = SDL_ReadLE16(f);
 	size.h = SDL_ReadLE16(f);
