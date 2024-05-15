@@ -217,13 +217,14 @@ std::vector<std::string> CPA::get_all_filenames()
 #if !defined ANDROID && !defined IOS
 	if (load_from_filesystem) {
 		char *base = SDL_GetBasePath();
+		std::string add = shim::use_cwd ? "" : std::string(base);
 
 		// Read directory listing from filesystem
 
 		std::vector< std::vector<std::string> > stack;
 		std::vector<std::string> name_stack;
 		std::vector<std::string> curr;
-		List_Directory l(std::string(base) + "data/*");
+		List_Directory l(add + "data/*");
 		std::string s;
 
 		while ((s = l.next()) != "") {
@@ -233,7 +234,7 @@ std::vector<std::string> CPA::get_all_filenames()
 		}
 
 		stack.push_back(curr);
-		name_stack.push_back(std::string(SDL_GetBasePath()) + "data");
+		name_stack.push_back((shim::use_cwd ? "" : std::string(SDL_GetBasePath())) + "data");
 
 		while (stack.size() > 0) {
 			while (stack[0].size() > 0) {
