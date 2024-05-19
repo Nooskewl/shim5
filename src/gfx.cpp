@@ -650,7 +650,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 #if defined _WIN32
 	if (shim::opengl && internal::gfx_context.restarting) {
-		SDL_Delay(2500); // need this when "restart"ing, need to let old fullscreen mode die fully, especially on screen rotations
+		//SDL_Delay(2500); // need this when "restart"ing, need to let old fullscreen mode die fully, especially on screen rotations
 	}
 #endif
 	
