@@ -57,7 +57,7 @@
 #define _strdup strdup
 #endif
 
-#if defined IOS || defined ANDROID
+#if defined IOS || defined ANDROID || defined __EMSCRIPTEN__
 #define glStencilFuncSeparate_ptr glStencilFuncSeparate
 #define glStencilOpSeparate_ptr glStencilOpSeparate
 #define glBindFramebuffer_ptr glBindFramebuffer
@@ -135,7 +135,9 @@
 #define glDrawArrays_ptr glDrawArrays
 #endif
 
-#ifdef IOS
+#ifdef __EMSCRIPTEN__
+#include <GL/gl.h>
+#elif defined IOS
 #include <OpenGLES/ES2/gl.h>
 #include <OpenGLES/ES2/glext.h>
 #elif defined ANDROID
@@ -324,8 +326,6 @@ extern SHIM4_EXPORT glDrawArrays_func glDrawArrays_ptr;
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_CTOR_INIT
-#ifdef RASPBERRYPI
-#endif
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>

@@ -15,7 +15,7 @@
 #include <png.h>
 #endif
 
-#if defined ANDROID || defined IOS
+#if defined ANDROID || defined IOS || defined __EMSCRIPTEN__
 #define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
 #endif
 
@@ -597,7 +597,7 @@ unsigned char *Image::read_texture(gfx::Image *image)
 {
 	unsigned char *buf = new unsigned char[image->size.w*image->size.h*4];
 
-#ifdef ANDROID
+#if defined ANDROID || defined __EMSCRIPTEN__
 	return buf;
 #else
 	if (shim::opengl) {
@@ -1684,7 +1684,7 @@ void Image::Internal::upload(unsigned char *pixels)
 				else {
 					format = GL_DEPTH_COMPONENT16;
 				}
-#if defined ANDROID || defined IOS || defined RASPBERRYPI
+#if defined ANDROID || defined IOS || defined RASPBERRYPI || defined __EMSCRIPTEN__
 				if (strstr((const char *)glGetString(GL_EXTENSIONS), "GL_OES_packed_depth_stencil") != 0) {
 					glGenRenderbuffers_ptr(1, &depth_buffer); // use a combined depth and stencil as it must be supported
 					PRINT_GL_ERROR("glGenRenderbuffers\n");
