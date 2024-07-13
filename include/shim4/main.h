@@ -115,9 +115,7 @@
 #define glClearColor_ptr glClearColor
 #define glClear_ptr glClear
 #define glClearDepthf_ptr glClearDepthf
-#if !defined ANDROID && !defined IOS
 #define glClearDepth_ptr glClearDepth
-#endif
 #define glClearStencil_ptr glClearStencil
 #define glDepthMask_ptr glDepthMask
 #define glDepthFunc_ptr glDepthFunc
@@ -140,7 +138,7 @@
 #elif defined IOS
 #include <OpenGLES/ES2/gl.h>
 #include <OpenGLES/ES2/glext.h>
-#elif defined ANDROID
+#elif defined ANDROID || defined __EMSCRIPTEN__
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #else
@@ -348,7 +346,7 @@ extern SHIM4_EXPORT glDrawArrays_func glDrawArrays_ptr;
 #endif
 #endif
 
-#if __linux__ || (defined __APPLE__)
+#if __linux__ || (defined __APPLE__) || defined __EMSCRIPTEN__
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 #else
@@ -356,7 +354,7 @@ extern SHIM4_EXPORT glDrawArrays_func glDrawArrays_ptr;
 #include <SDL_syswm.h>
 #endif
 #ifdef USE_TTF
-#include <SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 #endif
 
 #include <tgui6/tgui6.h>

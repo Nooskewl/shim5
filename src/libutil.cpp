@@ -273,6 +273,8 @@ std::string get_system_language()
 	return get_system_language_linux();
 #elif defined ANDROID
 	return get_system_language_android();
+#elif defined __EMSCRIPTEN__
+	return "english";
 #else
 	return apple_get_system_language();
 #endif
