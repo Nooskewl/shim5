@@ -150,7 +150,7 @@ gfx::Image SHIM4_EXPORT *gen_plasma(int seed, float alpha1, float alpha2, SDL_Co
 void SHIM4_EXPORT screen_shake(float amount, Uint32 length);
 void SHIM4_EXPORT apply_screen_shake();
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32)
+#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32 || defined __EMSCRIPTEN__)
 void SHIM4_EXPORT create_mouse_cursors();
 void SHIM4_EXPORT delete_mouse_cursors();
 #endif

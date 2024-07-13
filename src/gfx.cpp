@@ -30,7 +30,7 @@
 
 using namespace noo;
 
-#if !defined ANDROID && !defined IOS
+#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 glStencilFuncSeparate_func glStencilFuncSeparate_ptr;
 glStencilOpSeparate_func glStencilOpSeparate_ptr;
 glBindFramebuffer_func glBindFramebuffer_ptr;
@@ -469,7 +469,7 @@ static int shim_stencilop_to_gl(Stencil_Op op)
 			return GL_DECR;
 		case STENCILOP_INVERT:
 			return GL_INVERT;
-#ifndef ANDROID
+#if !defined ANDROID && !defined __EMSCRIPTEN__
 		case STENCILOP_INCR:
 			return GL_INCR_WRAP;
 		case STENCILOP_DECR:
@@ -701,7 +701,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 			util::errormsg("Failed to create OpenGL context! (%s)\n", SDL_GetError());
 		}
 
-#if !defined ANDROID && !defined IOS
+#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
 		glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
 		glBindFramebuffer_ptr = (glBindFramebuffer_func)SDL_GL_GetProcAddress("glBindFramebuffer");
@@ -763,7 +763,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 #else
 		glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepthf");
 #endif
-#if !defined ANDROID && !defined IOS
+#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		if (glClearDepthf_ptr == 0) {
 			glClearDepth_ptr = (glClearDepth_func)SDL_GL_GetProcAddress("glClearDepth");
 		}
@@ -1388,7 +1388,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-#if defined IOS || defined ANDROID || defined RASPBERRYPI
+#if defined IOS || defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -1398,7 +1398,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 		if (::create_depth_buffer) {
-#if defined ANDROID || defined RASPBERRYPI
+#if defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 #else
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -2163,7 +2163,7 @@ void clear(SDL_Colour colour)
 void clear_depth_buffer(float value)
 {
 	if (shim::opengl) {
-#if !defined ANDROID && !defined IOS
+#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		if (glClearDepthf_ptr == 0) {
 			glClearDepth_ptr(value);
 		}
@@ -2506,7 +2506,7 @@ void enable_two_sided_stencil(bool onoff)
 void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
 {
 	if (shim::opengl) {
-#ifdef ANDROID
+#if defined ANDROID || defined __EMSCRIPTEN__
 		two_sided_stencil = false;
 #endif
 		if (two_sided_stencil == false) {
@@ -2519,7 +2519,7 @@ void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Sten
 			);
 			PRINT_GL_ERROR("glStencilOp\n");
 		}
-#ifndef ANDROID
+#if !defined ANDROID && !defined __EMSCRIPTEN__
 		else {
 			glStencilFuncSeparate_ptr(GL_FRONT, shim_compare_to_gl(func), reference, mask);
 			PRINT_GL_ERROR("glStencilFuncSeparate\n");
@@ -2548,7 +2548,7 @@ void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Sten
 void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
 {
 	if (shim::opengl) {
-#ifdef ANDROID
+#if defined ANDROID || defined __EMSCRIPTEN__
 		two_sided_stencil = false;
 #endif
 		if (two_sided_stencil == false) {
@@ -2561,7 +2561,7 @@ void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op z
 			);
 			PRINT_GL_ERROR("glStencilOp\n");
 		}
-#ifndef ANDROID
+#if !defined ANDROID && !defined __EMSCRIPTEN__
 		else {
 			glStencilFuncSeparate_ptr(GL_BACK, shim_compare_to_gl(func), reference, mask);
 			PRINT_GL_ERROR("glStencilFuncSeparate\n");

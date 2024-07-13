@@ -159,11 +159,11 @@ static void handle_resize(SDL_Event *event)
 		return;
 	}
 
-#if !defined IOS && !defined ANDROID
+#if !defined IOS && !defined ANDROID && !defined __EMSCRIPTEN__
 	if (gfx::internal::gfx_context.fullscreen == false) {
 #endif
 		gfx::resize_window(event->window.data1, event->window.data2);
-#if !defined IOS && !defined ANDROID
+#if !defined IOS && !defined ANDROID && !defined __EMSCRIPTEN__
 	}
 #endif
 }
@@ -263,6 +263,8 @@ bool static_start(int sdl_init_flags)
 	if (sdl_init_flags == 0) {
 #if defined ANDROID || defined TVOS
 		sdl_init_flags = SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_AUDIO; // we need to be able to shutdown/bring up the joystick system on Android
+#elif defined __EMSCRIPTEN__
+		sdl_init_flags = SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER;
 #else
 		sdl_init_flags = SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC;
 #endif

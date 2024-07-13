@@ -581,7 +581,7 @@ std::string get_standard_path(Path_Type type, bool create)
 	}
 
 	return "";
-#elif defined __linux__ && !defined ANDROID
+#elif defined __linux__ || defined __EMSCRIPTEN__ && !defined ANDROID
 	std::string path = getenv("HOME");
 	if (create) {
 		mkdir(path);
@@ -694,7 +694,7 @@ void open_with_system(std::string filename)
 		system((std::string("xdg-open ") + filename).c_str());
 		exit(0);
 	}
-#elif !defined IOS
+#elif !defined IOS && !defined __EMSCRIPTEN__
 	macosx_open_with_system(filename);
 #endif
 }

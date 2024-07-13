@@ -31,7 +31,7 @@ namespace util {
 SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
 {
 	if (load_from_filesystem) {
-#if !defined ANDROID && !defined IOS
+#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		if (shim::use_cwd == false) {
 			char *base = SDL_GetBasePath();
 			filename = std::string(base) + "data/" + filename;
@@ -306,7 +306,7 @@ CPA::CPA() :
 	bool loaded_cpa = false;
 
 	file = 0;
-#if defined ANDROID || defined IOS
+#if defined ANDROID || defined IOS || defined __EMSCRIPTEN__
 	load_from_filesystem = true;
 #elif defined ANDROID_XXX
 	// Don't use a compressed .cpa on Android -- the APK is already compressed

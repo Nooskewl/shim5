@@ -493,7 +493,7 @@ int popup(std::string caption, std::string text, Popup_Type type)
 	return result;
 #elif defined __APPLE__ && !defined IOS
 	return macosx_popup(caption, text, type);
-#elif !defined ANDROID && !defined IOS && !defined RASPBERRYPI_NOX
+#elif !defined ANDROID && !defined IOS && !defined RASPBERRYPI_NOX && !defined __EMSCRIPTEN__
 	return x_popup(caption, text, type);
 #else
 	return -1;
