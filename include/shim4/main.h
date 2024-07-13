@@ -354,7 +354,11 @@ extern SHIM4_EXPORT glDrawArrays_func glDrawArrays_ptr;
 #include <SDL_syswm.h>
 #endif
 #ifdef USE_TTF
+#ifdef __EMSCRIPTEN__
 #include <SDL2/SDL_ttf.h>
+#else
+#include <SDL_ttf.h>
+#endif
 #endif
 
 #include <tgui6/tgui6.h>
