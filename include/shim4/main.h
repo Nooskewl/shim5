@@ -133,9 +133,7 @@
 #define glDrawArrays_ptr glDrawArrays
 #endif
 
-#ifdef __EMSCRIPTEN__
-#include <GL/gl.h>
-#elif defined IOS
+#ifdef IOS
 #include <OpenGLES/ES2/gl.h>
 #include <OpenGLES/ES2/glext.h>
 #elif defined ANDROID || defined __EMSCRIPTEN__
