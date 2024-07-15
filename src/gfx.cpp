@@ -596,6 +596,9 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	centre_y = 0;
 #elif defined RASPBERRYPI_NOX
 	flags |= SDL_WINDOW_FULLSCREEN;
+#elif defined __EMSCRIPTEN__
+	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	centre_y = 0;
 #else
 	util::Size<int> desktop_size = get_desktop_resolution();
 	if (window_h <= 0) {
@@ -876,7 +879,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 		SDL_GL_SetSwapInterval(v ? 1 : 0); // vsync, 1 = on
 
-#if defined IOS
+#if defined IOS || defined __EMSCRIPTEN__
 	       SDL_GL_GetDrawableSize(internal::gfx_context.window, &w, &h);
 #else
 	       if (internal::gfx_context.fullscreen) {
@@ -2879,7 +2882,7 @@ void set_maximum_window_size(util::Size<int> size)
 // This doesn't resize the window, but should be called after the window is resized
 void resize_window(int width, int height)
 {
-#ifdef IOS
+#if defined IOS || defined __EMSCRIPTEN__
 	SDL_GL_GetDrawableSize(internal::gfx_context.window, &width, &height);
 #endif
 	
@@ -3014,6 +3017,16 @@ bool scale_mouse_event(TGUI_Event *event)
 			event->mouse.x *= window_w;
 			event->mouse.y *= window_h;
 		}
+#ifdef __EMSCRIPTEN__
+		else {
+			int drawable_w, drawable_h;
+			SDL_GL_GetDrawableSize(internal::gfx_context.window, &drawable_w, &drawable_h);
+			int window_w, window_h;
+			SDL_GetWindowSize(internal::gfx_context.window, &window_w, &window_h);
+			event->mouse.x *= drawable_w / window_w;
+			event->mouse.y *= drawable_h / window_h;
+		}
+#endif
 		event->mouse.x = (event->mouse.x - shim::screen_offset.x) / shim::scale;
 		event->mouse.y = (event->mouse.y - shim::screen_offset.y) / shim::scale;
 		event->mouse.normalised = false;
