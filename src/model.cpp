@@ -582,23 +582,26 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 					face++;
 				}
 				else {
-					num_triangles += 2;
+					num_triangles++;
 					skip_whitespace(file);
 					std::string s1 = read_word(file);
 					skip_whitespace(file);
 					std::string s2 = read_word(file);
 					skip_whitespace(file);
 					std::string s3 = read_word(file);
-					skip_whitespace(file);
-					std::string s4 = read_word(file);
 					triangles[face*3+0] = atoi(s1.c_str());
 					triangles[face*3+1] = atoi(s2.c_str());
 					triangles[face*3+2] = atoi(s3.c_str());
 					face++;
-					triangles[face*3+0] = atoi(s1.c_str());
-					triangles[face*3+1] = atoi(s4.c_str());
-					triangles[face*3+2] = atoi(s3.c_str());
-					face++;
+					for (int j = 0; j < v-3; j++) {
+						num_triangles++;
+						skip_whitespace(file);
+						std::string s4 = read_word(file);
+						triangles[face*3+0] = atoi(s1.c_str());
+						triangles[face*3+1] = atoi(s2.c_str());
+						triangles[face*3+2] = atoi(s4.c_str());
+						face++;
+					}
 				}
 				skip_whitespace(file);
 			}
@@ -661,33 +664,26 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						std::string v2 = read_word(file);
 						skip_whitespace(file);
 						std::string v3 = read_word(file);
-
-						std::string v4;
-						if (count == 4) {
-							skip_whitespace(file);
-							v4 = read_word(file);
-						}
-
 						int v1i = atoi(v1.c_str());
 						int v2i = atoi(v2.c_str());
 						int v3i = atoi(v3.c_str());
-						int v4i = atoi(v4.c_str());
 
-						if (count == 4) {
+						if (count == 3) {
 							normal_indices[face*3+0] = v1i;
 							normal_indices[face*3+1] = v2i;
-							normal_indices[face*3+2] = v3i;
-							face++;
-							normal_indices[face*3+0] = v1i;
-							normal_indices[face*3+1] = v4i;
 							normal_indices[face*3+2] = v3i;
 							face++;
 						}
 						else {
-							normal_indices[face*3+0] = v1i;
-							normal_indices[face*3+1] = v2i;
-							normal_indices[face*3+2] = v3i;
-							face++;
+							for (int j = 0; j < count-3; j++) {
+								skip_whitespace(file);
+								std::string v4 = read_word(file);
+								int v4i = atoi(v4.c_str());
+								normal_indices[face*3+0] = v1i;
+								normal_indices[face*3+1] = v2i;
+								normal_indices[face*3+2] = v4i;
+								face++;
+							}
 						}
 					}
 					skip_whitespace(file);
@@ -920,13 +916,13 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 								destroy(m);
 								throw util::LoadError("Error loading texture 'gfx/textures/" + filename + "'");
 							}
+							skip_whitespace(file);
+							c = read_byte(file);
 						}
 						else if (token != "}") {
 							destroy(m);
 							throw util::LoadError(util::string_printf("Expected } on line %d", line));
 						}
-						skip_whitespace(file);
-						c = read_byte(file);
 					}
 					skip_whitespace(file);
 					c = read_byte(file);
@@ -992,7 +988,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 			skip_section(file);
 		}
 	}
-printf("num_triangles=%d\n", num_triangles);
+	
 	m->create_arrays(vertices, triangles, normals, normal_indices, texcoords, colours, num_triangles);
 
 	delete[] vertices;
