@@ -350,6 +350,11 @@ void Model::skip_whitespace(SDL_RWops *file)
 				return;
 			}
 		}
+		else if (c == '#') {
+			while (c != '\n' && c != EOF) {
+				c = read_byte(file);
+			}
+		}
 		else if (!isspace(c)) {
 			unget(c);
 			return;
@@ -376,6 +381,15 @@ std::string Model::read_word(SDL_RWops *file)
 				break;
 			}
 			return word;
+		}
+		if (c == '#') {
+			while (c == '#' && c != EOF) {
+				while (c != EOF && c != '\n') {
+					c = read_byte(file);
+				}
+				skip_whitespace(file);
+				c = read_byte(file);
+			}
 		}
 		char s[2];
 		s[0] = c;
@@ -409,13 +423,17 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 
 	skip_whitespace(file);
 
-	int c = read_byte(file);
+	int c;
 
-	if (c != '{') {
-		destroy(m);
-		throw util::LoadError(util::string_printf("Expected { on line %d", line));
+	if (m->name != "{") {
+		c = read_byte(file);
+
+		if (c != '{') {
+			destroy(m);
+			throw util::LoadError(util::string_printf("Expected { on line %d", line));
+		}
 	}
-
+	
 	while (true) {
 		skip_whitespace(file);
 
@@ -472,11 +490,13 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 		}
 		else if (token == "Mesh") {
 			skip_whitespace(file);
-			c = read_byte(file);
-			if (c != '{') {
-				destroy(m);
-				throw util::LoadError(util::string_printf("Expected { on line %d", line));
+
+			std::string name = read_word(file);
+
+			if (name != "{") {
+				m->name = name;
 			}
+
 			skip_whitespace(file);
 			std::string vcount_s = read_word(file);
 			if (vcount_s == "") {
@@ -533,9 +553,10 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 			}
 			int nfaces = atoi(nfaces_s.c_str());
-			num_triangles = nfaces;
-			triangles = new int[nfaces * 3];
-			for (int i = 0; i < nfaces * 4; i++) {
+			num_triangles = 0;
+			triangles = new int[nfaces * 3 * 2];
+			int face = 0;
+			for (int i = 0; i < nfaces; i++) {
 				skip_whitespace(file);
 				std::string v_s = read_word(file);
 				if (v_s == "") {
@@ -543,15 +564,37 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 				}
 				int v = atoi(v_s.c_str());
-				if (i % 4 == 0 && v != 3) {
-					destroy(m);
-					throw util::LoadError("Only triangles supported!");
+				if (v == 3) {
+					num_triangles++;
+					skip_whitespace(file);
+					std::string s1 = read_word(file);
+					skip_whitespace(file);
+					std::string s2 = read_word(file);
+					skip_whitespace(file);
+					std::string s3 = read_word(file);
+					triangles[face*3+2] = atoi(s1.c_str());
+					triangles[face*3+1] = atoi(s2.c_str());
+					triangles[face*3+0] = atoi(s3.c_str());
+					face++;
 				}
-				else if (i % 4 != 0) {
-					int face = i / 4;
-					int vert = i % 4 - 1;
-					triangles[face*3+(2-vert)] = v;
-					//triangles[face*3+vert] = v;
+				else {
+					num_triangles += 2;
+					skip_whitespace(file);
+					std::string s1 = read_word(file);
+					skip_whitespace(file);
+					std::string s2 = read_word(file);
+					skip_whitespace(file);
+					std::string s3 = read_word(file);
+					skip_whitespace(file);
+					std::string s4 = read_word(file);
+					triangles[face*3+2] = atoi(s1.c_str());
+					triangles[face*3+1] = atoi(s2.c_str());
+					triangles[face*3+0] = atoi(s3.c_str());
+					face++;
+					triangles[face*3+2] = atoi(s1.c_str());
+					triangles[face*3+1] = atoi(s3.c_str());
+					triangles[face*3+0] = atoi(s4.c_str());
+					face++;
 				}
 			}
 			while (true) {
@@ -596,7 +639,8 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 					}
 					int nfaces = atoi(nfaces_s.c_str());
-					normal_indices = new int[nfaces * 3];
+					normal_indices = new int[nfaces * 3 * 2];
+					int face = 0;
 					for (int i = 0; i < nfaces; i++) {
 						skip_whitespace(file);
 						std::string v_s = read_word(file);
@@ -605,10 +649,6 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 						}
 						int count = atoi(v_s.c_str());
-						if (count != 3) {
-							destroy(m);
-							throw util::LoadError("Only triangles supported, aborting!");
-						}
 
 						skip_whitespace(file);
 						std::string v1 = read_word(file);
@@ -617,13 +657,27 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						skip_whitespace(file);
 						std::string v3 = read_word(file);
 
+						std::string v4;
+						if (count == 4) {
+							skip_whitespace(file);
+							v4 = read_word(file);
+						}
+
 						int v1i = atoi(v1.c_str());
 						int v2i = atoi(v2.c_str());
 						int v3i = atoi(v3.c_str());
 
-						normal_indices[i*3+2] = v1i;
-						normal_indices[i*3+1] = v2i;
-						normal_indices[i*3+0] = v3i;
+						normal_indices[face*3+2] = v1i;
+						normal_indices[face*3+1] = v2i;
+						normal_indices[face*3+0] = v3i;
+						face++;
+
+						if (count == 4) {
+							normal_indices[face*3+2] = v1i;
+							normal_indices[face*3+1] = v3i;
+							normal_indices[face*3+0] = atoi(v4.c_str());
+							face++;
+						}
 					}
 					skip_whitespace(file);
 					c = read_byte(file);
@@ -810,11 +864,13 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 							throw util::LoadError(util::string_printf("Unexpteced EOF on line %d", line));
 						}
 
-						skip_whitespace(file);
-						c = read_byte(file);
-						if (c != '{') {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Expected { on line %d", line));
+						if (token != "{") {
+							skip_whitespace(file);
+							c = read_byte(file);
+							if (c != '{') {
+								destroy(m);
+								throw util::LoadError(util::string_printf("Expected { on line %d", line));
+							}
 						}
 						// we ignore these material properties for now
 						for (int j = 0; j < 11; j++) {
@@ -823,45 +879,43 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						}
 						skip_whitespace(file);
 						token = read_word(file);
-						if (token != "TextureFilename") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Expected TextureFilename on line %d", line));
-						}
-						int nquotes = 0;
-						std::string filename;
-						while (true) {
-							c = read_byte(file);
-							if (c == '"') {
-								nquotes++;
+						if (token == "TextureFilename") {
+							int nquotes = 0;
+							std::string filename;
+							while (true) {
+								c = read_byte(file);
+								if (c == '"') {
+									nquotes++;
+								}
+								else if (c == '}') {
+									break;
+								}
+								else if (c == EOF) {
+									destroy(m);
+									throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+								}
+								else if (nquotes == 1) {
+									char s[2];
+									s[0] = c;
+									s[1] = 0;
+									filename += s;
+								}
 							}
-							else if (c == '}') {
-								break;
+							Image *texture = new Image("gfx/textures/" + filename, true);
+							if (texture) {
+								m->textures.push_back(texture);
 							}
-							else if (c == EOF) {
+							else {
 								destroy(m);
-								throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-							}
-							else if (nquotes == 1) {
-								char s[2];
-								s[0] = c;
-								s[1] = 0;
-								filename += s;
+								throw util::LoadError("Error loading texture 'gfx/textures/" + filename + "'");
 							}
 						}
-						Image *texture = new Image("gfx/textures/" + filename, true);
-						if (texture) {
-							m->textures.push_back(texture);
-						}
-						else {
-							destroy(m);
-							throw util::LoadError("Error loading texture 'gfx/textures/" + filename + "'");
-						}
-						skip_whitespace(file);
-						c = read_byte(file);
-						if (c != '}') {
+						else if (token != "}") {
 							destroy(m);
 							throw util::LoadError(util::string_printf("Expected } on line %d", line));
 						}
+						skip_whitespace(file);
+						c = read_byte(file);
 					}
 					skip_whitespace(file);
 					c = read_byte(file);
@@ -903,6 +957,10 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 							float v = atof(v_s.c_str());
 							colours[i*4+j] = v;
 						}
+						// premultiply alpha
+						colours[i*4+0] *= colours[i*4+3];
+						colours[i*4+1] *= colours[i*4+3];
+						colours[i*4+2] *= colours[i*4+3];
 					}
 					skip_whitespace(file);
 					c = read_byte(file);
@@ -1063,11 +1121,15 @@ Model::Animation *Model::read_animationset(SDL_RWops *file)
 
 	skip_whitespace(file);
 
-	int c = read_byte(file);
+	int c;
 
-	if (c != '{') {
-		destroy(a);
-		throw util::LoadError(util::string_printf("Expected { on line %d", line));
+	if (a->name != "{") {
+		c = read_byte(file);
+
+		if (c != '{') {
+			destroy(a);
+			throw util::LoadError(util::string_printf("Expected { on line %d", line));
+		}
 	}
 
 	while (true) {
@@ -1117,146 +1179,180 @@ Model::Bone *Model::read_animation(SDL_RWops *file)
 	std::string name = read_word(file);
 
 	if (name[0] != '{' || name[name.length()-1] != '}') {
-		delete b;
-		throw util::LoadError(util::string_printf("Expected {bone_name} on line %d", line));
-	}
-
-	name = name.substr(1, name.length()-2);
-
-	b->name = name;
-
-	std::vector<glm::quat> rotations;
-	std::vector<glm::vec3> scales;
-	std::vector<glm::vec3> translations;
-
-	while (true) {
-		skip_whitespace(file);
-
-		std::string token = read_word(file);
-
-		if (token == "") {
+		// Assume type 4
+		if (name != "AnimationKey") {
 			delete b;
-			throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			throw util::LoadError(util::string_printf("Expected AnimationKey on line %d", line));
 		}
-		else if (token == "}") {
-			break;
+		skip_whitespace(file);
+		c = read_byte(file);
+		if (c != '{') {
+			delete b;
+			throw util::LoadError(util::string_printf("Expected { on line %d", line));
 		}
-		else if (token == "AnimationKey") {
+		skip_whitespace(file);
+		std::string type_s = read_word(file);
+		skip_whitespace(file);
+		std::string num_mats_s = read_word(file);
+		int num_mats = atoi(num_mats_s.c_str());
+		for (int i = 0; i < num_mats; i++) {
 			skip_whitespace(file);
-
-			int c = read_byte(file);
-
-			if (c != '{') {
-				delete b;
-				throw util::LoadError(util::string_printf("Expected { on line %d", line));
-			}
-
+			std::string skip_count = read_word(file);
 			skip_whitespace(file);
-
-			std::string type = read_word(file);
-
-			if (type != "0" && type != "1" && type != "2") {
-				delete b;
-				throw util::LoadError(util::string_printf("Unknown AnimationKey type %s on line %d", type.c_str(), line));
-			}
-
-			skip_whitespace(file);
-
-			std::string countS = read_word(file);
-			int count = atoi(countS.c_str());
-
-			if (count <= 0) {
-				delete b;
-				throw util::LoadError(util::string_printf("Count is %d on line %d", count, line));
-			}
-
-			for (int i = 0; i < count; i++) {
+			std::string elem_count_s = read_word(file);
+			int elem_count = atoi(elem_count_s.c_str());
+			float mat[16];
+			for (int j = 0; j < elem_count; j++) {
 				skip_whitespace(file);
-				read_word(file); // skip frame number, we assume sequential
-				skip_whitespace(file);
-				std::string elem_countS = read_word(file);
-				int elem_count = atoi(elem_countS.c_str());
-
-				if (type == "0") { // rotation
-					if (elem_count != 4) {
-						delete b;
-						throw util::LoadError(util::string_printf("Element count is not 4 on line %d", line));
-					}
-					float values[4];
-					for (int j = 0; j < 4; j++) {
-						skip_whitespace(file);
-						std::string vS = read_word(file);
-						if (vS == "") {
-							delete b;
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						float v = atof(vS.c_str());
-						values[j] = v;
-					}
-					glm::quat q;
-					q.w = values[0];
-					q.x = values[1];
-					q.y = values[2];
-					q.z = values[3];
-					q = glm::inverse(q);
-					rotations.push_back(q);
+				std::string v_s = read_word(file);
+				float f = atof(v_s.c_str());
+				if (j < 16) {
+					mat[j] = f;
 				}
-				else {
-					if (elem_count != 3) {
-						delete b;
-						throw util::LoadError(util::string_printf("Element count is not 3 on line %d", line));
-					}
-					float values[3];
-					for (int j = 0; j < 3; j++) {
-						skip_whitespace(file);
-						std::string vS = read_word(file);
-						if (vS == "") {
+			}
+			glm::mat4 m = glm::make_mat4(mat);
+			//m = glm::transpose(m);
+			b->frames.push_back(m);
+		}
+	}
+	else {
+		name = name.substr(1, name.length()-2);
+
+		b->name = name;
+
+		std::vector<glm::quat> rotations;
+		std::vector<glm::vec3> scales;
+		std::vector<glm::vec3> translations;
+
+		while (true) {
+			skip_whitespace(file);
+
+			std::string token = read_word(file);
+
+			if (token == "") {
+				delete b;
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			else if (token == "}") {
+				break;
+			}
+			else if (token == "AnimationKey") {
+				skip_whitespace(file);
+
+				int c = read_byte(file);
+
+				if (c != '{') {
+					delete b;
+					throw util::LoadError(util::string_printf("Expected { on line %d", line));
+				}
+
+				skip_whitespace(file);
+
+				std::string type = read_word(file);
+
+				if (type != "0" && type != "1" && type != "2") {
+					delete b;
+					throw util::LoadError(util::string_printf("Unknown AnimationKey type %s on line %d", type.c_str(), line));
+				}
+
+				skip_whitespace(file);
+
+				std::string countS = read_word(file);
+				int count = atoi(countS.c_str());
+
+				if (count <= 0) {
+					delete b;
+					throw util::LoadError(util::string_printf("Count is %d on line %d", count, line));
+				}
+
+				for (int i = 0; i < count; i++) {
+					skip_whitespace(file);
+					read_word(file); // skip frame number, we assume sequential
+					skip_whitespace(file);
+					std::string elem_countS = read_word(file);
+					int elem_count = atoi(elem_countS.c_str());
+
+					if (type == "0") { // rotation
+						if (elem_count != 4) {
 							delete b;
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+							throw util::LoadError(util::string_printf("Element count is not 4 on line %d", line));
 						}
-						float v = atof(vS.c_str());
-						values[j] = v;
-					}
-					glm::vec3 v;
-					v.x = values[0];
-					v.y = values[1];
-					v.z = values[2];
-					if (type == "1") {
-						scales.push_back(v);
+						float values[4];
+						for (int j = 0; j < 4; j++) {
+							skip_whitespace(file);
+							std::string vS = read_word(file);
+							if (vS == "") {
+								delete b;
+								throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+							}
+							float v = atof(vS.c_str());
+							values[j] = v;
+						}
+						glm::quat q;
+						q.w = values[0];
+						q.x = values[1];
+						q.y = values[2];
+						q.z = values[3];
+						q = glm::inverse(q);
+						rotations.push_back(q);
 					}
 					else {
-						translations.push_back(v);
+						if (elem_count != 3) {
+							delete b;
+							throw util::LoadError(util::string_printf("Element count is not 3 on line %d", line));
+						}
+						float values[3];
+						for (int j = 0; j < 3; j++) {
+							skip_whitespace(file);
+							std::string vS = read_word(file);
+							if (vS == "") {
+								delete b;
+								throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+							}
+							float v = atof(vS.c_str());
+							values[j] = v;
+						}
+						glm::vec3 v;
+						v.x = values[0];
+						v.y = values[1];
+						v.z = values[2];
+						if (type == "1") {
+							scales.push_back(v);
+						}
+						else {
+							translations.push_back(v);
+						}
 					}
 				}
+				
+				skip_whitespace(file);
+
+				c = read_byte(file);
+
+				if (c != '}') {
+					delete b;
+					throw util::LoadError(util::string_printf("Expected } on line %d", line));
+				}
 			}
-			
-			skip_whitespace(file);
-
-			c = read_byte(file);
-
-			if (c != '}') {
-				delete b;
-				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			else {
+				util::errormsg("Unexpected token %s on line %d.\n", token.c_str(), line);
+				skip_section(file);
 			}
 		}
-		else {
-			util::errormsg("Unexpected token %s on line %d.\n", token.c_str(), line);
-			skip_section(file);
+
+		if (rotations.size() != scales.size() || scales.size() != translations.size()) {
+			delete b;
+			throw util::LoadError("Unbalanced number of transformations!");
 		}
-	}
 
-	if (rotations.size() != scales.size() || scales.size() != translations.size()) {
-		delete b;
-		throw util::LoadError("Unbalanced number of transformations!");
-	}
-
-	for (size_t i = 0; i < rotations.size(); i++) {
-		glm::mat4 m;
-		m = glm::translate(m, translations[i]);
-		glm::mat4 m2 = glm::toMat4(rotations[i]);
-		m = m * m2;
-		m = glm::scale(m, scales[i]);
-		b->frames.push_back(m);
+		for (size_t i = 0; i < rotations.size(); i++) {
+			glm::mat4 m;
+			m = glm::translate(m, translations[i]);
+			glm::mat4 m2 = glm::toMat4(rotations[i]);
+			m = m * m2;
+			m = glm::scale(m, scales[i]);
+			b->frames.push_back(m);
+		}
 	}
 
 	return b;
@@ -1717,7 +1813,7 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 	instance->finished_callback_data = finished_callback_data;
 	// set up influences at this time so it can be done for only 1 anim (fastest way)
 	if (already_set == false && instance->current_animation != "") {
-		Node *n = find("Model");
+		Model::Node *n = find("Model");
 		Animation *a = get_animation(instance->current_animation);
 		if (a) {
 			for (int i = 0; i < n->num_vertices; i++) {
