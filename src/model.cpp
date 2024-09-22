@@ -494,7 +494,12 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 			std::string name = read_word(file);
 
 			if (name != "{") {
-				m->name = name;
+				skip_whitespace(file);
+				c = read_byte(file);
+				if (c != '{') {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Expected { on line %d", line));
+				}
 			}
 
 			skip_whitespace(file);
@@ -553,7 +558,6 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 			}
 			int nfaces = atoi(nfaces_s.c_str());
-			num_triangles = 0;
 			triangles = new int[nfaces * 3 * 2];
 			int face = 0;
 			for (int i = 0; i < nfaces; i++) {
@@ -572,9 +576,9 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 					std::string s2 = read_word(file);
 					skip_whitespace(file);
 					std::string s3 = read_word(file);
-					triangles[face*3+2] = atoi(s1.c_str());
+					triangles[face*3+0] = atoi(s1.c_str());
 					triangles[face*3+1] = atoi(s2.c_str());
-					triangles[face*3+0] = atoi(s3.c_str());
+					triangles[face*3+2] = atoi(s3.c_str());
 					face++;
 				}
 				else {
@@ -587,15 +591,16 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 					std::string s3 = read_word(file);
 					skip_whitespace(file);
 					std::string s4 = read_word(file);
-					triangles[face*3+2] = atoi(s1.c_str());
+					triangles[face*3+0] = atoi(s1.c_str());
 					triangles[face*3+1] = atoi(s2.c_str());
-					triangles[face*3+0] = atoi(s3.c_str());
+					triangles[face*3+2] = atoi(s3.c_str());
 					face++;
-					triangles[face*3+2] = atoi(s1.c_str());
-					triangles[face*3+1] = atoi(s3.c_str());
-					triangles[face*3+0] = atoi(s4.c_str());
+					triangles[face*3+0] = atoi(s1.c_str());
+					triangles[face*3+1] = atoi(s4.c_str());
+					triangles[face*3+2] = atoi(s3.c_str());
 					face++;
 				}
+				skip_whitespace(file);
 			}
 			while (true) {
 				skip_whitespace(file);
@@ -666,16 +671,22 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						int v1i = atoi(v1.c_str());
 						int v2i = atoi(v2.c_str());
 						int v3i = atoi(v3.c_str());
-
-						normal_indices[face*3+2] = v1i;
-						normal_indices[face*3+1] = v2i;
-						normal_indices[face*3+0] = v3i;
-						face++;
+						int v4i = atoi(v4.c_str());
 
 						if (count == 4) {
-							normal_indices[face*3+2] = v1i;
-							normal_indices[face*3+1] = v3i;
-							normal_indices[face*3+0] = atoi(v4.c_str());
+							normal_indices[face*3+0] = v1i;
+							normal_indices[face*3+1] = v2i;
+							normal_indices[face*3+2] = v3i;
+							face++;
+							normal_indices[face*3+0] = v1i;
+							normal_indices[face*3+1] = v4i;
+							normal_indices[face*3+2] = v3i;
+							face++;
+						}
+						else {
+							normal_indices[face*3+0] = v1i;
+							normal_indices[face*3+1] = v2i;
+							normal_indices[face*3+2] = v3i;
 							face++;
 						}
 					}
@@ -961,6 +972,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						colours[i*4+0] *= colours[i*4+3];
 						colours[i*4+1] *= colours[i*4+3];
 						colours[i*4+2] *= colours[i*4+3];
+						colours[i*4+3] *= colours[i*4+3];
 					}
 					skip_whitespace(file);
 					c = read_byte(file);
@@ -980,7 +992,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 			skip_section(file);
 		}
 	}
-
+printf("num_triangles=%d\n", num_triangles);
 	m->create_arrays(vertices, triangles, normals, normal_indices, texcoords, colours, num_triangles);
 
 	delete[] vertices;
@@ -1005,42 +1017,37 @@ void Model::Node::create_arrays(float *v, int *f, float *n, int *nind, float *t,
 	int vi = 0;
 
 	if (textures.size() > 0) {
-		for (size_t i = 0; i < textures.size(); i++) {
-			for (int j = 0; j < num_triangles; j++) {
-				int texture = face_textures[j];
-				if (texture == (int)i) {
-					for (int k = 0; k < 3; k++) {
-						vertices[vi++] = v[f[j * 3 + k] * 3 + 0];
-						vertices[vi++] = v[f[j * 3 + k] * 3 + 1];
-						vertices[vi++] = v[f[j * 3 + k] * 3 + 2];
-						if (n != 0) {
-							vertices[vi++] = n[nind[j * 3 + k] * 3 + 0];
-							vertices[vi++] = n[nind[j * 3 + k] * 3 + 1];
-							vertices[vi++] = n[nind[j * 3 + k] * 3 + 2];
-						}
-						else {
-							vi += 3;
-						}
-						if (t != 0) {
-							vertices[vi++] = t[f[j * 3 + k] * 2 + 0];
-							vertices[vi++] = t[f[j * 3 + k] * 2 + 1];
-						}
-						else {
-							vi += 2;
-						}
-						if (c != 0) {
-							vertices[vi++] = c[f[j * 3 + k] * 4 + 0];
-							vertices[vi++] = c[f[j * 3 + k] * 4 + 1];
-							vertices[vi++] = c[f[j * 3 + k] * 4 + 2];
-							vertices[vi++] = c[f[j * 3 + k] * 4 + 3];
-						}
-						else {
-							vertices[vi++] = 1.0f;
-							vertices[vi++] = 1.0f;
-							vertices[vi++] = 1.0f;
-							vertices[vi++] = 1.0f;
-						}
-					}
+		for (int j = 0; j < num_triangles; j++) {
+			for (int k = 0; k < 3; k++) {
+				vertices[vi++] = v[f[j * 3 + k] * 3 + 0];
+				vertices[vi++] = v[f[j * 3 + k] * 3 + 1];
+				vertices[vi++] = v[f[j * 3 + k] * 3 + 2];
+				if (n != 0) {
+					vertices[vi++] = n[nind[j * 3 + k] * 3 + 0];
+					vertices[vi++] = n[nind[j * 3 + k] * 3 + 1];
+					vertices[vi++] = n[nind[j * 3 + k] * 3 + 2];
+				}
+				else {
+					vi += 3;
+				}
+				if (t != 0) {
+					vertices[vi++] = t[f[j * 3 + k] * 2 + 0];
+					vertices[vi++] = t[f[j * 3 + k] * 2 + 1];
+				}
+				else {
+					vi += 2;
+				}
+				if (c != 0) {
+					vertices[vi++] = c[f[j * 3 + k] * 4 + 0];
+					vertices[vi++] = c[f[j * 3 + k] * 4 + 1];
+					vertices[vi++] = c[f[j * 3 + k] * 4 + 2];
+					vertices[vi++] = c[f[j * 3 + k] * 4 + 3];
+				}
+				else {
+					vertices[vi++] = 1.0f;
+					vertices[vi++] = 1.0f;
+					vertices[vi++] = 1.0f;
+					vertices[vi++] = 1.0f;
 				}
 			}
 		}
