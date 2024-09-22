@@ -374,7 +374,7 @@ std::string Model::read_word(SDL_RWops *file)
 			// skip extra semicolons and commas
 			while (true) {
 				c = read_byte(file);
-				if (c == ';' || c == ',') {
+				if (c == ';' || c == ',' || c == '\r' || c == '\n') {
 					continue;
 				}
 				unget(c);
@@ -411,6 +411,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 	float *texcoords = 0;
 	float *colours = 0;
 	int num_triangles = 0;
+	int vcount = 0;
 
 	skip_whitespace(file);
 
@@ -494,6 +495,9 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 			std::string name = read_word(file);
 
 			if (name != "{") {
+				if (m->name == "") {
+					m->name = name;
+				}
 				skip_whitespace(file);
 				c = read_byte(file);
 				if (c != '{') {
@@ -508,7 +512,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 				destroy(m);
 				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 			}
-			int vcount = atoi(vcount_s.c_str());
+			vcount = atoi(vcount_s.c_str());
 			vertices = new float[vcount * 3];
 			for (int i = 0; i < vcount * 3; i++) {
 				skip_whitespace(file);
@@ -597,390 +601,374 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 						num_triangles++;
 						skip_whitespace(file);
 						std::string s4 = read_word(file);
-						triangles[face*3+0] = atoi(s1.c_str());
-						triangles[face*3+1] = atoi(s2.c_str());
+						triangles[face*3+0] = triangles[(face-1)*3+0];
+						triangles[face*3+1] = triangles[(face-1)*3+2];
 						triangles[face*3+2] = atoi(s4.c_str());
 						face++;
 					}
 				}
 				skip_whitespace(file);
 			}
-			while (true) {
+		}
+		else if (token == "MeshNormals") {
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '{') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected { on line %d", line));
+			}
+			skip_whitespace(file);
+			std::string nnormals_s = read_word(file);
+			if (nnormals_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int nnormals = atoi(nnormals_s.c_str());
+			normals = new float[MAX(num_triangles, nnormals) * 3 * 2];
+			for (int i = 0; i < nnormals * 3; i++) {
 				skip_whitespace(file);
-				std::string token = read_word(file);
-				if (token == "") {
+				std::string v_s = read_word(file);
+				if (v_s == "") {
 					destroy(m);
 					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 				}
-				else if (token == "}") {
-					break;
+				float v = (float)atof(v_s.c_str());
+				normals[i] = v;
+			}
+			skip_whitespace(file);
+			std::string nfaces_s = read_word(file);
+			if (nfaces_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int nfaces = atoi(nfaces_s.c_str());
+			normal_indices = new int[MAX(nfaces, num_triangles) * 3 * 2];
+			int face = 0;
+			for (int i = 0; i < nfaces; i++) {
+				skip_whitespace(file);
+				std::string v_s = read_word(file);
+				if (v_s == "") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 				}
-				if (token == "MeshNormals") {
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '{') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected { on line %d", line));
-					}
-					skip_whitespace(file);
-					std::string nnormals_s = read_word(file);
-					if (nnormals_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int nnormals = atoi(nnormals_s.c_str());
-					normals = new float[nnormals * 3];
-					for (int i = 0; i < nnormals * 3; i++) {
-						skip_whitespace(file);
-						std::string v_s = read_word(file);
-						if (v_s == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						float v = (float)atof(v_s.c_str());
-						normals[i] = v;
-					}
-					skip_whitespace(file);
-					std::string nfaces_s = read_word(file);
-					if (nfaces_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int nfaces = atoi(nfaces_s.c_str());
-					normal_indices = new int[nfaces * 3 * 2];
-					int face = 0;
-					for (int i = 0; i < nfaces; i++) {
-						skip_whitespace(file);
-						std::string v_s = read_word(file);
-						if (v_s == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						int count = atoi(v_s.c_str());
+				int count = atoi(v_s.c_str());
 
-						skip_whitespace(file);
-						std::string v1 = read_word(file);
-						skip_whitespace(file);
-						std::string v2 = read_word(file);
-						skip_whitespace(file);
-						std::string v3 = read_word(file);
-						int v1i = atoi(v1.c_str());
-						int v2i = atoi(v2.c_str());
-						int v3i = atoi(v3.c_str());
+				skip_whitespace(file);
+				std::string v1 = read_word(file);
+				skip_whitespace(file);
+				std::string v2 = read_word(file);
+				skip_whitespace(file);
+				std::string v3 = read_word(file);
+				int v1i = atoi(v1.c_str());
+				int v2i = atoi(v2.c_str());
+				int v3i = atoi(v3.c_str());
 
-						if (count == 3) {
-							normal_indices[face*3+0] = v1i;
-							normal_indices[face*3+1] = v2i;
-							normal_indices[face*3+2] = v3i;
-							face++;
-						}
-						else {
-							for (int j = 0; j < count-3; j++) {
-								skip_whitespace(file);
-								std::string v4 = read_word(file);
-								int v4i = atoi(v4.c_str());
-								normal_indices[face*3+0] = v1i;
-								normal_indices[face*3+1] = v2i;
-								normal_indices[face*3+2] = v4i;
-								face++;
-							}
-						}
-					}
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '}') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
-				}
-				else if (token == "XSkinMeshHeader") {
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '{') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
-					for (int i = 0; i < 3; i++) {
-						// FIXME: read properly
-						skip_whitespace(file);
-						read_word(file);
-					}
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '}') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
-				}
-				else if (token == "SkinWeights") {
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '{') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
-					skip_whitespace(file);
-					Weights *w = new Weights;
-					w->name = read_word(file);
-					if (w->name == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					w->name = w->name.substr(1, w->name.length()-2); // remove quotes
-					skip_whitespace(file);
-					std::string count_s = read_word(file);
-					if (count_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int count = atoi(count_s.c_str());
-					std::vector<int> indices;
-					std::vector<float> weights;
-					for (int i = 0; i < count; i++) {
-						skip_whitespace(file);
-						std::string index_s = read_word(file);
-						if (index_s == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						indices.push_back(atoi(index_s.c_str()));
-					}
-					for (int i = 0; i < count; i++) {
-						skip_whitespace(file);
-						std::string weight_s = read_word(file);
-						if (weight_s == "") {
-							destroy(m);
-							delete w;
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						weights.push_back((float)atof(weight_s.c_str()));
-					}
-					w->weights = new float[vcount];
-					for (int i = 0; i < vcount; i++) {
-						w->weights[i] = 0.0f;
-					}
-					for (size_t i = 0; i < indices.size(); i++) {
-						w->weights[indices[i]] = weights[i];
-					}
-					float f[16];
-					for (int i = 0; i < 16; i++) {
-						skip_whitespace(file);
-						std::string v_s = read_word(file);
-						if (v_s == "") {
-							destroy(m);
-							delete w;
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						f[i] = (float)atof(v_s.c_str());
-					}
-					w->transform = glm::mat4x4(
-						f[0],  f[1],  f[2],  f[3],
-						f[4],  f[5],  f[6],  f[7],
-						f[8],  f[9],  f[10], f[11],
-						f[12], f[13], f[14], f[15]
-					);
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '}') {
-						destroy(m);
-						delete w;
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
-					m->weights.push_back(w);
-				}
-				else if (token == "MeshTextureCoords") {
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '{') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected { on line %d", line));
-					}
-					skip_whitespace(file);
-					std::string vcount_s = read_word(file);
-					if (vcount_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int vcount = atoi(vcount_s.c_str());
-					texcoords = new float[vcount * 2];
-					for (int i = 0; i < vcount * 2; i++) {
-						skip_whitespace(file);
-						std::string v_s = read_word(file);
-						if (v_s == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						float v = (float)atof(v_s.c_str());
-						if (i % 2 == 1) {
-							texcoords[i] = 1.0f - v;
-						}
-						else {
-							texcoords[i] = v;
-						}
-					}
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '}') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
-				}
-				else if (token == "MeshMaterialList") {
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '{') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected { on line %d", line));
-					}
-					skip_whitespace(file);
-					std::string nmaterials_s = read_word(file);
-					if (nmaterials_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int nmaterials = atoi(nmaterials_s.c_str());
-					skip_whitespace(file);
-					std::string nfaces_s = read_word(file);
-					if (nfaces_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int nfaces = atoi(nfaces_s.c_str());
-					m->face_textures = new int[nfaces];
-					for (int i = 0; i < nfaces; i++) {
-						skip_whitespace(file);
-						std::string v_s = read_word(file);
-						if (v_s == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						int v = atoi(v_s.c_str());
-						m->face_textures[i] = v;
-					}
-					for (int i = 0; i < nmaterials; i++) {
-						skip_whitespace(file);
-						std::string token = read_word(file);
-						if (token != "Material") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Expected Material on line %d", line));
-						}
-						skip_whitespace(file);
-						token = read_word(file);
-						if (token == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpteced EOF on line %d", line));
-						}
+				normal_indices[face*3+0] = v1i;
+				normal_indices[face*3+1] = v2i;
+				normal_indices[face*3+2] = v3i;
+				face++;
 
-						if (token != "{") {
-							skip_whitespace(file);
-							c = read_byte(file);
-							if (c != '{') {
-								destroy(m);
-								throw util::LoadError(util::string_printf("Expected { on line %d", line));
-							}
-						}
-						// we ignore these material properties for now
-						for (int j = 0; j < 11; j++) {
-							skip_whitespace(file);
-							read_word(file);
-						}
+				if (count != 3) {
+					for (int j = 0; j < count-3; j++) {
 						skip_whitespace(file);
-						token = read_word(file);
-						if (token == "TextureFilename") {
-							int nquotes = 0;
-							std::string filename;
-							while (true) {
-								c = read_byte(file);
-								if (c == '"') {
-									nquotes++;
-								}
-								else if (c == '}') {
-									break;
-								}
-								else if (c == EOF) {
-									destroy(m);
-									throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-								}
-								else if (nquotes == 1) {
-									char s[2];
-									s[0] = c;
-									s[1] = 0;
-									filename += s;
-								}
-							}
-							Image *texture = new Image("gfx/textures/" + filename, true);
-							if (texture) {
-								m->textures.push_back(texture);
-							}
-							else {
-								destroy(m);
-								throw util::LoadError("Error loading texture 'gfx/textures/" + filename + "'");
-							}
-							skip_whitespace(file);
-							c = read_byte(file);
-						}
-						else if (token != "}") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Expected } on line %d", line));
-						}
-					}
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '}') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
+						std::string v4 = read_word(file);
+						int v4i = atoi(v4.c_str());
+						normal_indices[face*3+0] = normal_indices[(face-1)*3+0];
+						normal_indices[face*3+1] = normal_indices[(face-1)*3+2];
+						normal_indices[face*3+2] = v4i;
+						face++;
 					}
 				}
-				else if (token == "MeshVertexColors") {
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '{') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected { on line %d", line));
-					}
-					skip_whitespace(file);
-					std::string ncolours_s = read_word(file);
-					if (ncolours_s == "") {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-					}
-					int ncolours = atoi(ncolours_s.c_str());
-					colours = new float[ncolours * 4];
-					for (int i = 0; i < ncolours; i++) {
-						skip_whitespace(file);
-						std::string i_s = read_word(file);
-						if (i_s == "") {
-							destroy(m);
-							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-						}
-						// FIXME: validate i_s (should be 4?)
-						for (int j = 0; j < 4; j++) {
-							skip_whitespace(file);
-							std::string v_s = read_word(file);
-							if (v_s == "") {
-								destroy(m);
-								throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
-							}
-							float v = atof(v_s.c_str());
-							colours[i*4+j] = v;
-						}
-						// premultiply alpha
-						colours[i*4+0] *= colours[i*4+3];
-						colours[i*4+1] *= colours[i*4+3];
-						colours[i*4+2] *= colours[i*4+3];
-						colours[i*4+3] *= colours[i*4+3];
-					}
-					skip_whitespace(file);
-					c = read_byte(file);
-					if (c != '}') {
-						destroy(m);
-						throw util::LoadError(util::string_printf("Expected } on line %d", line));
-					}
+			}
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '}') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+		}
+		else if (token == "XSkinMeshHeader") {
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '{') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+			for (int i = 0; i < 3; i++) {
+				// FIXME: read properly
+				skip_whitespace(file);
+				read_word(file);
+			}
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '}') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+		}
+		else if (token == "SkinWeights") {
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '{') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+			skip_whitespace(file);
+			Weights *w = new Weights;
+			w->name = read_word(file);
+			if (w->name == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			w->name = w->name.substr(1, w->name.length()-2); // remove quotes
+			skip_whitespace(file);
+			std::string count_s = read_word(file);
+			if (count_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int count = atoi(count_s.c_str());
+			std::vector<int> indices;
+			std::vector<float> weights;
+			for (int i = 0; i < count; i++) {
+				skip_whitespace(file);
+				std::string index_s = read_word(file);
+				if (index_s == "") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+				}
+				indices.push_back(atoi(index_s.c_str()));
+			}
+			for (int i = 0; i < count; i++) {
+				skip_whitespace(file);
+				std::string weight_s = read_word(file);
+				if (weight_s == "") {
+					destroy(m);
+					delete w;
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+				}
+				weights.push_back((float)atof(weight_s.c_str()));
+			}
+			w->weights = new float[vcount];
+			for (int i = 0; i < vcount; i++) {
+				w->weights[i] = 0.0f;
+			}
+			for (size_t i = 0; i < indices.size(); i++) {
+				w->weights[indices[i]] = weights[i];
+			}
+			float f[16];
+			for (int i = 0; i < 16; i++) {
+				skip_whitespace(file);
+				std::string v_s = read_word(file);
+				if (v_s == "") {
+					destroy(m);
+					delete w;
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+				}
+				f[i] = (float)atof(v_s.c_str());
+			}
+			w->transform = glm::mat4x4(
+				f[0],  f[1],  f[2],  f[3],
+				f[4],  f[5],  f[6],  f[7],
+				f[8],  f[9],  f[10], f[11],
+				f[12], f[13], f[14], f[15]
+			);
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '}') {
+				destroy(m);
+				delete w;
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+			m->weights.push_back(w);
+		}
+		else if (token == "MeshTextureCoords") {
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '{') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected { on line %d", line));
+			}
+			skip_whitespace(file);
+			std::string vcount_s = read_word(file);
+			if (vcount_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int vcount = atoi(vcount_s.c_str());
+			texcoords = new float[vcount * 2];
+			for (int i = 0; i < vcount * 2; i++) {
+				skip_whitespace(file);
+				std::string v_s = read_word(file);
+				if (v_s == "") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+				}
+				float v = (float)atof(v_s.c_str());
+				if (i % 2 == 1) {
+					texcoords[i] = 1.0f - v;
 				}
 				else {
-					util::errormsg("Unexpected token %s on line %d.\n", token.c_str(), line);
-					skip_section(file);
+					texcoords[i] = v;
 				}
+			}
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '}') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+		}
+		else if (token == "MeshMaterialList") {
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '{') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected { on line %d", line));
+			}
+			skip_whitespace(file);
+			std::string nmaterials_s = read_word(file);
+			if (nmaterials_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int nmaterials = atoi(nmaterials_s.c_str());
+			skip_whitespace(file);
+			std::string nfaces_s = read_word(file);
+			if (nfaces_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int nfaces = atoi(nfaces_s.c_str());
+			m->face_textures = new int[nfaces];
+			for (int i = 0; i < nfaces; i++) {
+				skip_whitespace(file);
+				std::string v_s = read_word(file);
+				if (v_s == "") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+				}
+				int v = atoi(v_s.c_str());
+				m->face_textures[i] = v;
+			}
+			for (int i = 0; i < nmaterials; i++) {
+				skip_whitespace(file);
+				std::string token = read_word(file);
+				if (token != "Material") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Expected Material on line %d", line));
+				}
+				skip_whitespace(file);
+				token = read_word(file);
+				if (token == "") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Unexpteced EOF on line %d", line));
+				}
+
+				if (token != "{") {
+					skip_whitespace(file);
+					c = read_byte(file);
+					if (c != '{') {
+						destroy(m);
+						throw util::LoadError(util::string_printf("Expected { on line %d", line));
+					}
+				}
+				// we ignore these material properties for now
+				for (int j = 0; j < 11; j++) {
+					skip_whitespace(file);
+					read_word(file);
+				}
+				skip_whitespace(file);
+				token = read_word(file);
+				if (token == "TextureFilename") {
+					int nquotes = 0;
+					std::string filename;
+					while (true) {
+						c = read_byte(file);
+						if (c == '"') {
+							nquotes++;
+						}
+						else if (c == '}') {
+							break;
+						}
+						else if (c == EOF) {
+							destroy(m);
+							throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+						}
+						else if (nquotes == 1) {
+							char s[2];
+							s[0] = c;
+							s[1] = 0;
+							filename += s;
+						}
+					}
+					Image *texture = new Image("gfx/textures/" + filename, true);
+					if (texture) {
+						m->textures.push_back(texture);
+					}
+					else {
+						destroy(m);
+						throw util::LoadError("Error loading texture 'gfx/textures/" + filename + "'");
+					}
+					skip_whitespace(file);
+					c = read_byte(file);
+				}
+				else if (token != "}") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Expected } on line %d", line));
+				}
+			}
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '}') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
+			}
+		}
+		else if (token == "MeshVertexColors") {
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '{') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected { on line %d", line));
+			}
+			skip_whitespace(file);
+			std::string ncolours_s = read_word(file);
+			if (ncolours_s == "") {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+			}
+			int ncolours = atoi(ncolours_s.c_str());
+			colours = new float[ncolours * 4];
+			for (int i = 0; i < ncolours; i++) {
+				skip_whitespace(file);
+				std::string i_s = read_word(file);
+				if (i_s == "") {
+					destroy(m);
+					throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+				}
+				// FIXME: validate i_s (should be 4?)
+				for (int j = 0; j < 4; j++) {
+					skip_whitespace(file);
+					std::string v_s = read_word(file);
+					if (v_s == "") {
+						destroy(m);
+						throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
+					}
+					float v = atof(v_s.c_str());
+					colours[i*4+j] = v;
+				}
+				// premultiply alpha
+				colours[i*4+0] *= colours[i*4+3];
+				colours[i*4+1] *= colours[i*4+3];
+				colours[i*4+2] *= colours[i*4+3];
+				colours[i*4+3] *= colours[i*4+3];
+			}
+			skip_whitespace(file);
+			c = read_byte(file);
+			if (c != '}') {
+				destroy(m);
+				throw util::LoadError(util::string_printf("Expected } on line %d", line));
 			}
 		}
 		else {
@@ -988,7 +976,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 			skip_section(file);
 		}
 	}
-	
+
 	m->create_arrays(vertices, triangles, normals, normal_indices, texcoords, colours, num_triangles);
 
 	delete[] vertices;
@@ -1216,6 +1204,26 @@ Model::Bone *Model::read_animation(SDL_RWops *file)
 			glm::mat4 m = glm::make_mat4(mat);
 			//m = glm::transpose(m);
 			b->frames.push_back(m);
+		}
+
+		skip_whitespace(file);
+		c = read_byte(file);
+		if (c != '}') {
+			delete b;
+			throw util::LoadError(util::string_printf("Expected } on line %d", line));
+		}
+
+		skip_whitespace(file);
+		std::string n = read_word(file);
+
+		n = n.substr(1, n.length()-2);
+		b->name = n;
+		
+		skip_whitespace(file);
+		c = read_byte(file);
+		if (c != '}') {
+			delete b;
+			throw util::LoadError(util::string_printf("Expected } on line %d", line));
 		}
 	}
 	else {
@@ -1817,6 +1825,12 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 	// set up influences at this time so it can be done for only 1 anim (fastest way)
 	if (already_set == false && instance->current_animation != "") {
 		Model::Node *n = find("Model");
+		if (n == nullptr) {
+			std::vector<Model::Node *> nodes = get_nodes();
+			if (nodes.size() > 0) {
+				n = nodes[0];
+			}
+		}
 		Animation *a = get_animation(instance->current_animation);
 		if (a) {
 			for (int i = 0; i < n->num_vertices; i++) {
@@ -1883,6 +1897,12 @@ void Model::stop()
 float *Model::calc_frame(std::string anim_name, int frame)
 {
 	Model::Node *node = find("Model");
+	if (node == nullptr) {
+		std::vector<Model::Node *> nodes = get_nodes();
+		if (nodes.size() > 0) {
+			node = nodes[0];
+		}
+	}
 	Model::Animation *a = get_animation(anim_name);
 	float *vertices;
 
@@ -1950,6 +1970,12 @@ float *Model::calc_frame(std::string anim_name, int frame)
 void Model::precalculate_animation(std::string name, int fps)
 {
 	Model::Node *node = find("Model");
+	if (node == nullptr) {
+		std::vector<Model::Node *> nodes = get_nodes();
+		if (nodes.size() > 0) {
+			node = nodes[0];
+		}
+	}
 	Animation *anim = instance->animations[name];
 	anim->precalc_fps = fps;
 	std::pair<std::string, Bone *> p = *(anim->bones.begin());
@@ -1979,6 +2005,12 @@ void Model::precalculate_animations(int fps)
 void Model::draw(SDL_Colour tint, bool textured)
 {
 	Model::Node *node = find("Model");
+	if (node == nullptr) {
+		std::vector<Model::Node *> nodes = get_nodes();
+		if (nodes.size() > 0) {
+			node = nodes[0];
+		}
+	}
 
 	if (node) {
 		int frame = get_current_frame();
