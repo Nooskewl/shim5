@@ -82,7 +82,7 @@ endif()
 
 if(WIN32 AND SHARED)
 	list(APPEND LIB_SRC versioninfo.rc)
-elseif(NOT EMSCRIPTEN)
+elseif(NOT WIN32 AND NOT EMSCRIPTEN)
 	list(APPEND LIB_SRC src/x.cpp)
 endif()
 
