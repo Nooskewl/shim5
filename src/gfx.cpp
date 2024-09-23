@@ -145,6 +145,7 @@ static int scissor_x;
 static int scissor_y;
 static int scissor_w;
 static int scissor_h;
+static bool scissor_disabled = false;
 static bool force_integer_scaling;
 static gfx::_lost_device_callback lost_device_callback;
 static gfx::_lost_device_callback found_device_callback;
@@ -2158,7 +2159,7 @@ void clear(SDL_Colour colour)
 	}
 #endif
 
-	if (internal::gfx_context.target_image == 0) {
+	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
 		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 	}
 }
@@ -2409,6 +2410,21 @@ void unset_scissor()
 		sw = internal::gfx_context.target_image->size.w;
 		sh = internal::gfx_context.target_image->size.h;
 		*/
+		if (shim::opengl) {
+			glDisable_ptr(GL_SCISSOR_TEST);
+		}
+#ifdef _WIN32
+		else {
+			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+		}
+#endif
+	}
+}
+
+void set_default_scissor_enabled(bool enabled)
+{
+	scissor_disabled = !enabled;
+	if (enabled == false) {
 		if (shim::opengl) {
 			glDisable_ptr(GL_SCISSOR_TEST);
 		}
