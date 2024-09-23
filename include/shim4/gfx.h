@@ -90,7 +90,6 @@ void SHIM4_EXPORT update_projection();
 
 void SHIM4_EXPORT set_scissor(int x, int y, int w, int h);
 void SHIM4_EXPORT unset_scissor();
-void SHIM4_EXPORT set_default_scissor_enabled(bool enabled);
 
 Image SHIM4_EXPORT *get_target_image();
 void SHIM4_EXPORT set_target_image(Image *image);

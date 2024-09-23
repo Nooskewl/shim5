@@ -2166,6 +2166,17 @@ void clear(SDL_Colour colour)
 
 void clear_depth_buffer(float value)
 {
+	if (internal::gfx_context.target_image == 0) {
+		if (shim::opengl) {
+			glDisable_ptr(GL_SCISSOR_TEST);
+		}
+#ifdef _WIN32
+		else {
+			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+		}
+#endif
+	}
+
 	if (shim::opengl) {
 #if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		if (glClearDepthf_ptr == 0) {
@@ -2185,6 +2196,10 @@ void clear_depth_buffer(float value)
 		shim::d3d_device->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, value, 0);
 	}
 #endif
+
+	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
+		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
+	}
 }
 
 void clear_stencil_buffer(int value)
@@ -2410,21 +2425,6 @@ void unset_scissor()
 		sw = internal::gfx_context.target_image->size.w;
 		sh = internal::gfx_context.target_image->size.h;
 		*/
-		if (shim::opengl) {
-			glDisable_ptr(GL_SCISSOR_TEST);
-		}
-#ifdef _WIN32
-		else {
-			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-		}
-#endif
-	}
-}
-
-void set_default_scissor_enabled(bool enabled)
-{
-	scissor_disabled = !enabled;
-	if (enabled == false) {
 		if (shim::opengl) {
 			glDisable_ptr(GL_SCISSOR_TEST);
 		}
