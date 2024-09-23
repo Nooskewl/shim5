@@ -1817,13 +1817,8 @@ void Model::add_node(Node *node)
 void Model::set_animation(std::string name, util::Callback finished_callback, void *finished_callback_data)
 {
 	bool already_set = instance->current_animation == name;
-	if (already_set == false) {
-		instance->current_animation = name;
-	}
-	instance->finished_callback = finished_callback;
-	instance->finished_callback_data = finished_callback_data;
 	// set up influences at this time so it can be done for only 1 anim (fastest way)
-	if (already_set == false && instance->current_animation != "") {
+	if (already_set == false && name != "") {
 		Model::Node *n = find("Model");
 		if (n == nullptr) {
 			std::vector<Model::Node *> nodes = get_nodes();
@@ -1831,7 +1826,7 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 				n = nodes[0];
 			}
 		}
-		Animation *a = get_animation(instance->current_animation);
+		Animation *a = get_animation(name);
 		if (a) {
 			for (int i = 0; i < n->num_vertices; i++) {
 				n->influences[i].bones.clear();
@@ -1840,7 +1835,15 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 				}
 			}
 		}
+		else {
+			return;
+		}
 	}
+	if (already_set == false) {
+		instance->current_animation = name;
+	}
+	instance->finished_callback = finished_callback;
+	instance->finished_callback_data = finished_callback_data;
 }
 
 Model::Animation *Model::get_animation(std::string name)
@@ -1886,6 +1889,9 @@ void Model::reset()
 
 void Model::start()
 {
+	if (get_animation(instance->current_animation) == nullptr) {
+		return;
+	}
 	instance->started = true;
 }
 
