@@ -209,6 +209,52 @@ bool model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point)
 	}
 }
 
+bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1, glm::vec3 point2, glm::vec3 &out)
+{
+	std::string anim = model->get_current_animation();
+	int frame = model->get_current_frame();
+
+	gfx::Model::Node *node = model->find("Model");
+	if (node == nullptr) {
+		std::vector<gfx::Model::Node *> nodes = model->get_nodes();
+		if (nodes.size() > 0) {
+			node = nodes[0];
+		}
+	}
+
+	int nt = node->num_triangles;
+
+	float *verts = model->calc_frame(anim, frame);
+
+	glm::vec3 ray = glm::normalize(point2 - point1);
+
+	for (int i = 0; i < nt; i++) {
+		glm::vec4 pt[3];
+		for (int vert = 0; vert < 3; vert++) {
+			pt[vert].x = verts[i*36+vert*12+0];
+			pt[vert].y = verts[i*36+vert*12+1];
+			pt[vert].z = verts[i*36+vert*12+2];
+			pt[vert].w = 1.0f;
+			pt[vert] = transform * pt[vert];
+		}
+		glm::vec3 pt3[3];
+		for (int j = 0; j < 3; j++) {
+			pt3[j].x = pt[j].x;
+			pt3[j].y = pt[j].y;
+			pt3[j].z = pt[j].z;
+		}
+
+		if (ray_collides(point1, ray, pt3[0], pt3[1], pt3[2], out)) {
+			float d = glm::distance(out, point1);
+			if (d < glm::length(point2 - point1)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 } // End namespace cd
 
 } // End namespace noo

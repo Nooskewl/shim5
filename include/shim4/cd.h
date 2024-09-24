@@ -13,6 +13,7 @@ bool SHIM4_EXPORT box_box(util::Point<float> topleft_a, util::Size<float> size_a
 bool SHIM4_EXPORT line_line(const util::Point<float> *a1, const util::Point<float> *a2,	const util::Point<float> *a3, const util::Point<float> *a4, util::Point<float> *result);
 float SHIM4_EXPORT dist_point_line(util::Point<float> point, util::Point<float> a, util::Point<float> b);
 bool SHIM4_EXPORT model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point);
+bool SHIM4_EXPORT model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1, glm::vec3 point2, glm::vec3 &out);
 
 } // End namespace cd
 
