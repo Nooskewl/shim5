@@ -104,7 +104,7 @@ float dist_point_line(util::Point<float> point, util::Point<float> a, util::Poin
 	return dist_point_line_result(point, a, b, &result);
 }
 
-static bool ray_collides(glm::vec3 ray_origin, glm::vec3 ray_vector, glm::vec3 a, glm::vec3 b, glm::vec3 c)
+static bool ray_collides(glm::vec3 ray_origin, glm::vec3 ray_vector, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 &out)
 {
 	constexpr float epsilon = std::numeric_limits<float>::epsilon();
 
@@ -136,6 +136,7 @@ static bool ray_collides(glm::vec3 ray_origin, glm::vec3 ray_vector, glm::vec3 a
 	float t = inv_det * glm::dot(edge2, s_cross_e1);
 
 	if (t > epsilon) { // ray intersection
+		out = glm::vec3(ray_origin + ray_vector * t);
 		return true;
 	}
 
@@ -166,6 +167,8 @@ bool model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point)
 
 	int num_collisions = 0;
 
+	std::vector<glm::vec3> collided;
+
 	for (int i = 0; i < nt; i++) {
 		glm::vec4 pt[3];
 		for (int vert = 0; vert < 3; vert++) {
@@ -182,8 +185,18 @@ bool model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point)
 			pt3[j].z = pt[j].z;
 		}
 
-		if (ray_collides(glm::vec3(x, y, z), ray, pt3[0], pt3[1], pt3[2])) {
-			num_collisions++;
+		glm::vec3 out;
+		if (ray_collides(glm::vec3(x, y, z), ray, pt3[0], pt3[1], pt3[2], out)) {
+			bool already = false;
+			for (size_t j = 0; j < collided.size(); j++) {
+				if (collided[j] == out) {
+					already = true;
+					break;
+				}
+			}
+			if (already == false) {
+				num_collisions++;
+			}
 		}
 	}
 
