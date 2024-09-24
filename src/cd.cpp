@@ -142,7 +142,7 @@ static bool ray_collides(glm::vec3 ray_origin, glm::vec3 ray_vector, glm::vec3 a
 	return false;
 }
 
-bool model_point(gfx::Model *model, glm::vec3 point, glm::mat4 transform)
+bool model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point)
 {
 	std::string anim = model->get_current_animation();
 	int frame = model->get_current_frame();
