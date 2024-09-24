@@ -2132,6 +2132,12 @@ void flip()
 	}
 
 	set_custom_mouse_cursor();
+
+#ifdef _WIN32
+	if (shim::opengl == false && internal::gfx_context.depth_stencil_buffer != nullptr) {
+		shim::d3d_device->SetDepthStencilSurface(internal::gfx_context.depth_stencil_buffer);
+	}
+#endif
 }
 
 void clear(SDL_Colour colour)
