@@ -104,6 +104,97 @@ float dist_point_line(util::Point<float> point, util::Point<float> a, util::Poin
 	return dist_point_line_result(point, a, b, &result);
 }
 
+static bool ray_collides(glm::vec3 ray_origin, glm::vec3 ray_vector, glm::vec3 a, glm::vec3 b, glm::vec3 c)
+{
+	constexpr float epsilon = std::numeric_limits<float>::epsilon();
+
+	glm::vec3 edge1 = b - a;
+	glm::vec3 edge2 = c - a;
+	glm::vec3 ray_cross_e2 = glm::cross(ray_vector, edge2);
+	float det = glm::dot(edge1, ray_cross_e2);
+
+	if (det > -epsilon && det < epsilon) {
+		return false; // This ray is parallel to this 
+	}
+
+	float inv_det = 1.0 / det;
+	glm::vec3 s = ray_origin - a;
+	float u = inv_det * glm::dot(s, ray_cross_e2);
+
+	if (u < 0 || u > 1) {
+		return false;
+	}
+
+	glm::vec3 s_cross_e1 = glm::cross(s, edge1);
+	float v = inv_det * glm::dot(ray_vector, s_cross_e1);
+
+	if (v < 0 || u + v > 1) {
+		return false;
+	}
+
+	// At this stage we can compute t to find out where the intersection point is on the line.
+	float t = inv_det * glm::dot(edge2, s_cross_e1);
+
+	if (t > epsilon) { // ray intersection
+		return true;
+	}
+
+	return false;
+}
+
+bool model_point(gfx::Model *model, glm::vec3 point, glm::mat4 transform)
+{
+	std::string anim = model->get_current_animation();
+	int frame = model->get_current_frame();
+	float x = point.x;
+	float y = point.y;
+	float z = point.z;
+
+	gfx::Model::Node *node = model->find("Model");
+	if (node == nullptr) {
+		std::vector<gfx::Model::Node *> nodes = model->get_nodes();
+		if (nodes.size() > 0) {
+			node = nodes[0];
+		}
+	}
+
+	int nt = node->num_triangles;
+
+	float *verts = model->calc_frame(anim, frame);
+
+	glm::vec3 ray(1.0f, 0.0f, 0.0f);
+
+	int num_collisions = 0;
+
+	for (int i = 0; i < nt; i++) {
+		glm::vec4 pt[3];
+		for (int vert = 0; vert < 3; vert++) {
+			pt[vert].x = verts[i*36+vert*12+0];
+			pt[vert].y = verts[i*36+vert*12+1];
+			pt[vert].z = verts[i*36+vert*12+2];
+			pt[vert].w = 1.0f;
+			pt[vert] = transform * pt[vert];
+		}
+		glm::vec3 pt3[3];
+		for (int j = 0; j < 3; j++) {
+			pt3[j].x = pt[j].x;
+			pt3[j].y = pt[j].y;
+			pt3[j].z = pt[j].z;
+		}
+
+		if (ray_collides(glm::vec3(x, y, z), ray, pt3[0], pt3[1], pt3[2])) {
+			num_collisions++;
+		}
+	}
+
+	if (num_collisions % 2 == 1) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 } // End namespace cd
 
 } // End namespace noo
