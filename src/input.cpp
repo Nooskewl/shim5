@@ -774,7 +774,7 @@ static int steam_rumble(void *data)
 #endif
 
 // FIXME: this rumbles ALL joysticks
-void rumble(Uint32 length)
+void rumble(Uint32 length, int num)
 {
 #ifdef STEAM_INPUT
 	if (shim::steam_init_failed == false) {
@@ -807,6 +807,11 @@ void rumble(Uint32 length)
 #endif
 	{
 		for (size_t i = 0; i < joysticks.size(); i++) {
+
+			if (num >= 0 && (int)i != num) {
+				continue;
+			}
+
 			Joystick &j = joysticks[i];
 
 #if 0

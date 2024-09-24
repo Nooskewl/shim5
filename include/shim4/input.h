@@ -26,7 +26,7 @@ void handle_event(TGUI_Event *event);
 
 bool SHIM4_EXPORT convert_to_focus_event(TGUI_Event *event, Focus_Event *focus);
 void SHIM4_EXPORT convert_focus_to_original(TGUI_Event *event);
-void SHIM4_EXPORT rumble(Uint32 length);
+void SHIM4_EXPORT rumble(Uint32 length, int num = -1);
 bool SHIM4_EXPORT is_joystick_connected();
 std::string SHIM4_EXPORT get_joystick_button_name(int button);
 std::string SHIM4_EXPORT get_joystick_button_colour_code(int button);
