@@ -195,6 +195,7 @@ bool model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point)
 				}
 			}
 			if (already == false) {
+				collided.push_back(out);
 				num_collisions++;
 			}
 		}
