@@ -110,6 +110,8 @@ public:
 	SHIM4_EXPORT void draw_tinted_textured(SDL_Colour tint);
 
 	SHIM4_EXPORT bool save_binary_model(std::string filename);
+	
+	SHIM4_EXPORT float *calc_frame(std::string anim_name, int frame);
 
 private:
 	SHIM4_EXPORT void read(std::string filename, bool load_from_filesystem);
@@ -125,7 +127,6 @@ private:
 	SHIM4_EXPORT Animation *read_animationset(SDL_RWops *file);
 	SHIM4_EXPORT Bone *read_animation(SDL_RWops *file);
 	SHIM4_EXPORT void precalculate_animation(std::string name, int fps);
-	SHIM4_EXPORT float *calc_frame(std::string anim_name, int frame);
 	SHIM4_EXPORT void draw(SDL_Colour tint, bool textured);
 	SHIM4_EXPORT void read_binary_model(SDL_RWops *file);
 	SHIM4_EXPORT void write_string(SDL_RWops *file, std::string s);
