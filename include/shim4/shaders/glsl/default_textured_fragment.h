@@ -6,5 +6,9 @@
 	"\n" \
 	"void main()\n" \
 	"{\n" \
-	"	gl_FragColor = texture2D(tex, texcoord) * colour;\n" \
+	"	vec4 c = texture2D(tex, texcoord) * colour;\n" \
+	"	if (c.a == 0.0) {\n" \
+	"		discard;\n" \
+	"	}\n" \
+	"	gl_FragColor = c;\n" \
 	"}\n"
