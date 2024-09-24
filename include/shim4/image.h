@@ -94,6 +94,8 @@ public:
 	SHIM4_EXPORT void draw_rotated(util::Point<float> centre, util::Point<float> dest_position, float angle, int flags = 0);
 	SHIM4_EXPORT void draw_rotated_scaled(util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, int flags = 0);
 
+	SHIM4_EXPORT GLuint get_opengl_texture();
+
 protected:
 	struct TGA_Header {
 		char idlength;

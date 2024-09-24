@@ -1433,6 +1433,13 @@ void Image::draw_rotated_scaled(util::Point<float> centre, util::Point<float> de
 
 //--
 
+GLuint Image::get_opengl_texture()
+{
+	gfx::Image *root = get_root();
+	GLuint texture = root == 0 ? 0 : root->internal->texture;
+	return texture;
+}
+
 Image::Internal::Internal(std::string filename, bool keep_data, bool support_render_to_texture, bool load_from_filesystem) :
 	loaded_data(0),
 	filename(filename),
