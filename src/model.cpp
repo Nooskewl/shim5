@@ -1921,7 +1921,13 @@ float *Model::calc_frame(std::string anim_name, int frame)
 		vertices = precalculated[anim_name][actual_frame];
 	}
 	else {
-		vertices = node->animated_vertices;
+		Uint32 num_animations = (Uint32)instance->animations.size();
+		if (num_animations == 0) {
+			return node->animated_vertices;
+		}
+		else {
+			vertices = node->animated_vertices;
+		}
 	}
 	
 	Model::Node *root = node;
