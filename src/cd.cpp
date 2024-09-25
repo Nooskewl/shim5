@@ -226,7 +226,7 @@ bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1
 
 	float *verts = model->calc_frame(anim, frame);
 
-	glm::vec3 ray = point2 - point1;
+	glm::vec3 ray = glm::normalize(point2 - point1);
 
 	for (int i = 0; i < nt; i++) {
 		glm::vec4 pt[3];
