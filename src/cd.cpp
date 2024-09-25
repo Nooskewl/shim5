@@ -172,17 +172,17 @@ bool model_point(gfx::Model *model, glm::mat4 transform, glm::vec3 point)
 	for (int i = 0; i < nt; i++) {
 		glm::vec4 pt[3];
 		for (int vert = 0; vert < 3; vert++) {
-			pt[vert].x = verts[i*36+vert*12+0];
-			pt[vert].y = verts[i*36+vert*12+1];
-			pt[vert].z = verts[i*36+vert*12+2];
-			pt[vert].w = 1.0f;
+			pt[vert] = glm::vec4(
+				verts[i*36+vert*12+0],
+				verts[i*36+vert*12+1],
+				verts[i*36+vert*12+2],
+				1.0f
+			);
 			pt[vert] = transform * pt[vert];
 		}
 		glm::vec3 pt3[3];
 		for (int j = 0; j < 3; j++) {
-			pt3[j].x = pt[j].x;
-			pt3[j].y = pt[j].y;
-			pt3[j].z = pt[j].z;
+			pt3[j] = glm::vec3(pt[j]);
 		}
 
 		glm::vec3 out;
@@ -226,22 +226,22 @@ bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1
 
 	float *verts = model->calc_frame(anim, frame);
 
-	glm::vec3 ray = glm::normalize(point2 - point1);
+	glm::vec3 ray = point2 - point1;
 
 	for (int i = 0; i < nt; i++) {
 		glm::vec4 pt[3];
 		for (int vert = 0; vert < 3; vert++) {
-			pt[vert].x = verts[i*36+vert*12+0];
-			pt[vert].y = verts[i*36+vert*12+1];
-			pt[vert].z = verts[i*36+vert*12+2];
-			pt[vert].w = 1.0f;
+			pt[vert] = glm::vec4(
+				verts[i*36+vert*12+0],
+				verts[i*36+vert*12+1],
+				verts[i*36+vert*12+2],
+				1.0f
+			);
 			pt[vert] = transform * pt[vert];
 		}
 		glm::vec3 pt3[3];
 		for (int j = 0; j < 3; j++) {
-			pt3[j].x = pt[j].x;
-			pt3[j].y = pt[j].y;
-			pt3[j].z = pt[j].z;
+			pt3[j] = glm::vec3(pt[j]);
 		}
 
 		if (ray_collides(point1, ray, pt3[0], pt3[1], pt3[2], out)) {
