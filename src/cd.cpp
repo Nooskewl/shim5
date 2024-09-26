@@ -252,6 +252,11 @@ bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1
 		}
 	}
 
+	if (model_point(model, transform, point1) && model_point(model, transform, point2)) {
+		// Line segment is contained within the model
+		return true;
+	}
+
 	return false;
 }
 
