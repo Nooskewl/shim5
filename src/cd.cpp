@@ -246,7 +246,7 @@ bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1
 
 		if (ray_collides(point1, ray, pt3[0], pt3[1], pt3[2], out)) {
 			float d = glm::distance(out, point1);
-			if (d < glm::length(point2 - point1)) {
+			if (d <= glm::length(point2 - point1)) {
 				return true;
 			}
 		}
