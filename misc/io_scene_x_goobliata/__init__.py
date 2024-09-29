@@ -20,7 +20,7 @@
 
 bl_info = {
     "name": "DirectX X Format (goobliata)",
-    "author": "Chris Foster",
+    "author": "Chris Foster/goobliata",
     "version": (3, 1, 0),
     "blender": (2, 69, 0),
     "location": "File > Export > DirectX (.x) (goobliata)",
