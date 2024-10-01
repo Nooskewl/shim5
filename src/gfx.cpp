@@ -1803,6 +1803,7 @@ void set_screen_size(util::Size<int> size)
 		shim::screen_offset.y = 0;
 	}
 
+/*
 	if (shim::opengl) {
 		glViewport_ptr(0, 0, orig_size.w, orig_size.h);
 		PRINT_GL_ERROR("glViewport\n");
@@ -1813,11 +1814,22 @@ void set_screen_size(util::Size<int> size)
 		shim::d3d_device->SetViewport(&viewport);
 	}
 #endif
-
+*/
 	scissor_x = shim::screen_offset.x;
 	scissor_y = shim::screen_offset.y;
 	scissor_w = MIN(orig_size.w, int(shim::screen_size.w*shim::scale));
 	scissor_h = MIN(orig_size.h, int(shim::screen_size.h*shim::scale));
+
+	if (shim::opengl) {
+		glViewport_ptr(scissor_x, shim::real_screen_size.h-(scissor_y+scissor_h), scissor_w, scissor_h);
+		PRINT_GL_ERROR("glViewport\n");
+	}
+#ifdef _WIN32
+	else {
+		D3DVIEWPORT9 viewport = { scissor_x, scissor_y, (DWORD)scissor_w, (DWORD)scissor_h, 0.0f, 1.0f };
+		shim::d3d_device->SetViewport(&viewport);
+	}
+#endif
 
 	real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 	
@@ -2154,6 +2166,22 @@ void clear(SDL_Colour colour)
 	}
 
 	if (shim::opengl) {
+		glClearColor_ptr(shim::black.r/255.0f, shim::black.g/255.0f, shim::black.b/255.0f, shim::black.a/255.0f);
+		PRINT_GL_ERROR("glClearColor\n");
+		glClear_ptr(GL_COLOR_BUFFER_BIT);
+		PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
+	}
+#ifdef _WIN32
+	else {
+		shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(shim::black.r, shim::black.g, shim::black.b, shim::black.a), 0.0f, 0);
+	}
+#endif
+
+	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
+		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
+	}
+
+	if (shim::opengl) {
 		glClearColor_ptr(colour.r/255.0f, colour.g/255.0f, colour.b/255.0f, colour.a/255.0f);
 		PRINT_GL_ERROR("glClearColor\n");
 		glClear_ptr(GL_COLOR_BUFFER_BIT);
@@ -2164,10 +2192,6 @@ void clear(SDL_Colour colour)
 		shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(colour.r, colour.g, colour.b, colour.a), 0.0f, 0);
 	}
 #endif
-
-	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
-		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
-	}
 }
 
 void clear_depth_buffer(float value)
