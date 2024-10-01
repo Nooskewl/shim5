@@ -18,7 +18,7 @@
 #endif
 
 #ifdef STEAMWORKS
-#include "shim4/steamworks.h"
+#include "shim5/steamworks.h"
 #endif
 
 namespace noo {

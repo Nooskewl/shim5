@@ -26,8 +26,8 @@ last mod: $Id: decoder_example.c 16243 2009-07-10 02:49:31Z xiphmont $
 
 /* Note that this is POSIX, not ANSI code */
 
-#include "shim4/main.h"
-#include "shim4/util.h"
+#include "shim5/main.h"
+#include "shim5/util.h"
 
 using namespace noo;
 

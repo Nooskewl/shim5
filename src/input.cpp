@@ -1,10 +1,10 @@
-#include "shim4/gfx.h"
-#include "shim4/input.h"
-#include "shim4/shim.h"
-#include "shim4/util.h"
+#include "shim5/gfx.h"
+#include "shim5/input.h"
+#include "shim5/shim.h"
+#include "shim5/util.h"
 
 #ifdef STEAM_INPUT
-#include "shim4/steamworks.h"
+#include "shim5/steamworks.h"
 ControllerHandle_t all_controllers[STEAM_CONTROLLER_MAX_COUNT];
 #endif
 
@@ -30,8 +30,8 @@ const Uint32 JOYSTICK_SUBSYSTEMS = SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC;
 
 using namespace noo;
 
-#include "shim4/internal/gfx.h"
-#include "shim4/internal/shim.h"
+#include "shim5/internal/gfx.h"
+#include "shim5/internal/shim.h"
 
 struct Joy_Repeat {
 	bool is_button;

@@ -1,16 +1,16 @@
 #ifdef USE_TTF
 
-#include "shim4/error.h"
-#include "shim4/gfx.h"
-#include "shim4/image.h"
-#include "shim4/shader.h"
-#include "shim4/shim.h"
-#include "shim4/ttf.h"
-#include "shim4/util.h"
+#include "shim5/error.h"
+#include "shim5/gfx.h"
+#include "shim5/image.h"
+#include "shim5/shader.h"
+#include "shim5/shim.h"
+#include "shim5/ttf.h"
+#include "shim5/util.h"
 
 #include "libutil/libutil.h"
 
-#include "shim4/internal/gfx.h"
+#include "shim5/internal/gfx.h"
 
 using namespace noo;
 

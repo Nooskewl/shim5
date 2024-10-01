@@ -1,17 +1,17 @@
-#include "shim4/cpa.h"
-#include "shim4/crash.h"
-#include "shim4/error.h"
-#include "shim4/mt.h"
-#include "shim4/shim.h"
-#include "shim4/util.h"
-#include "shim4/vertex_cache.h"
+#include "shim5/cpa.h"
+#include "shim5/crash.h"
+#include "shim5/error.h"
+#include "shim5/mt.h"
+#include "shim5/shim.h"
+#include "shim5/util.h"
+#include "shim5/vertex_cache.h"
 
 #ifdef __APPLE__
-#include "shim4/apple.h"
+#include "shim5/apple.h"
 #ifdef IOS
-#include "shim4/ios.h"
+#include "shim5/ios.h"
 #else
-#include "shim4/macosx.h"
+#include "shim5/macosx.h"
 #endif
 #endif
 
@@ -33,11 +33,11 @@
 #endif
 
 #ifdef STEAMWORKS
-#include "shim4/steamworks.h"
+#include "shim5/steamworks.h"
 #endif
 
-#include "shim4/internal/gfx.h"
-#include "shim4/internal/util.h"
+#include "shim5/internal/gfx.h"
+#include "shim5/internal/util.h"
 
 using namespace noo;
 

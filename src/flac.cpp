@@ -1,7 +1,7 @@
 #ifdef USE_FLAC
 
-#include "shim4/main.h"
-#include "shim4/util.h"
+#include "shim5/main.h"
+#include "shim5/util.h"
 
 #define FLAC__NO_DLL
 #include "FLAC/stream_decoder.h"

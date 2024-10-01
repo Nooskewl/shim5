@@ -6,10 +6,10 @@
 
 #import <GameKit/GameKit.h>
 
-#include "shim4/main.h"
-#include "shim4/gamecenter.h"
+#include "shim5/main.h"
+#include "shim5/gamecenter.h"
 
-#include "shim4/internal/gfx.h"
+#include "shim5/internal/gfx.h"
 
 using namespace noo;
 

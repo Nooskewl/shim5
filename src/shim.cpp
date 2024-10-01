@@ -1,30 +1,30 @@
-#include "shim4/audio.h"
-#include "shim4/cpa.h"
-#include "shim4/devsettings.h"
-#include "shim4/error.h"
-#include "shim4/gfx.h"
-#include "shim4/gui.h"
-#include "shim4/image.h"
-#include "shim4/input.h"
-#include "shim4/json.h"
-#include "shim4/mml.h"
-#include "shim4/mt.h"
-#include "shim4/primitives.h"
-#include "shim4/sample.h"
-#include "shim4/shim.h"
-#include "shim4/sound.h"
-#include "shim4/sprite.h"
-#include "shim4/translation.h"
-#include "shim4/util.h"
-#include "shim4/vertex_cache.h"
+#include "shim5/audio.h"
+#include "shim5/cpa.h"
+#include "shim5/devsettings.h"
+#include "shim5/error.h"
+#include "shim5/gfx.h"
+#include "shim5/gui.h"
+#include "shim5/image.h"
+#include "shim5/input.h"
+#include "shim5/json.h"
+#include "shim5/mml.h"
+#include "shim5/mt.h"
+#include "shim5/primitives.h"
+#include "shim5/sample.h"
+#include "shim5/shim.h"
+#include "shim5/sound.h"
+#include "shim5/sprite.h"
+#include "shim5/translation.h"
+#include "shim5/util.h"
+#include "shim5/vertex_cache.h"
 
-#include "shim4/internal/audio.h"
-#include "shim4/internal/gfx.h"
-#include "shim4/internal/shim.h"
-#include "shim4/internal/util.h"
+#include "shim5/internal/audio.h"
+#include "shim5/internal/gfx.h"
+#include "shim5/internal/shim.h"
+#include "shim5/internal/util.h"
 
 #ifdef STEAMWORKS
-#include "shim4/steamworks.h"
+#include "shim5/steamworks.h"
 #endif
 
 using namespace noo;
@@ -309,7 +309,7 @@ bool static_start(int sdl_init_flags)
 	adjust_screen_size = true;
 #endif
 
-	// argc/argv should be set before static_start in shim4 (util::static_start uses them)
+	// argc/argv should be set before static_start in shim5 (util::static_start uses them)
 	//argc = 0;
 	//argv = 0;
 
@@ -342,7 +342,7 @@ bool static_start(int sdl_init_flags)
 	switch_out_screen_size = {-1, -1};
 
 	try {
-		shim_json = new util::JSON("shim4.json");
+		shim_json = new util::JSON("shim5.json");
 	}
 	catch (util::Error &e) {
 		// Use a default file

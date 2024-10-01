@@ -1,24 +1,24 @@
-#include "shim4/error.h"
-#include "shim4/gfx.h"
-#include "shim4/gui.h"
-#include "shim4/image.h"
-#include "shim4/json.h"
-#include "shim4/model.h"
-#include "shim4/mt.h"
-#include "shim4/pixel_font.h"
-#include "shim4/primitives.h"
-#include "shim4/shader.h"
-#include "shim4/shim.h"
-#include "shim4/sprite.h"
-#include "shim4/tilemap.h"
-#include "shim4/ttf.h"
-#include "shim4/util.h"
-#include "shim4/vertex_cache.h"
+#include "shim5/error.h"
+#include "shim5/gfx.h"
+#include "shim5/gui.h"
+#include "shim5/image.h"
+#include "shim5/json.h"
+#include "shim5/model.h"
+#include "shim5/mt.h"
+#include "shim5/pixel_font.h"
+#include "shim5/primitives.h"
+#include "shim5/shader.h"
+#include "shim5/shim.h"
+#include "shim5/sprite.h"
+#include "shim5/tilemap.h"
+#include "shim5/ttf.h"
+#include "shim5/util.h"
+#include "shim5/vertex_cache.h"
 
 #include "libutil/libutil.h"
 
-#include "shim4/internal/gfx.h"
-#include "shim4/internal/shim.h"
+#include "shim5/internal/gfx.h"
+#include "shim5/internal/shim.h"
 
 #ifdef _WIN32
 #define NOOSKEWL_SHIM_DEFAULT_FVF (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE4(1))
@@ -108,25 +108,25 @@ glDrawArrays_func glDrawArrays_ptr;
 #endif
 
 #if defined __APPLE__ && !defined IOS
-#include "shim4/macosx.h"
+#include "shim5/macosx.h"
 #endif
 
 #if defined __linux__ && !defined ANDROID
-#include "shim4/x.h"
+#include "shim5/x.h"
 #endif
 
-#include "shim4/shaders/glsl/default_vertex.h"
-#include "shim4/shaders/glsl/default_fragment.h"
-#include "shim4/shaders/glsl/default_textured_fragment.h"
-#include "shim4/shaders/glsl/model_vertex.h"
-#include "shim4/shaders/glsl/model_fragment.h"
-#include "shim4/shaders/glsl/appear_fragment.h"
+#include "shim5/shaders/glsl/default_vertex.h"
+#include "shim5/shaders/glsl/default_fragment.h"
+#include "shim5/shaders/glsl/default_textured_fragment.h"
+#include "shim5/shaders/glsl/model_vertex.h"
+#include "shim5/shaders/glsl/model_fragment.h"
+#include "shim5/shaders/glsl/appear_fragment.h"
 
 #ifdef _WIN32
-#include "shim4/shaders/hlsl/default_vertex.h"
-#include "shim4/shaders/hlsl/default_fragment.h"
-#include "shim4/shaders/hlsl/default_textured_fragment.h"
-#include "shim4/shaders/hlsl/model_fragment.h"
+#include "shim5/shaders/hlsl/default_vertex.h"
+#include "shim5/shaders/hlsl/default_fragment.h"
+#include "shim5/shaders/hlsl/default_textured_fragment.h"
+#include "shim5/shaders/hlsl/model_fragment.h"
 #endif
 
 static int scaled_w;

@@ -1,11 +1,11 @@
-#include "shim4/error.h"
-#include "shim4/flac.h"
-#include "shim4/sample.h"
-#include "shim4/shim.h"
-#include "shim4/util.h"
-#include "shim4/vorbis.h"
+#include "shim5/error.h"
+#include "shim5/flac.h"
+#include "shim5/sample.h"
+#include "shim5/shim.h"
+#include "shim5/util.h"
+#include "shim5/vorbis.h"
 
-#include "shim4/internal/audio.h"
+#include "shim5/internal/audio.h"
 
 using namespace noo;
 
