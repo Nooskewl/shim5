@@ -256,7 +256,7 @@ void GUI::transition_end()
 
 			shim::current_shader = shim::default_shader;
 			shim::current_shader->use();
-			gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+			gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 			gfx::update_projection();
 		}
 	}
@@ -283,7 +283,7 @@ void GUI::transition_end()
 			gfx::internal::gfx_context.work_image->draw_tinted(tint, {0.0f, 0.0f});
 		}
 
-		gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		gfx::update_projection();
 	}
 	else {
@@ -333,7 +333,7 @@ void GUI::appear_in_transition(float p)
 	appear_save = p;
 	gfx::set_target_image(gfx::internal::gfx_context.work_image);
 	gfx::clear(shim::transparent);
-	gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 	gfx::update_projection();
 	gfx::clear(shim::transparent);
 }
@@ -343,7 +343,7 @@ void GUI::appear_out_transition(float p)
 	appear_save = p;
 	gfx::set_target_image(gfx::internal::gfx_context.work_image);
 	gfx::clear(shim::transparent);
-	gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 	gfx::update_projection();
 	gfx::clear_buffers();
 }
@@ -351,7 +351,7 @@ void GUI::appear_out_transition(float p)
 void GUI::slide_transition(float p)
 {
 	slide_save = p;
-	gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 	glm::mat4 mv, proj;
 	gfx::get_matrices(mv, proj);
 	mv = glm::translate(mv, glm::vec3(p * shim::screen_size.w, 0.0f, 0.0f));
@@ -364,7 +364,7 @@ void GUI::slide_vertical_transition(float p)
 	slide_save = p;
 	gfx::set_target_image(gfx::internal::gfx_context.work_image);
 	gfx::clear(shim::transparent);
-	gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 	glm::mat4 mv, proj;
 	gfx::get_matrices(mv, proj);
 	mv = glm::translate(mv, glm::vec3(0.0f, p * shim::screen_size.h, 0.0f));

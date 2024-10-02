@@ -1540,14 +1540,6 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 		enable_press_and_hold(press_and_hold_state == 1);
 	}
 
-#ifdef __linux__ // FIXME: not sure why this is here, if find out, leave a comment
-	glViewport_ptr(0, 0, window_w, window_h); // reset in handle_found_device
-	PRINT_GL_ERROR("glViewport\n");
-	clear(shim::black);
-	flip();
-	SDL_Delay(100);
-#endif
-	
 	internal::handle_found_device(true, true);
 	
 #if (defined __linux__ && !defined ANDROID) || defined _WIN32
@@ -1663,11 +1655,9 @@ void set_matrices(glm::mat4 &mv, glm::mat4 &p)
 void set_default_projection(util::Size<int> screen_size, util::Point<int> screen_offset, float scale)
 {
 	modelview = glm::mat4();
-	modelview = glm::translate(modelview, glm::vec3(screen_offset.x, screen_offset.y, 0));
-	modelview = glm::scale(modelview, glm::vec3(scale, scale, scale));
 	proj = glm::ortho(0.0f, (float)screen_size.w, (float)screen_size.h, 0.0f);
 
-	if (screen_size == shim::real_screen_size && screen_offset == shim::screen_offset && scale == shim::scale) {
+	if (screen_size == shim::screen_size && screen_offset == shim::screen_offset && scale == shim::scale) {
 		default_modelview = modelview;
 		default_proj = proj;
 	}
@@ -1803,18 +1793,6 @@ void set_screen_size(util::Size<int> size)
 		shim::screen_offset.y = 0;
 	}
 
-/*
-	if (shim::opengl) {
-		glViewport_ptr(0, 0, orig_size.w, orig_size.h);
-		PRINT_GL_ERROR("glViewport\n");
-	}
-#ifdef _WIN32
-	else {
-		D3DVIEWPORT9 viewport = { 0, 0, (DWORD)orig_size.w, (DWORD)orig_size.h, 0.0f, 1.0f };
-		shim::d3d_device->SetViewport(&viewport);
-	}
-#endif
-*/
 	scissor_x = shim::screen_offset.x;
 	scissor_y = shim::screen_offset.y;
 	scissor_w = MIN(orig_size.w, int(shim::screen_size.w*shim::scale));
@@ -1833,7 +1811,7 @@ void set_screen_size(util::Size<int> size)
 
 	real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 	
-	set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+	set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 	update_projection();
 
 	if (shim::screen_size != last_gui_size) {

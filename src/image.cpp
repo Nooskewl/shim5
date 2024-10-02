@@ -1166,7 +1166,7 @@ void Image::set_target()
 	// Set an ortho projection the size of the image
 	if (this == (Image *)internal::gfx_context.work_image) {
 		// mimic the real backbuffer
-		set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+		set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		update_projection();
 		// also set the default screen scissor
 		gfx::unset_scissor();

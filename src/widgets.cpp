@@ -90,7 +90,7 @@ void Widget::draw()
 	if (bg_colour.a != 0) {
 		glm::mat4 old_mv, old_p;
 		gfx::get_matrices(old_mv, old_p);
-		gfx::set_default_projection(shim::real_screen_size, shim::screen_offset, shim::scale);
+		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		gfx::update_projection();
 		gfx::draw_filled_rectangle(bg_colour, {float(calculated_x), float(calculated_y)}, {float(calculated_w), float(calculated_h)});
 		gfx::set_matrices(old_mv, old_p);
