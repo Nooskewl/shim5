@@ -518,6 +518,8 @@ void update()
 				event.mouse.finger = mr.finger;
 				event.mouse.x = mr.down_pos.x * shim::scale + shim::screen_offset.x;
 				event.mouse.y = mr.down_pos.y * shim::scale + shim::screen_offset.y;
+				event.mouse.dx = 0;
+				event.mouse.dy = 0;
 				event.mouse.normalised = false;
 				shim::push_event(event);
 			}
