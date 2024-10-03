@@ -1665,6 +1665,7 @@ void set_default_projection(util::Size<int> screen_size, util::Point<int> screen
 
 void update_projection()
 {
+	shim::current_shader->use();
 	shim::current_shader->set_matrix("modelview", modelview);
 
 	util::Size<int> target_size;
@@ -2032,6 +2033,10 @@ void flip()
 #endif
 	{
 		if (show_fps && shim::font != 0) {
+			glm::mat4 _mv, _proj;
+			gfx::get_matrices(_mv, _proj);
+			gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
+			gfx::update_projection();
 			for (float y = 0; y < 4; y++) {
 				for (float x = 0; x < 4; x++) {
 					shim::font->draw(shim::white, util::itos(fps), {x, y});
@@ -2042,6 +2047,8 @@ void flip()
 					shim::font->draw(shim::black, util::itos(fps), {x, y});
 				}
 			}
+			gfx::set_matrices(_mv, _proj);
+			gfx::update_projection();
 		}
 	}
 
