@@ -161,7 +161,12 @@ void Sprite::load(std::string json_filename, std::string image_directory, bool a
 			int count = (int)frames->children.size();
 			had_keep_data = Image::keep_data;
 			Image::keep_data = true;
-			parent = new Image(image_directory + "/" + anim->value + ".tga",  true);
+			try {
+				parent = new Image(image_directory + "/" + anim->value + ".tga",  true);
+			}
+			catch (util::Error &err) {
+				parent = new Image(image_directory + "/" + anim->value + ".png",  true);
+			}
 			for (int i = 0; i < count; i++) {
 				util::JSON::Node *json = frames->children[i];
 				util::JSON::Node *frame = json->find("frame");
