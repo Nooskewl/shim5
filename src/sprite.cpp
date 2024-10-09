@@ -301,6 +301,14 @@ void Sprite::load(std::string json_filename, std::string image_directory, bool a
 	delete json;
 }
 
+bool Sprite::set_animation_lazy(std::string name)
+{
+	if (name == get_animation()) {
+		return true;
+	}
+	return set_animation(name);
+}
+
 bool Sprite::set_animation(std::string name, util::Callback finished_callback, void *finished_callback_data)
 {
 	// Make sure callbacks get called when animation changes

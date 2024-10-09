@@ -45,6 +45,7 @@ public:
 	SHIM5_EXPORT Sprite(std::string image_directory);
 	SHIM5_EXPORT ~Sprite();
 
+	SHIM5_EXPORT bool set_animation_lazy(std::string name);
 	SHIM5_EXPORT bool set_animation(std::string name, util::Callback finished_callback = 0, void *finished_callback_data = 0);
 	SHIM5_EXPORT std::string get_animation();
 	SHIM5_EXPORT std::string get_previous_animation();
