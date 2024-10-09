@@ -1431,14 +1431,24 @@ void Image::draw_rotated_scaled(util::Point<float> centre, util::Point<float> de
 	draw_tinted_rotated_scaled(shim::white, centre, dest_position, angle, scale, flags);
 }
 
-//--
-
 GLuint Image::get_opengl_texture()
 {
 	gfx::Image *root = get_root();
 	GLuint texture = root == 0 ? 0 : root->internal->texture;
 	return texture;
 }
+
+bool Image::is_sub_image()
+{
+	return internal->parent != nullptr;
+}
+
+util::Point<int> Image::get_offset()
+{
+	return internal->offset;
+}
+
+//--
 
 Image::Internal::Internal(std::string filename, bool keep_data, bool support_render_to_texture, bool load_from_filesystem) :
 	loaded_data(0),
