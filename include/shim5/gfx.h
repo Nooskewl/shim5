@@ -129,6 +129,7 @@ void SHIM5_EXPORT fancy_draw(SDL_Colour colour, std::string text, util::Point<in
 
 void SHIM5_EXPORT set_custom_mouse_cursor(); // can be needed in some cases but rarely
 
+void SHIM5_EXPORT set_scaled_size(util::Size<int> size);
 void SHIM5_EXPORT set_screen_size(util::Size<int> size);
 
 int SHIM5_EXPORT get_max_comfortable_scale(util::Size<int> scaled_size);

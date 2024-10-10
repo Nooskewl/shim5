@@ -1686,6 +1686,12 @@ void update_projection()
 	shim::current_shader->set_matrix("proj", p);
 }
 
+void set_scaled_size(util::Size<int> size)
+{
+	scaled_w = size.w;
+	scaled_h = size.h;
+}
+
 void set_screen_size(util::Size<int> size)
 {
 	util::Size<int> orig_size = size;
