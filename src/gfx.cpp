@@ -1690,6 +1690,7 @@ void set_scaled_size(util::Size<int> size)
 {
 	scaled_w = size.w;
 	scaled_h = size.h;
+	set_screen_size(shim::real_screen_size);
 }
 
 void set_screen_size(util::Size<int> size)
