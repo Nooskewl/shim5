@@ -310,11 +310,13 @@ void GUI::fade_transition(float p)
 
 void GUI::scale_transition(float scale)
 {
-	scale *= shim::scale;
+	//scale *= shim::scale;
 	int new_w = int(shim::screen_size.w * scale);
 	int new_h = int(shim::screen_size.h * scale);
-	int w_diff = (new_w - shim::real_screen_size.w) / 2;
-	int h_diff = (new_h - shim::real_screen_size.h) / 2;
+	//int w_diff = (new_w - shim::real_screen_size.w) / 2;
+	//int h_diff = (new_h - shim::real_screen_size.h) / 2;
+	int w_diff = (new_w - shim::screen_size.w) / 2;
+	int h_diff = (new_h - shim::screen_size.h) / 2;
 	if (shim::allow_dpad_below) {
 		int o = (shim::real_screen_size.h - (shim::screen_size.h*shim::scale)) / 2 - shim::screen_offset.y;
 		h_diff += o;
