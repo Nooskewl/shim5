@@ -35,7 +35,7 @@ GUI::GUI() :
 	gui(0),
 	focus(0),
 	appear_save(0.0f),
-	transition_duration(500),
+	transition_duration(250),
 	slide_save(0.0f)
 {
 	transition = false; // set this true to do transitions
