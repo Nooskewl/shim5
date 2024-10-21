@@ -775,7 +775,6 @@ static int steam_rumble(void *data)
 }
 #endif
 
-// FIXME: this rumbles ALL joysticks
 void rumble(Uint32 length, int num)
 {
 #ifdef STEAM_INPUT
