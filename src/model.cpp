@@ -2051,12 +2051,14 @@ void Model::draw(SDL_Colour tint, bool textured)
 		std::string anim_name = get_current_animation();
 		float *vertices = calc_frame(anim_name, frame);
 		if (textured && node->textures.size() > 0) {
-			//Shader *old_shader = shim::current_shader;
+			Shader *old_shader = shim::current_shader;
 
-			//shim::current_shader = shim::model_shader;
-			//shim::current_shader->use();
-			shim::current_shader->set_colour("tint", tint);
-			//update_projection();
+			if (old_shader == shim::default_shader) {
+				shim::current_shader = shim::model_shader;
+				shim::current_shader->use();
+				shim::current_shader->set_colour("tint", tint);
+				update_projection();
+			}
 
 			for (size_t i = 0; i < node->textures.size(); i++) {
 				int start = -1;
@@ -2077,9 +2079,11 @@ void Model::draw(SDL_Colour tint, bool textured)
 				}
 			}
 
-			//shim::current_shader = old_shader;
-			//shim::current_shader->use();
-			//gfx::update_projection();
+			if (old_shader == shim::default_shader) {
+				shim::current_shader = old_shader;
+				shim::current_shader->use();
+				gfx::update_projection();
+			}
 		}
 		else {
 			Vertex_Cache::instance()->start();
