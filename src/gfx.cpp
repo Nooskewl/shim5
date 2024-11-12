@@ -1003,12 +1003,54 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 #endif
 
 	if (shim::opengl) {
-		std::string default_vertex_source = DEFAULT_GLSL_VERTEX_SHADER;
-		std::string default_fragment_source = DEFAULT_GLSL_FRAGMENT_SHADER;
-		std::string default_textured_fragment_source = DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER;
-		std::string model_vertex_source = MODEL_GLSL_VERTEX_SHADER;
-		std::string model_fragment_source = MODEL_GLSL_FRAGMENT_SHADER;
-		std::string appear_fragment_source = APPEAR_GLSL_FRAGMENT_SHADER;
+		std::string default_vertex_source;
+		try {
+			default_vertex_source = util::load_text("gfx/shaders/glsl/default_vertex.txt");
+		}
+		catch (util::Error &e) {
+			default_vertex_source = DEFAULT_GLSL_VERTEX_SHADER;
+		}
+
+		std::string default_fragment_source;
+		try {
+			default_fragment_source = util::load_text("gfx/shaders/glsl/default_fragment.txt");
+		}
+		catch (util::Error &e) {
+			default_fragment_source = DEFAULT_GLSL_FRAGMENT_SHADER;
+		}
+
+		std::string default_textured_fragment_source;
+		try {
+			default_textured_fragment_source = util::load_text("gfx/shaders/glsl/default_textured_fragment.txt");
+		}
+		catch (util::Error &e) {
+			default_textured_fragment_source = DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER;
+		}
+
+		std::string model_vertex_source;
+		try {
+			model_vertex_source = util::load_text("gfx/shaders/glsl/model_vertex.txt");
+		}
+		catch (util::Error &e) {
+			model_vertex_source = MODEL_GLSL_VERTEX_SHADER;
+		}
+
+		std::string model_fragment_source;
+		try {
+			model_fragment_source = util::load_text("gfx/shaders/glsl/model_fragment.txt");
+		}
+		catch (util::Error &e) {
+			model_fragment_source = MODEL_GLSL_FRAGMENT_SHADER;
+		}
+
+		std::string appear_fragment_source;
+		try {
+			appear_fragment_source = util::load_text("gfx/shaders/glsl/appear_fragment.txt");
+		}
+		catch (util::Error &e) {
+			appear_fragment_source = APPEAR_GLSL_FRAGMENT_SHADER;
+		}
+
 		Shader::OpenGL_Shader *default_vertex = Shader::load_opengl_vertex_shader(DEFAULT_GLSL_VERTEX_SHADER, Shader::HIGH);
 		Shader::OpenGL_Shader *default_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_FRAGMENT_SHADER);
 		Shader::OpenGL_Shader *default_textured_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER, Shader::HIGH);
