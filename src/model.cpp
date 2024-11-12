@@ -1935,6 +1935,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 		root = root->parent;
 	}
 	glm::vec4 vert;
+	glm::vec4 norm;
 	vert.w = 1.0f;
 	
 	if (anim_name != "") {
@@ -1951,17 +1952,29 @@ float *Model::calc_frame(std::string anim_name, int frame)
 			vert.x = node->vertices[12 * v + 0];
 			vert.y = node->vertices[12 * v + 1];
 			vert.z = node->vertices[12 * v + 2];
+			norm.x = node->vertices[12 * v + 3];
+			norm.y = node->vertices[12 * v + 4];
+			norm.z = node->vertices[12 * v + 5];
 			glm::vec4 transformed(0.0f, 0.0f, 0.0f, 0.0f);
+			glm::vec4 transformed_norm(0.0f, 0.0f, 0.0f, 0.0f);
 			for (size_t i = 0; i < influence->weights.size(); i++) {
 				Model::Weights *w = influence->weights[i];
 				Model::Bone *b = influence->bones[i];
 				transformed += b->combined_transform * w->transform * vert * w->weights[v];
+				transformed_norm += b->combined_transform * w->transform * norm * w->weights[v];
 			}
 			transformed = transformed / transformed.w;
 			transformed = root->transform * /*node->transform **/ transformed;
+			//transformed_norm = transformed_norm / transformed_norm.w;
+			transformed_norm = root->transform * transformed_norm;
 			vertices[12 * v + 0] = transformed.x;
 			vertices[12 * v + 1] = transformed.y;
 			vertices[12 * v + 2] = transformed.z;
+			glm::vec3 n = glm::vec3(transformed_norm);
+			n = glm::normalize(n);
+			vertices[12 * v + 3] = n.x;
+			vertices[12 * v + 4] = n.y;
+			vertices[12 * v + 5] = n.z;
 		}
 	}
 	else {
@@ -1973,6 +1986,15 @@ float *Model::calc_frame(std::string anim_name, int frame)
 			vertices[12 * v + 0] = vert.x;
 			vertices[12 * v + 1] = vert.y;
 			vertices[12 * v + 2] = vert.z;
+			norm.x = node->vertices[12 * v + 3];
+			norm.y = node->vertices[12 * v + 4];
+			norm.z = node->vertices[12 * v + 5];
+			norm = root->transform * norm;
+			glm::vec3 n = glm::vec3(norm);
+			n = glm::normalize(n);
+			vertices[12 * v + 3] = n.x;
+			vertices[12 * v + 4] = n.y;
+			vertices[12 * v + 5] = n.z;
 		}
 	}
 
@@ -2029,12 +2051,12 @@ void Model::draw(SDL_Colour tint, bool textured)
 		std::string anim_name = get_current_animation();
 		float *vertices = calc_frame(anim_name, frame);
 		if (textured && node->textures.size() > 0) {
-			Shader *old_shader = shim::current_shader;
+			//Shader *old_shader = shim::current_shader;
 
-			shim::current_shader = shim::model_shader;
-			shim::current_shader->use();
+			//shim::current_shader = shim::model_shader;
+			//shim::current_shader->use();
 			shim::current_shader->set_colour("tint", tint);
-			update_projection();
+			//update_projection();
 
 			for (size_t i = 0; i < node->textures.size(); i++) {
 				int start = -1;
@@ -2055,9 +2077,9 @@ void Model::draw(SDL_Colour tint, bool textured)
 				}
 			}
 
-			shim::current_shader = old_shader;
-			shim::current_shader->use();
-			gfx::update_projection();
+			//shim::current_shader = old_shader;
+			//shim::current_shader->use();
+			//gfx::update_projection();
 		}
 		else {
 			Vertex_Cache::instance()->start();
