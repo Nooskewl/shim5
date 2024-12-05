@@ -32,6 +32,7 @@ std::string SHIM5_EXPORT get_joystick_button_name(int button);
 std::string SHIM5_EXPORT get_joystick_button_colour_code(int button);
 void SHIM5_EXPORT drop_repeats(bool joystick = true, bool mouse = true);
 int SHIM5_EXPORT get_num_joysticks();
+int SHIM5_EXPORT get_controller_index(SDL_JoystickID id);
 SDL_JoystickID SHIM5_EXPORT get_controller_id(int index);
 SDL_Joystick SHIM5_EXPORT *get_sdl_joystick(SDL_JoystickID id);
 SDL_GameController SHIM5_EXPORT *get_sdl_gamecontroller(SDL_JoystickID id);

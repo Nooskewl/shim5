@@ -1224,6 +1224,16 @@ int get_num_joysticks()
 	return joysticks.size();
 }
 
+int get_controller_index(SDL_JoystickID id)
+{
+	for (size_t i = 0; i < joysticks.size(); i++) {
+		if (joysticks[i].id == id) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 SDL_JoystickID get_controller_id(int index)
 {
 	if ((int)joysticks.size() <= index) {
