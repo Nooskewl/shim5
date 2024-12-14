@@ -130,8 +130,6 @@ extern SHIM5_EXPORT float joystick_activate_threshold;
 extern SHIM5_EXPORT float joystick_deactivate_threshold;
 extern SHIM5_EXPORT bool mouse_button_repeats;
 extern SHIM5_EXPORT int mouse_button_repeat_max_movement;
-extern SHIM5_EXPORT bool dpad_below;
-extern SHIM5_EXPORT bool allow_dpad_below;
 extern SHIM5_EXPORT bool dpad_enabled;
 extern SHIM5_EXPORT void (*joystick_disconnect_callback)();
 extern SHIM5_EXPORT bool force_tablet;

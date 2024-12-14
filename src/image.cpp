@@ -1163,20 +1163,10 @@ void Image::set_target()
 	}
 #endif
 
-	// Set an ortho projection the size of the image
-	if (this == (Image *)internal::gfx_context.work_image) {
-		// mimic the real backbuffer
-		set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
-		update_projection();
-		// also set the default screen scissor
-		gfx::unset_scissor();
-	}
-	else {
-		glm::mat4 modelview = glm::mat4();
-		glm::mat4 proj = glm::ortho(0.0f, (float)size.w, (float)size.h, 0.0f);
-		set_matrices(modelview, proj);
-		update_projection();
-	}
+	glm::mat4 modelview = glm::mat4();
+	glm::mat4 proj = glm::ortho(0.0f, (float)size.w, (float)size.h, 0.0f);
+	set_matrices(modelview, proj);
+	update_projection();
 }
 
 void Image::release_target()

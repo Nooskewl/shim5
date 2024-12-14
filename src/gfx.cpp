@@ -120,7 +120,6 @@ glDrawArrays_func glDrawArrays_ptr;
 #include "shim5/shaders/glsl/default_textured_fragment.h"
 #include "shim5/shaders/glsl/model_vertex.h"
 #include "shim5/shaders/glsl/model_fragment.h"
-#include "shim5/shaders/glsl/appear_fragment.h"
 
 #ifdef _WIN32
 #include "shim5/shaders/hlsl/default_vertex.h"
@@ -1043,24 +1042,14 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 			model_fragment_source = MODEL_GLSL_FRAGMENT_SHADER;
 		}
 
-		std::string appear_fragment_source;
-		try {
-			appear_fragment_source = util::load_text("gfx/shaders/glsl/appear_fragment.txt");
-		}
-		catch (util::Error &e) {
-			appear_fragment_source = APPEAR_GLSL_FRAGMENT_SHADER;
-		}
-
 		Shader::OpenGL_Shader *default_vertex = Shader::load_opengl_vertex_shader(DEFAULT_GLSL_VERTEX_SHADER, Shader::HIGH);
 		Shader::OpenGL_Shader *default_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_FRAGMENT_SHADER);
 		Shader::OpenGL_Shader *default_textured_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER, Shader::HIGH);
 		Shader::OpenGL_Shader *model_vertex = Shader::load_opengl_vertex_shader(MODEL_GLSL_VERTEX_SHADER);
 		Shader::OpenGL_Shader *model_fragment = Shader::load_opengl_fragment_shader(MODEL_GLSL_FRAGMENT_SHADER);
-		Shader::OpenGL_Shader *appear_fragment = Shader::load_opengl_fragment_shader(APPEAR_GLSL_FRAGMENT_SHADER);
 		shim::default_shader = internal::gfx_context.untextured_shader = new Shader(default_vertex, default_fragment, true, true);
 		internal::gfx_context.textured_shader = new Shader(default_vertex, default_textured_fragment, false, true);
 		shim::model_shader = new Shader(model_vertex, model_fragment, true, true);
-		shim::appear_shader = new Shader(default_vertex, appear_fragment, false, true);
 	}
 #ifdef _WIN32
 	else {
@@ -1078,11 +1067,9 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 		Shader::D3D_Fragment_Shader *default_fragment_shader = Shader::load_d3d_fragment_shader("noo_default_fragment");
 		Shader::D3D_Fragment_Shader *default_textured_fragment_shader = Shader::load_d3d_fragment_shader("noo_default_textured_fragment");
 		Shader::D3D_Fragment_Shader *model_fragment_shader = Shader::load_d3d_fragment_shader("noo_model_fragment");
-		Shader::D3D_Fragment_Shader *appear_fragment_shader = Shader::load_d3d_fragment_shader("appear_fragment");
 		shim::default_shader = internal::gfx_context.untextured_shader = new Shader(default_vertex_shader, default_fragment_shader, true, true);
 		internal::gfx_context.textured_shader = new Shader(default_vertex_shader, default_textured_fragment_shader, false, true);
 		shim::model_shader = new Shader(default_vertex_shader, model_fragment_shader, false, true);
-		shim::appear_shader = new Shader(default_vertex_shader, appear_fragment_shader, false, true);
 #endif
 	}
 #endif
@@ -1826,15 +1813,7 @@ void set_screen_size(util::Size<int> size)
 		shim::scale = 1.0f;
 	}
 
-	if (shim::allow_dpad_below && shim::screen_size.h*shim::scale*1.5f < orig_size.h) {
-		shim::screen_offset = {int(orig_size.w-(shim::screen_size.w*shim::scale))/2, int(orig_size.h-(shim::screen_size.h*1.5f*shim::scale))/2}; // room for controls
-		shim::dpad_below = true;
-	}
-	else {
-		shim::screen_offset = {int(orig_size.w-(shim::screen_size.w*shim::scale))/2, int(orig_size.h-(shim::screen_size.h*shim::scale))/2};
-		shim::dpad_below = false;
-	}
-
+	shim::screen_offset = {int(orig_size.w-(shim::screen_size.w*shim::scale))/2, int(orig_size.h-(shim::screen_size.h*shim::scale))/2};
 
 	if (shim::screen_offset.x < shim::scale) {
 		shim::screen_offset.x = 0;
@@ -2191,28 +2170,20 @@ void clear(SDL_Colour colour)
 	if (internal::gfx_context.target_image == 0) {
 		if (shim::opengl) {
 			glDisable_ptr(GL_SCISSOR_TEST);
+			glClearColor_ptr(shim::black.r/255.0f, shim::black.g/255.0f, shim::black.b/255.0f, shim::black.a/255.0f);
+			PRINT_GL_ERROR("glClearColor\n");
+			glClear_ptr(GL_COLOR_BUFFER_BIT);
+			PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
 		}
 #ifdef _WIN32
 		else {
 			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+			shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(shim::black.r, shim::black.g, shim::black.b, shim::black.a), 0.0f, 0);
 		}
 #endif
-	}
-
-	if (shim::opengl) {
-		glClearColor_ptr(shim::black.r/255.0f, shim::black.g/255.0f, shim::black.b/255.0f, shim::black.a/255.0f);
-		PRINT_GL_ERROR("glClearColor\n");
-		glClear_ptr(GL_COLOR_BUFFER_BIT);
-		PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
-	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(shim::black.r, shim::black.g, shim::black.b, shim::black.a), 0.0f, 0);
-	}
-#endif
-
-	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
-		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
+		if (scissor_disabled == false) {
+			real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
+		}
 	}
 
 	if (shim::opengl) {
@@ -3415,7 +3386,8 @@ void recreate_work_image()
 	}
 	bool old_create_depth_buffer = gfx::Image::create_depth_buffer;
 	gfx::Image::create_depth_buffer = true;
-	internal::gfx_context.work_image = new Image(util::Size<int>(shim::real_screen_size.w, shim::real_screen_size.h));
+	//internal::gfx_context.work_image = new Image(util::Size<int>(shim::real_screen_size.w, shim::real_screen_size.h));
+	internal::gfx_context.work_image = new Image(util::Size<int>(4096, 4096));
 	gfx::Image::create_depth_buffer = old_create_depth_buffer;
 }
 

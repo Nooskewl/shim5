@@ -74,7 +74,6 @@ std::string game_name;
 gfx::Shader *current_shader;
 gfx::Shader *default_shader;
 gfx::Shader *model_shader;
-gfx::Shader *appear_shader;
 int tile_size;
 util::Size<int> screen_size;
 util::Size<int> real_screen_size;
@@ -112,8 +111,6 @@ float joystick_activate_threshold;
 float joystick_deactivate_threshold;
 bool mouse_button_repeats;
 int mouse_button_repeat_max_movement;
-bool dpad_below;
-bool allow_dpad_below;
 bool dpad_enabled;
 void (*joystick_disconnect_callback)();
 bool force_tablet;
@@ -418,8 +415,6 @@ bool static_start(int sdl_init_flags)
 	convert_directions_to_focus_events = root->get_nested_bool("shim>input>convert_directions_to_focus_events", &convert_directions_to_focus_events, true);
 	mouse_button_repeats = root->get_nested_bool("shim>input>mouse_button_repeats", &mouse_button_repeats, true);
 	mouse_button_repeat_max_movement = root->get_nested_int("shim>input>mouse_button_repeat_max_movement", &mouse_button_repeat_max_movement, -1); // * shim::scale
-	dpad_below = false;
-	allow_dpad_below = root->get_nested_bool("shim>input>allow_dpad_below", &allow_dpad_below, true, true, false);
 	force_tablet = root->get_nested_bool("shim>input>force_tablet", &force_tablet, false, true, false);
 	notification_duration = root->get_nested_int("shim>gfx>notification_duration", &notification_duration, 3000);
 	notification_fade_duration = root->get_nested_int("shim>gfx>notification_fade_duration", &notification_fade_duration, 500);
@@ -903,9 +898,9 @@ bool update()
 	}
 #endif
 
-	if (gfx::internal::gfx_context.work_image != 0 && gfx::internal::gfx_context.work_image->size != shim::real_screen_size) {
-		gfx::internal::recreate_work_image();
-	}
+	//if (gfx::internal::gfx_context.work_image != 0 && gfx::internal::gfx_context.work_image->size != shim::real_screen_size) {
+		//gfx::internal::recreate_work_image();
+	//}
 
 	input::update();
 

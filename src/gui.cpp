@@ -34,7 +34,6 @@ Uint32 GUI::transition_start_time = 0;
 GUI::GUI() :
 	gui(0),
 	focus(0),
-	appear_save(0.0f),
 	transition_duration(250),
 	slide_save(0.0f)
 {
@@ -43,7 +42,6 @@ GUI::GUI() :
 	transitioning_out = false;
 	transition_is_enlarge = false;
 	transition_is_shrink = false;
-	transition_is_appear = false;
 	transition_is_slide = false;
 	transition_is_slide_vertical = false;
 }
@@ -164,9 +162,6 @@ void GUI::transition_start(float p)
 			}
 			scale_transition(scale);
 		}
-		else if (transition_is_appear) {
-			appear_in_transition(p);
-		}
 		else if (transition_is_slide) {
 			slide_transition(p-1.0f);
 		}
@@ -187,9 +182,6 @@ void GUI::transition_start(float p)
 				scale = 1.0f - p;
 			}
 			scale_transition(scale);
-		}
-		else if (transition_is_appear) {
-			appear_out_transition(p);
 		}
 		else if (transition_is_slide) {
 			slide_transition(p);
@@ -212,77 +204,7 @@ void GUI::transition_end()
 		gfx::set_matrices(mv_backup, p);
 		gfx::update_projection();
 	}
-	else if (transition_is_appear) {
-		if (transitioning_out) {
-			gfx::set_target_backbuffer();
-			gfx::clear_buffers();
-			glm::mat4 mv_save, proj_save, mv, proj;
-			gfx::get_matrices(mv_save, proj_save);
-			float x = 1.0f;
-			float y = 1.0f;
-			proj = glm::scale(proj, glm::vec3(10.0f, 10.0f, 1.0f));
-			proj = glm::translate(proj, glm::vec3(0.0f, 0.0f, -10.0f));
-			proj = glm::frustum(-x, x, y, -y, 1.0f, 1000.0f) * proj;
-			proj = glm::translate(proj, glm::vec3(0.0f, y, 0.0f));
-			proj = glm::rotate(proj, float(M_PI/2.0f*appear_save), glm::vec3(1.0f, 0.0f, 0.0f));
-			proj = glm::translate(proj, glm::vec3(0.0f, -y, 0.0f));
-			gfx::set_matrices(mv, proj);
-			gfx::update_projection();
-			gfx::set_cull_mode(gfx::NO_FACE);
-			SDL_Colour tint = shim::white;
-			float f = 1.0f - appear_save;
-			tint.r *= f;
-			tint.g *= f;
-			tint.b *= f;
-			tint.a *= f;
-			gfx::internal::gfx_context.work_image->stretch_region_tinted(tint, {0.0f, 0.0f}, shim::real_screen_size, {-x, -y}, {int(x*2), int(y*2)});
-			gfx::set_matrices(mv_save, proj_save);
-			gfx::update_projection();
-			gfx::set_cull_mode(gfx::BACK_FACE);
-		}
-		else {
-			shim::current_shader = shim::appear_shader;
-			shim::current_shader->use();
-			shim::current_shader->set_texture("plasma", gfx::internal::gfx_context.plasma, 1);
-			shim::current_shader->set_float("p", appear_save);
-
-			gfx::set_target_backbuffer();
-			glm::mat4 mv, proj;
-			proj = glm::ortho(0.0f, (float)shim::real_screen_size.w, (float)shim::real_screen_size.h, 0.0f);
-			gfx::set_matrices(mv, proj);
-			gfx::update_projection();
-
-			gfx::internal::gfx_context.work_image->draw({0.0f, 0.0f});
-
-			shim::current_shader = shim::default_shader;
-			shim::current_shader->use();
-			gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
-			gfx::update_projection();
-		}
-	}
 	else if (transition_is_slide || transition_is_slide_vertical) {
-		if (transition_is_slide_vertical) {
-			gfx::set_target_backbuffer();
-			glm::mat4 mv, proj;
-			proj = glm::ortho(0.0f, (float)shim::real_screen_size.w, (float)shim::real_screen_size.h, 0.0f);
-			gfx::set_matrices(mv, proj);
-			gfx::update_projection();
-
-			SDL_Colour tint = shim::white;
-			float f;
-			if (transitioning_in) {
-				f = slide_save + 1.0f;
-			}
-			else {
-				f = 1.0f - slide_save;
-			}
-			tint.r *= f;
-			tint.g *= f;
-			tint.b *= f;
-			tint.a *= f;
-			gfx::internal::gfx_context.work_image->draw_tinted(tint, {0.0f, 0.0f});
-		}
-
 		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		gfx::update_projection();
 	}
@@ -292,8 +214,7 @@ void GUI::transition_end()
 		SDL_Colour whitish = { c, c, c, c };
 		glm::mat4 mv_backup, proj_backup, mv;
 		gfx::get_matrices(mv_backup, proj_backup);
-		mv = glm::mat4();
-		gfx::set_matrices(mv, proj_backup);
+		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		gfx::update_projection();
 		gfx::internal::gfx_context.work_image->draw_tinted(whitish, util::Point<int>(0, 0));
 		gfx::set_matrices(mv_backup, proj_backup);
@@ -317,10 +238,6 @@ void GUI::scale_transition(float scale)
 	//int h_diff = (new_h - shim::real_screen_size.h) / 2;
 	int w_diff = (new_w - shim::screen_size.w) / 2;
 	int h_diff = (new_h - shim::screen_size.h) / 2;
-	if (shim::allow_dpad_below) {
-		int o = (shim::real_screen_size.h - (shim::screen_size.h*shim::scale)) / 2 - shim::screen_offset.y;
-		h_diff += o;
-	}
 	glm::mat4 mv, p;
 	gfx::get_matrices(mv_backup, p);
 	mv = glm::mat4();
@@ -328,26 +245,6 @@ void GUI::scale_transition(float scale)
 	mv = glm::scale(mv, glm::vec3(scale, scale, 1.0f));
 	gfx::set_matrices(mv, p);
 	gfx::update_projection();
-}
-
-void GUI::appear_in_transition(float p)
-{
-	appear_save = p;
-	gfx::set_target_image(gfx::internal::gfx_context.work_image);
-	gfx::clear(shim::transparent);
-	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
-	gfx::update_projection();
-	gfx::clear(shim::transparent);
-}
-
-void GUI::appear_out_transition(float p)
-{
-	appear_save = p;
-	gfx::set_target_image(gfx::internal::gfx_context.work_image);
-	gfx::clear(shim::transparent);
-	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
-	gfx::update_projection();
-	gfx::clear_buffers();
 }
 
 void GUI::slide_transition(float p)
@@ -364,8 +261,6 @@ void GUI::slide_transition(float p)
 void GUI::slide_vertical_transition(float p)
 {
 	slide_save = p;
-	gfx::set_target_image(gfx::internal::gfx_context.work_image);
-	gfx::clear(shim::transparent);
 	gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 	glm::mat4 mv, proj;
 	gfx::get_matrices(mv, proj);
@@ -382,11 +277,6 @@ void GUI::use_enlarge_transition(bool onoff)
 void GUI::use_shrink_transition(bool onoff)
 {
 	transition_is_shrink = onoff;
-}
-
-void GUI::use_appear_transition(bool onoff)
-{
-	transition_is_appear = onoff;
 }
 
 void GUI::use_slide_transition(bool onoff)
@@ -409,7 +299,6 @@ void GUI::found_device()
 
 void GUI::transition_in_done()
 {
-	appear_save = 0.0f;
 	slide_save = 0.0f;
 }
 

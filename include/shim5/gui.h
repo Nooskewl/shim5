@@ -46,7 +46,6 @@ public:
 	// normally a fade is done if transitions are enabled, but these can be used instead
 	SHIM5_EXPORT void use_enlarge_transition(bool onoff);
 	SHIM5_EXPORT void use_shrink_transition(bool onoff);
-	SHIM5_EXPORT void use_appear_transition(bool onoff);
 	SHIM5_EXPORT void use_slide_transition(bool onoff);
 	SHIM5_EXPORT void use_slide_vertical_transition(bool onoff);
 
@@ -73,8 +72,6 @@ protected:
 
 	SHIM5_EXPORT void fade_transition(float p);
 	SHIM5_EXPORT void scale_transition(float scale);
-	SHIM5_EXPORT void appear_in_transition(float p);
-	SHIM5_EXPORT void appear_out_transition(float p);
 	SHIM5_EXPORT void slide_transition(float x);
 	SHIM5_EXPORT void slide_vertical_transition(float y);
 
@@ -83,13 +80,11 @@ protected:
 	bool transitioning_out;
 	bool transition_is_enlarge;
 	bool transition_is_shrink;
-	bool transition_is_appear;
 	bool transition_is_slide;
 	bool transition_is_slide_vertical;
 	glm::mat4 mv_backup;
 	glm::mat4 p_backup;
 	float last_transition_p;
-	float appear_save;
 	gfx::Image *plasma;
 	int transition_duration;
 	float slide_save;
