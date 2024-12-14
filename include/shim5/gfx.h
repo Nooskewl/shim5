@@ -151,6 +151,16 @@ gfx::Image SHIM5_EXPORT *gen_plasma(int seed, float alpha1, float alpha2, SDL_Co
 void SHIM5_EXPORT screen_shake(float amount, Uint32 length);
 void SHIM5_EXPORT apply_screen_shake();
 
+enum Black_Bar_Type {
+	BAR_TOP,
+	BAR_BOTTOM,
+	BAR_LEFT,
+	BAR_RIGHT
+};
+
+typedef void (*_black_bars_callback)(Black_Bar_Type type, int x, int y, int w, int h);
+void SHIM5_EXPORT register_black_bars_callback(_black_bars_callback);
+
 #if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32 || defined __EMSCRIPTEN__)
 void SHIM5_EXPORT create_mouse_cursors();
 void SHIM5_EXPORT delete_mouse_cursors();

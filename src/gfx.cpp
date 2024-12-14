@@ -171,6 +171,7 @@ static glm::mat4 screen_shake_mv;
 static glm::mat4 screen_shake_p;
 static glm::mat4 default_modelview;
 static glm::mat4 default_proj;
+static gfx::_black_bars_callback black_bars_callback;
 
 #if defined _WIN32
 static D3DPRESENT_PARAMETERS d3d_pp;
@@ -188,6 +189,20 @@ static void next_notification()
 {
 	notifications.erase(notifications.begin());
 	notification_start_time = SDL_GetTicks();
+}
+
+static void set_viewport()
+{
+	if (shim::opengl) {
+		glViewport_ptr(scissor_x, shim::real_screen_size.h-(scissor_y+scissor_h), scissor_w, scissor_h);
+		PRINT_GL_ERROR("glViewport\n");
+	}
+#ifdef _WIN32
+	else {
+		D3DVIEWPORT9 viewport = { scissor_x, scissor_y, (DWORD)scissor_w, (DWORD)scissor_h, 0.0f, 1.0f };
+		shim::d3d_device->SetViewport(&viewport);
+	}
+#endif
 }
 
 namespace noo {
@@ -1631,6 +1646,11 @@ void get_lost_device_callbacks(gfx::_lost_device_callback_pointer lost, gfx::_lo
 	*found = found_device_callback;
 }
 
+void register_black_bars_callback(gfx::_black_bars_callback callback)
+{
+	black_bars_callback = callback;
+}
+
 Image *get_target_image()
 {
 	return internal::gfx_context.target_image;
@@ -1827,16 +1847,7 @@ void set_screen_size(util::Size<int> size)
 	scissor_w = MIN(orig_size.w, int(shim::screen_size.w*shim::scale));
 	scissor_h = MIN(orig_size.h, int(shim::screen_size.h*shim::scale));
 
-	if (shim::opengl) {
-		glViewport_ptr(scissor_x, shim::real_screen_size.h-(scissor_y+scissor_h), scissor_w, scissor_h);
-		PRINT_GL_ERROR("glViewport\n");
-	}
-#ifdef _WIN32
-	else {
-		D3DVIEWPORT9 viewport = { scissor_x, scissor_y, (DWORD)scissor_w, (DWORD)scissor_h, 0.0f, 1.0f };
-		shim::d3d_device->SetViewport(&viewport);
-	}
-#endif
+	set_viewport();
 
 	real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 	
@@ -2181,6 +2192,41 @@ void clear(SDL_Colour colour)
 			shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(shim::black.r, shim::black.g, shim::black.b, shim::black.a), 0.0f, 0);
 		}
 #endif
+		if (black_bars_callback != nullptr && internal::gfx_context.inited == true) {
+			glm::mat4 mv_bak, proj_bak;
+			gfx::get_matrices(mv_bak, proj_bak);
+			gfx::set_default_projection(shim::real_screen_size, util::Point<int>(0, 0), 1.0f);
+			gfx::update_projection();
+
+			if (shim::opengl) {
+				glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
+				PRINT_GL_ERROR("glViewport\n");
+			}
+#ifdef _WIN32
+			else {
+				D3DVIEWPORT9 viewport = { 0, 0, (DWORD)shim::real_screen_size.w, (DWORD)shim::real_screen_size.h, 0.0f, 1.0f };
+				shim::d3d_device->SetViewport(&viewport);
+			}
+#endif
+
+			if (shim::screen_offset.x > 0) {
+				int w = shim::screen_offset.x;
+				int h = shim::real_screen_size.h;
+				black_bars_callback(BAR_LEFT, 0, 0, w, h);
+				black_bars_callback(BAR_RIGHT, shim::real_screen_size.w-w, 0, w, h);
+			}
+			else if (shim::screen_offset.y > 0) {
+				int w = shim::real_screen_size.w;
+				int h = shim::screen_offset.y;
+				black_bars_callback(BAR_TOP, 0, 0, w, h);
+				black_bars_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
+			}
+			
+			set_viewport();
+
+			gfx::set_matrices(mv_bak, proj_bak);
+			gfx::update_projection();
+		}
 		if (scissor_disabled == false) {
 			real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 		}
