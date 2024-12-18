@@ -1662,9 +1662,9 @@ void Image::Internal::upload(unsigned char *pixels)
 #endif
 		PRINT_GL_ERROR("glTexImage2D\n");
 
-		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, shim::linear_filtering ? GL_LINEAR : GL_NEAREST);
 		PRINT_GL_ERROR("glTexParameteri\n");
-		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, shim::linear_filtering ? GL_LINEAR : GL_NEAREST);
 		PRINT_GL_ERROR("glTexParameteri\n");
 		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		PRINT_GL_ERROR("glTexParameteri\n");

@@ -397,10 +397,10 @@ static void set_initial_d3d_state()
 	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP) != D3D_OK) {
 		util::infomsg("SetSamplerState failed.\n");
 	}
-	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT) != D3D_OK) {
+	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_MINFILTER, shim::linear_filtering ? D3DTEXF_LINEAR : D3DTEXF_POINT) != D3D_OK) {
 		util::infomsg("SetSamplerState failed.\n");
 	}
-	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT) != D3D_OK) {
+	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_MAGFILTER, shim::linear_filtering ? D3DTEXF_LINEAR : D3DTEXF_POINT) != D3D_OK) {
 		util::infomsg("SetSamplerState failed.\n");
 	}
 
@@ -1471,7 +1471,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 {
 	util::JSON::Node *root = shim::shim_json->get_root();
 	multisampling = root->get_nested_bool("shim>gfx>multisampling", &multisampling, true);
-	aa_samples = root->get_nested_int("shim>gfx>aa_samples", &aa_samples, 4);
+	aa_samples = root->get_nested_int("shim>gfx>samples", &aa_samples, 4);
 	multisampling = util::bool_arg(multisampling, shim::argc, shim::argv, "multisampling");
 	int index;
 	if ((index = util::check_args(shim::argc, shim::argv, "+samples")) >= 0) {

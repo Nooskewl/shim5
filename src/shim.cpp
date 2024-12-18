@@ -105,6 +105,7 @@ int key_r;
 int key_u;
 int key_d;
 int fullscreen_key;
+bool linear_filtering;
 int devsettings_key;
 bool convert_directions_to_focus_events;
 float joystick_activate_threshold;
@@ -433,6 +434,7 @@ bool static_start(int sdl_init_flags)
 	cursor_hotspot.y = root->get_nested_int("shim>gfx>cursor_hotspot.y", &shim::cursor_hotspot.y, 0);
 	
 	debug = root->get_nested_bool("shim>misc>debug", &debug, false);
+	linear_filtering = root->get_nested_bool("shim>gfx>linear_filtering", &linear_filtering, false);
 
 	get_way_points = nullptr;
 
@@ -472,6 +474,8 @@ bool start()
 	}
 
 	force_tablet = force_tablet || util::bool_arg(false, shim::argc, shim::argv, "force-tablet");
+
+	linear_filtering = util::bool_arg(linear_filtering, shim::argc, shim::argv, "linear-filtering");
 
 	if (timer_event_id == (Uint32)-1) {
 		timer_event_id = SDL_RegisterEvents(1);
