@@ -319,7 +319,7 @@ static void d3d_create_depth_buffer()
 			else {
 				format = D3DFMT_D16;
 			}
-			if (shim::d3d_device->CreateDepthStencilSurface(size.w, size.h, format, D3DMULTISAMPLE_NONE, 0, true, &internal::gfx_context.depth_stencil_buffer, 0) != D3D_OK) {
+			if (shim::d3d_device->CreateDepthStencilSurface(size.w, size.h, format, D3DMULTISAMPLE_4_SAMPLES, 0, true, &internal::gfx_context.depth_stencil_buffer, 0) != D3D_OK) {
 				throw util::Error("CreateDepthStencilSurface failed");
 			}
 			else {
@@ -371,7 +371,7 @@ static void fill_d3d_pp(int w, int h)
 	d3d_pp.BackBufferWidth = w;
 	d3d_pp.BackBufferHeight = h;
 	d3d_pp.BackBufferCount = 1;
-	d3d_pp.MultiSampleType = D3DMULTISAMPLE_NONE;
+	d3d_pp.MultiSampleType = D3DMULTISAMPLE_4_SAMPLES;
 	d3d_pp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3d_pp.hDeviceWindow = internal::gfx_context.hwnd;
 	d3d_pp.Windowed = internal::gfx_context.fullscreen ? 0 : 1;
@@ -1461,6 +1461,8 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		else {
 			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
 		}
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 	}
 	
 	::scaled_w = -1;
