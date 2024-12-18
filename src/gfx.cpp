@@ -172,6 +172,8 @@ static glm::mat4 screen_shake_p;
 static glm::mat4 default_modelview;
 static glm::mat4 default_proj;
 static gfx::_black_bars_callback black_bars_callback;
+bool multisampling;
+int aa_samples;
 
 #if defined _WIN32
 static D3DPRESENT_PARAMETERS d3d_pp;
@@ -184,6 +186,47 @@ static bool use_custom_cursor;
 SDL_Surface *mouse_cursor_surface;
 SDL_Cursor *mouse_cursor;
 #endif
+
+static D3DMULTISAMPLE_TYPE samples_to_d3d(int samples)
+{
+	if (multisampling == false) {
+		return D3DMULTISAMPLE_NONE;
+	}
+	switch (samples) {
+		case 16:
+			return D3DMULTISAMPLE_16_SAMPLES;
+		case 15:
+			return D3DMULTISAMPLE_15_SAMPLES;
+		case 14:
+			return D3DMULTISAMPLE_14_SAMPLES;
+		case 13:
+			return D3DMULTISAMPLE_13_SAMPLES;
+		case 12:
+			return D3DMULTISAMPLE_12_SAMPLES;
+		case 11:
+			return D3DMULTISAMPLE_11_SAMPLES;
+		case 10:
+			return D3DMULTISAMPLE_10_SAMPLES;
+		case 9:
+			return D3DMULTISAMPLE_9_SAMPLES;
+		case 8:
+			return D3DMULTISAMPLE_8_SAMPLES;
+		case 7:
+			return D3DMULTISAMPLE_7_SAMPLES;
+		case 6:
+			return D3DMULTISAMPLE_6_SAMPLES;
+		case 5:
+			return D3DMULTISAMPLE_5_SAMPLES;
+		case 4:
+			return D3DMULTISAMPLE_4_SAMPLES;
+		case 3:
+			return D3DMULTISAMPLE_3_SAMPLES;
+		case 2:
+			return D3DMULTISAMPLE_2_SAMPLES;
+		default:
+			return D3DMULTISAMPLE_NONE;
+	}
+}
 
 static void next_notification()
 {
@@ -319,7 +362,7 @@ static void d3d_create_depth_buffer()
 			else {
 				format = D3DFMT_D16;
 			}
-			if (shim::d3d_device->CreateDepthStencilSurface(size.w, size.h, format, D3DMULTISAMPLE_4_SAMPLES, 0, true, &internal::gfx_context.depth_stencil_buffer, 0) != D3D_OK) {
+			if (shim::d3d_device->CreateDepthStencilSurface(size.w, size.h, format, samples_to_d3d(aa_samples), 0, true, &internal::gfx_context.depth_stencil_buffer, 0) != D3D_OK) {
 				throw util::Error("CreateDepthStencilSurface failed");
 			}
 			else {
@@ -371,7 +414,7 @@ static void fill_d3d_pp(int w, int h)
 	d3d_pp.BackBufferWidth = w;
 	d3d_pp.BackBufferHeight = h;
 	d3d_pp.BackBufferCount = 1;
-	d3d_pp.MultiSampleType = D3DMULTISAMPLE_4_SAMPLES;
+	d3d_pp.MultiSampleType = samples_to_d3d(aa_samples);
 	d3d_pp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3d_pp.hDeviceWindow = internal::gfx_context.hwnd;
 	d3d_pp.Windowed = internal::gfx_context.fullscreen ? 0 : 1;
@@ -1426,6 +1469,15 @@ void static_end()
 
 bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w, int window_h)
 {
+	util::JSON::Node *root = shim::shim_json->get_root();
+	multisampling = root->get_nested_bool("shim>gfx>multisampling", &multisampling, true);
+	aa_samples = root->get_nested_int("shim>gfx>aa_samples", &aa_samples, 4);
+	multisampling = util::bool_arg(multisampling, shim::argc, shim::argv, "multisampling");
+	int index;
+	if ((index = util::check_args(shim::argc, shim::argv, "+samples")) >= 0) {
+		aa_samples = atoi(shim::argv[index+1]);
+	}
+
 	::create_depth_buffer = shim::create_depth_buffer;
 	::create_stencil_buffer = shim::create_stencil_buffer;
 
@@ -1461,8 +1513,14 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		else {
 			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
 		}
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+		if (multisampling) {
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, aa_samples);
+		}
+		else {
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+		}
 	}
 	
 	::scaled_w = -1;
