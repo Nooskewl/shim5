@@ -380,6 +380,59 @@ void Shader::set_matrix(std::string name, glm::mat4 &matrix)
 #endif
 }
 
+void Shader::set_matrix_array(std::string name, int num_matrices, glm::mat4 matrix[])
+{
+	float *v = new float[16*num_matrices];
+
+	for (int i = 0; i < num_matrices; i++) {
+		glm::mat4 m = matrix[i];
+#ifndef USE_D3DX
+		if (opengl == false) {
+			m = glm::transpose(m);
+		}
+#endif
+		memcpy(v+16*i, glm::value_ptr(m), 16*sizeof(float));
+	}
+
+	if (opengl) {
+		GLint loc = get_uniform_location(name);
+		if (loc != -1) {
+			glUniformMatrix4fv_ptr(loc, num_matrices, GL_FALSE, v);
+			PRINT_GL_ERROR("glUniformMatrix4fv\n");
+		}
+	}
+#ifdef _WIN32
+	else {
+#if USE_D3DX
+		// FIXME: THIS IS BROKE FOR ARRAYS OF MATRICES
+		if (_is_d3dx) {
+			d3d_effect->SetMatrix(name.c_str(), (D3DXMATRIX *)glm::value_ptr(matrix));
+		}
+		else
+#endif
+		{
+			std::map<std::string, D3D_Var_Info>::iterator it;
+			if ((it = d3d_vertex->vars.find(name)) != d3d_vertex->vars.end()) {
+				std::pair<std::string, D3D_Var_Info> p = *it;
+				shim::d3d_device->SetVertexShaderConstantF(p.second.num, v, 4*num_matrices);
+			}
+			else {
+				//util::debugmsg("Trying to set matrix %s in vertex shader but it doesn't exist!\n", name.c_str());
+			}
+			if ((it = d3d_fragment->vars.find(name)) != d3d_fragment->vars.end()) {
+				std::pair<std::string, D3D_Var_Info> p = *it;
+				shim::d3d_device->SetPixelShaderConstantF(p.second.num, v, 4*num_matrices);
+			}
+			else {
+				//util::debugmsg("Trying to set matrix %s in fragment shader but it doesn't exist!\n", name.c_str());
+			}
+		}
+	}
+#endif
+
+	delete[] v;
+}
+
 void Shader::set_float(std::string name, float value)
 {
 	if (opengl) {

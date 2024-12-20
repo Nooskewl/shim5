@@ -73,6 +73,7 @@ public:
 
 	SHIM5_EXPORT void set_texture(std::string name, Image *image, int unit = 0);
 	SHIM5_EXPORT void set_matrix(std::string name, glm::mat4 &matrix);
+	SHIM5_EXPORT void set_matrix_array(std::string name, int num_matrices, glm::mat4 matrix[]);
 	SHIM5_EXPORT void set_float(std::string name, float value);
 	SHIM5_EXPORT bool set_float_vector(std::string name, int num_components, const float *vector, int num_elements);
 	SHIM5_EXPORT void set_bool(std::string name, bool value);
