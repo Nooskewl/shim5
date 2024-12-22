@@ -56,6 +56,40 @@ JSON::Node *JSON::Node::clone(JSON::Node *parent)
 	return n;
 }
 
+void JSON::Node::merge(JSON::Node *n, JSON::Node *parent)
+{
+	key = n->key;
+	value = n->value;
+	type = n->type;
+	userdata = n->userdata;
+	this->parent = parent;
+	trigger = n->trigger;
+	readonly = n->readonly;
+
+	for (size_t i = 0; i < n->children.size(); i++) {
+		bool _exists = false;
+		bool _merge = false;
+		Node *c = nullptr;
+		if (child_map.find(n->children[i]->key) != child_map.end()) {
+			_exists = true;
+			c = child_map[n->children[i]->key];
+			if (c->type == Node::HASH && n->children[i]->type == Node::HASH) {
+				_merge = true;
+			}
+		}
+		if (_merge) {
+			c->merge(n->children[i], this);
+		}
+		else {
+			if (_exists) { // replace
+				remove_child(c);
+			}
+			Node *cl = n->children[i]->clone(this);
+			add_child(cl);
+		}
+	}
+}
+
 std::string JSON::Node::to_json(int indent)
 {
 	update_value();
