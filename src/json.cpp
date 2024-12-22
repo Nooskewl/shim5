@@ -33,6 +33,29 @@ JSON::Node *JSON::Node::find(std::string loc)
 	return result;
 }
 
+JSON::Node *JSON::Node::clone(JSON::Node *parent)
+{
+	Node *n = new Node;
+	n->key = key;
+	n->value = value;
+	n->type = type;
+	n->userdata = userdata;
+	n->parent = parent;
+	n->trigger = trigger;
+	n->readonly = readonly;
+
+	for (size_t i = 0; i < children.size(); i++) {
+		JSON::Node *c = children[i]->clone(n);
+		n->children.push_back(c);
+	}
+
+	for (size_t i = 0; i < n->children.size(); i++) {
+		n->child_map[n->children[i]->key] = n->children[i];
+	}
+
+	return n;
+}
+
 std::string JSON::Node::to_json(int indent)
 {
 	update_value();
