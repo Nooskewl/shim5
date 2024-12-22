@@ -357,7 +357,6 @@ bool static_start(int sdl_init_flags)
 		util::JSON *user_json = new util::JSON(util::get_savegames_dir() + "/shim5.json", true);
 		root->merge(user_json->get_root(), nullptr);
 		delete user_json;
-		printf("%s\n", root->to_json(0).c_str());
 	}
 	catch (util::Error &e) {
 	}
