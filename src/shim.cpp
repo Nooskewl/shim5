@@ -353,6 +353,15 @@ bool static_start(int sdl_init_flags)
 
 	util::JSON::Node *root = shim_json->get_root();
 
+	try {
+		util::JSON *user_json = new util::JSON(util::get_savegames_dir() + "/shim5.json", true);
+		root->merge(user_json->get_root(), nullptr);
+		delete user_json;
+		printf("%s\n", root->to_json(0).c_str());
+	}
+	catch (util::Error &e) {
+	}
+
 	opengl = root->get_nested_bool("shim>gfx>opengl", &opengl, false, true, true);
 	black.r = root->get_nested_byte("shim>gfx>colours>black.r", &black.r, 0);
 	black.g = root->get_nested_byte("shim>gfx>colours>black.g", &black.g, 0);

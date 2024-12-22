@@ -73,11 +73,13 @@ void JSON::Node::merge(JSON::Node *n, JSON::Node *parent)
 		if (child_map.find(n->children[i]->key) != child_map.end()) {
 			_exists = true;
 			c = child_map[n->children[i]->key];
-			if (c->type == Node::HASH && n->children[i]->type == Node::HASH) {
+			printf("types=%d %d\n", c->type, n->children[i]->type);
+			if ((c->type == Node::HASH || c->type == Node::NONE) && (n->children[i]->type == Node::HASH || n->children[i]->type == Node::NONE)) {
 				_merge = true;
 			}
 		}
 		if (_merge) {
+			printf("mergin\n");
 			c->merge(n->children[i], this);
 		}
 		else {
