@@ -581,7 +581,7 @@ std::string get_standard_path(Path_Type type, bool create)
 	}
 
 	return "";
-#elif defined __linux__ || defined __EMSCRIPTEN__ && !defined ANDROID
+#elif (defined __linux__ || defined __EMSCRIPTEN__) && !defined ANDROID
 	std::string path = getenv("HOME");
 	if (create) {
 		mkdir(path);
@@ -661,6 +661,24 @@ std::string get_appdata_dir()
 	mkdir(appdata);
 	return appdata;
 }
+
+std::string get_savegames_dir()
+{
+	std::string path;
+
+#ifdef ANDROID
+	path = util::get_standard_path(util::SAVED_GAMES, true);
+#elif defined _WIN32
+	path = util::get_standard_path(util::SAVED_GAMES, true);
+	path += "/" + shim::game_name;
+	util::mkdir(path);
+#else
+	path = util::get_appdata_dir();
+#endif
+
+	return path;
+}
+
 
 void set_appdata_dir(std::string appdata_dir, bool create)
 {

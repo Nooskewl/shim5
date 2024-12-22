@@ -86,6 +86,7 @@ public:
 		void update_value(); // read value from userdata, store in value
 
 		Node *clone(Node *parent);
+		void merge(Node *n, Node *parent);
 	
 	private:
 		Node *add_child(Node *child);

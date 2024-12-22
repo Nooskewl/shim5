@@ -70,6 +70,7 @@ enum Path_Type {
 std::string SHIM5_EXPORT get_standard_path(Path_Type type, bool create);
 // appdata_dir is used for crashdumps, can be used for anything else you want like config files
 std::string SHIM5_EXPORT get_appdata_dir();
+std::string SHIM5_EXPORT get_savegames_dir();
 void SHIM5_EXPORT set_appdata_dir(std::string appdata_dir, bool create);
 
 void SHIM5_EXPORT open_with_system(std::string filename); // open with default app
