@@ -1170,10 +1170,10 @@ static void set_window_icon()
 	try {
 #ifdef _WIN32
 		int h = 16;
-		std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".tga";
-		pixels = Image::read_tga(filename, size);
+		std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".png";
+		pixels = Image::read_png(filename, size);
 #else
-		pixels = Image::read_tga("gfx/images/misc/icon256.tga", size);
+		pixels = Image::read_png("gfx/images/misc/icon256.png", size);
 #endif
 	}
 	catch (util::Error &e) {
@@ -1226,8 +1226,8 @@ static void set_window_icon()
 				}
 			}
 			//util::debugmsg("workarea_h=%d taskbar_h=%d o=%d biggest=%d dwMajorVersion=%d\n", workarea_h, taskbar_h, o, biggest, vi.dwMajorVersion);
-			std::string filename = std::string("gfx/images/misc/icon") + util::itos(biggest) + ".tga";
-			pixels = Image::read_tga(filename, size);
+			std::string filename = std::string("gfx/images/misc/icon") + util::itos(biggest) + ".png";
+			pixels = Image::read_png(filename, size);
 		}
 		else {
 			throw util::Error("SystemParametersInfo failed!");
@@ -1237,8 +1237,8 @@ static void set_window_icon()
 		util::infomsg(e.error_message + "\n");
 		try {
 			int h = 24;
-			std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".tga";
-			pixels = Image::read_tga(filename, size);
+			std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".png";
+			pixels = Image::read_png(filename, size);
 		}
 		catch (util::Error &e) {
 			util::infomsg(e.error_message + "\n");
@@ -1264,7 +1264,7 @@ void create_mouse_cursors()
 	if (shim::scale_mouse_cursor) {
 		gfx::Image *mc;
 		try {
-			mc = new gfx::Image("ui/mouse_cursor.tga");
+			mc = new gfx::Image("ui/mouse_cursor.png");
 		}
 		catch (util::Error &e) {
 			util::infomsg(e.error_message + "\n");
@@ -1284,7 +1284,7 @@ void create_mouse_cursors()
 	}
 	else {
 		try {
-			pixels = Image::read_tga("gfx/images/ui/mouse_cursor.tga", size);
+			pixels = Image::read_png("gfx/images/ui/mouse_cursor.png", size);
 		}
 		catch (util::Error &e) {
 			util::infomsg(e.error_message + "\n");
@@ -1468,12 +1468,12 @@ void static_end()
 bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w, int window_h)
 {
 	util::JSON::Node *root = shim::shim_json->get_root();
-	multisampling = root->get_nested_bool("shim>gfx>multisampling", &multisampling, true);
-	aa_samples = root->get_nested_int("shim>gfx>aa_samples", &aa_samples, 4);
-	multisampling = util::bool_arg(multisampling, shim::argc, shim::argv, "multisampling");
+	shim::multisampling = root->get_nested_bool("shim>gfx>multisampling", &shim::multisampling, true);
+	shim::aa_samples = root->get_nested_int("shim>gfx>aa_samples", &shim::aa_samples, 4);
+	shim::multisampling = util::bool_arg(shim::multisampling, shim::argc, shim::argv, "multisampling");
 	int index;
 	if ((index = util::check_args(shim::argc, shim::argv, "+aa-samples")) >= 0) {
-		aa_samples = atoi(shim::argv[index+1]);
+		shim::aa_samples = atoi(shim::argv[index+1]);
 	}
 
 	::create_depth_buffer = shim::create_depth_buffer;

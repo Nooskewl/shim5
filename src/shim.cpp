@@ -445,14 +445,6 @@ bool static_start(int sdl_init_flags)
 	
 	debug = root->get_nested_bool("shim>misc>debug", &debug, false);
 	linear_filtering = root->get_nested_bool("shim>gfx>linear_filtering", &linear_filtering, false);
-	
-	multisampling = root->get_nested_bool("shim>gfx>multisampling", &multisampling, true);
-	aa_samples = root->get_nested_int("shim>gfx>samples", &aa_samples, 4);
-	multisampling = util::bool_arg(multisampling, shim::argc, shim::argv, "multisampling");
-	int index;
-	if ((index = util::check_args(shim::argc, shim::argv, "+samples")) >= 0) {
-		aa_samples = atoi(shim::argv[index+1]);
-	}
 
 	get_way_points = nullptr;
 
