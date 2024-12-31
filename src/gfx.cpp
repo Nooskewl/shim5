@@ -1469,11 +1469,15 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 {
 	util::JSON::Node *root = shim::shim_json->get_root();
 	shim::multisampling = root->get_nested_bool("shim>gfx>multisampling", &shim::multisampling, true);
-	shim::aa_samples = root->get_nested_int("shim>gfx>aa_samples", &shim::aa_samples, 4);
 	shim::multisampling = util::bool_arg(shim::multisampling, shim::argc, shim::argv, "multisampling");
+	shim::aa_samples = root->get_nested_int("shim>gfx>aa_samples", &shim::aa_samples, 4);
 	int index;
 	if ((index = util::check_args(shim::argc, shim::argv, "+aa-samples")) >= 0) {
 		shim::aa_samples = atoi(shim::argv[index+1]);
+	}
+	shim::refresh_rate = root->get_nested_int("shim>gfx>refresh_rate", &shim::refresh_rate, 0);
+	if ((index = util::check_args(shim::argc, shim::argv, "+refresh-rate")) >= 0) {
+		shim::refresh_rate = atoi(shim::argv[index+1]);
 	}
 
 	::create_depth_buffer = shim::create_depth_buffer;
