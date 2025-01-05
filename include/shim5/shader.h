@@ -44,8 +44,8 @@ public:
 	struct D3D_Fragment_Shader : public D3D_Shader {
 		IDirect3DPixelShader9 *shader;
 	};
-	static D3D_Vertex_Shader *load_d3d_vertex_shader(std::string filename);
-	static D3D_Fragment_Shader *load_d3d_fragment_shader(std::string filename);
+	static D3D_Vertex_Shader *load_d3d_vertex_shader(std::string filename, bool load_from_filesystem = false);
+	static D3D_Fragment_Shader *load_d3d_fragment_shader(std::string filename, bool load_from_filesystem = false);
 #endif
 	struct OpenGL_Shader {
 		GLenum type;
@@ -85,7 +85,7 @@ public:
 
 private:
 #ifdef _WIN32
-	static void load_d3d_shader(std::string filename, D3D_Shader *shader);
+	static void load_d3d_shader(std::string filename, D3D_Shader *shader, bool load_from_filesystem = false);
 #endif
 	static std::string add_opengl_header(bool is_vertex, Precision precision, std::string source);
 	static GLuint compile_opengl_vertex_shader(std::string source);

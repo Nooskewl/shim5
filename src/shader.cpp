@@ -919,10 +919,10 @@ void Shader::unbind(Shader *s)
 }
 
 #ifdef _WIN32
-void Shader::load_d3d_shader(std::string filename, D3D_Shader *shader)
+void Shader::load_d3d_shader(std::string filename, D3D_Shader *shader, bool load_from_filesystem)
 {
 	int full_size;
-	SDL_RWops *f = util::open_file("gfx/shaders/hlsl/" + filename + ".shader", &full_size);
+	SDL_RWops *f = util::open_file("gfx/shaders/hlsl/" + filename + ".shader", &full_size, load_from_filesystem);
 	if (f == 0) {
 		throw util::FileNotFoundError("HLSL shader '" + filename + "' not found.");
 	}
@@ -961,19 +961,19 @@ void Shader::load_d3d_shader(std::string filename, D3D_Shader *shader)
 	util::close_file(f);
 }
 		
-Shader::D3D_Vertex_Shader *Shader::load_d3d_vertex_shader(std::string filename)
+Shader::D3D_Vertex_Shader *Shader::load_d3d_vertex_shader(std::string filename, bool load_from_filesystem)
 {
 	D3D_Vertex_Shader *shader = new D3D_Vertex_Shader;
 	shader->shader = 0;
-	load_d3d_shader(filename, shader);
+	load_d3d_shader(filename, shader, load_from_filesystem);
 	return shader;
 }
 		
-Shader::D3D_Fragment_Shader *Shader::load_d3d_fragment_shader(std::string filename)
+Shader::D3D_Fragment_Shader *Shader::load_d3d_fragment_shader(std::string filename, bool load_from_filesystem)
 {
 	D3D_Fragment_Shader *shader = new D3D_Fragment_Shader;
 	shader->shader = 0;
-	load_d3d_shader(filename, shader);
+	load_d3d_shader(filename, shader, load_from_filesystem);
 	return shader;
 }
 #endif
