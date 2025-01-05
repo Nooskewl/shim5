@@ -28,6 +28,7 @@ public:
 	static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
 	static unsigned char *read_texture(gfx::Image *image);
 	static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
+	static bool save_png(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
 	static unsigned char find_colour_in_palette(unsigned char *p);
 
 	// These parameters affect newly created images

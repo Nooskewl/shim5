@@ -992,6 +992,71 @@ unsigned char Image::find_colour_in_palette(unsigned char *p)
 	return 0;
 }
 
+#ifdef USE_PNG
+bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba)
+{
+	int y;
+
+	FILE *fp = fopen(filename.c_str(), "wb");
+	if (!fp) {
+		return false;
+	}
+
+	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png) {
+		return false;
+	}
+
+	png_infop info = png_create_info_struct(png);
+	if (!info) {
+		return false;
+	}
+
+	if (setjmp(png_jmpbuf(png))) {
+		return false;
+	}
+
+	png_init_io(png, fp);
+
+	png_set_IHDR(
+		png,
+		info,
+		size.w, size.h,
+		8,
+		PNG_COLOR_TYPE_RGBA,
+		PNG_INTERLACE_NONE,
+		PNG_COMPRESSION_TYPE_DEFAULT,
+		PNG_FILTER_TYPE_DEFAULT
+	);
+
+	png_write_info(png, info);
+
+	if (_save_rgba == false) {
+		png_set_filler(png, 0, PNG_FILLER_AFTER);
+	}
+
+	if (!data) {
+		return false;
+	}
+
+	unsigned char **row_pointers = new unsigned char *[size.h];
+	for (size_t i = 0; i < size.h; i++) {
+		row_pointers[i] = data + i * (size.w * 4);
+	}
+
+	png_write_image(png, row_pointers);
+	png_write_end(png, NULL);
+
+	fclose(fp);
+
+	png_destroy_write_struct(&png, &info);
+
+	delete[] row_pointers;
+
+	return true;
+}
+#endif
+
 bool Image::save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba)
 {
 	unsigned char header[] = {
@@ -1116,7 +1181,15 @@ bool Image::save(std::string filename)
 {
 	bool _save_rgba = internal->has_alpha || save_rgba; // FIXME: should be able to force NOT saving RGBA
 
-	return save_tga(filename, internal->loaded_data, size, _save_rgba);
+#ifdef USE_PNG	
+	if (filename.find(".png") != std::string::npos) {
+		return save_png(filename, internal->loaded_data, size, _save_rgba);
+	}
+	else
+#endif
+	{
+		return save_tga(filename, internal->loaded_data, size, _save_rgba);
+	}
 }
 
 void Image::set_target()
