@@ -3311,7 +3311,7 @@ void handle_found_device(bool including_opengl, bool force)
 
 int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 {
-#ifdef _WIN32
+#ifdef _WIN32_XXX
 	DEVMODE m;
 	memset(&m, 0, sizeof(m));
 	m.dmSize = sizeof(m);
@@ -3327,7 +3327,7 @@ int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 	mode->h = m.dmPelsHeight;
 	mode->refresh_rate = m.dmDisplayFrequency;
 	return 0;
-#elif defined __APPLE__ && !defined IOS
+#elif defined __APPLE__ && !defined IOS && defined XXX
 	util::Size<int> size = macosx_get_desktop_resolution();
 	mode->w = size.w;
 	mode->h = size.h;
