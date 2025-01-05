@@ -105,6 +105,7 @@ glTexImage2D_func glTexImage2D_ptr;
 glTexParameteri_func glTexParameteri_ptr;
 glGetError_func glGetError_ptr;
 glDrawArrays_func glDrawArrays_ptr;
+glReadPixels_func glReadPixels_ptr;
 #endif
 
 #if defined __APPLE__ && !defined IOS
@@ -847,6 +848,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		glTexParameteri_ptr = (glTexParameteri_func)SDL_GL_GetProcAddress("glTexParameteri");
 		glGetError_ptr = (glGetError_func)SDL_GL_GetProcAddress("glGetError");
 		glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
+		glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
 
 		if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
 		if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
@@ -922,6 +924,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		if (glTexParameteri_ptr == 0) { util::debugmsg("glTexParameteri_ptr=%p\n", glTexParameteri_ptr); }
 		if (glGetError_ptr == 0) { util::debugmsg("glGetError_ptr=%p\n", glGetError_ptr); }
 		if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
+		if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
 #endif
 
 		gfx::clear(shim::black);

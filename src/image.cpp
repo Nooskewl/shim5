@@ -593,6 +593,62 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 	return pixels;
 }
 
+unsigned char *Image::read_backbuffer(bool include_black_bars, int *out_w, int *out_h)
+{
+	int x, y, w, h;
+
+	if (include_black_bars) {
+		x = 0;
+		y = 0;
+		w = shim::real_screen_size.w;
+		h = shim::real_screen_size.h;
+	}
+	else {
+		x = shim::screen_offset.x;
+		y = shim::screen_offset.y;
+		w = shim::screen_size.w * shim::scale;
+		h = shim::screen_size.h * shim::scale;
+	}
+
+	if (out_w != nullptr) {
+		*out_w = w;
+	}
+	if (out_h != nullptr) {
+		*out_h = h;
+	}
+
+	unsigned char *buf = new unsigned char[w * h * 4];
+
+	if (shim::opengl) {
+		glReadPixels_ptr(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+		PRINT_GL_ERROR("glReadPixels\n");
+		// The image is flipped, so flip it
+		unsigned char *line = new unsigned char[w * 4];
+		for (int i = 0; i < h / 2; i++) {
+			memcpy(line, buf+i*(w*4), w*4);
+			memcpy(buf+i*(w*4), buf+(h-1-i)*w*4, w*4);
+			memcpy(buf+(h-1-i)*(w*4), line, w*4);
+		}
+		delete[] line;
+	}
+#ifdef _WIN32
+	else {
+		D3DLOCKED_RECT lr;
+		if (internal::gfx_context.render_target->LockRect(&lr, 0, D3DLOCK_READONLY) == D3D_OK) {
+			for (int i = 0; i < h; i++) {
+				memcpy(buf+i*(w*h), (unsigned char *)lr.pBits+(i+y)*lr.Pitch+x*4, w*4);
+			}
+			internal::gfx_context.render_target->UnlockRect();
+		}
+		else {
+			return nullptr;
+		}
+	}
+#endif
+
+	return buf;
+}
+
 unsigned char *Image::read_texture(gfx::Image *image)
 {
 	unsigned char *buf = new unsigned char[image->size.w*image->size.h*4];
