@@ -128,6 +128,8 @@ extern SHIM5_EXPORT int key_d;
 extern SHIM5_EXPORT int fullscreen_key; // key toggles fullscreen window if set
 extern SHIM5_EXPORT bool linear_filtering;
 extern SHIM5_EXPORT int devsettings_key; // key toggles developer settings
+extern SHIM5_EXPORT int screenshot_key;
+extern SHIM5_EXPORT bool take_screenshot;
 extern SHIM5_EXPORT bool convert_directions_to_focus_events;
 extern SHIM5_EXPORT float joystick_activate_threshold;
 extern SHIM5_EXPORT float joystick_deactivate_threshold;

@@ -109,6 +109,8 @@ int key_d;
 int fullscreen_key;
 bool linear_filtering;
 int devsettings_key;
+int screenshot_key;
+bool take_screenshot;
 bool convert_directions_to_focus_events;
 float joystick_activate_threshold;
 float joystick_deactivate_threshold;
@@ -423,6 +425,8 @@ bool static_start(int sdl_init_flags)
 	key_d = TGUIK_DOWN;
 	fullscreen_key = root->get_nested_int("shim>input>fullscreen_key", &fullscreen_key, TGUIK_F11);
 	devsettings_key = root->get_nested_int("shim>input>devsettings_key", &devsettings_key, TGUIK_F9);
+	screenshot_key = root->get_nested_int("shim>input>screenshot_key", &screenshot_key, TGUIK_F10);
+	take_screenshot = false;
 	convert_directions_to_focus_events = root->get_nested_bool("shim>input>convert_directions_to_focus_events", &convert_directions_to_focus_events, true);
 	mouse_button_repeats = root->get_nested_bool("shim>input>mouse_button_repeats", &mouse_button_repeats, true);
 	mouse_button_repeat_max_movement = root->get_nested_int("shim>input>mouse_button_repeat_max_movement", &mouse_button_repeat_max_movement, -1); // * shim::scale
@@ -679,6 +683,10 @@ static TGUI_Event *real_handle_tgui_event(TGUI_Event *tgui_event)
 			}
 			*/
 		}
+	}
+	
+	if (event->type == TGUI_KEY_DOWN && event->keyboard.code == screenshot_key && event->keyboard.is_repeat == false) {
+		take_screenshot = true;
 	}
 
 	// Don't pass events to game if DevSettings_GUI is up

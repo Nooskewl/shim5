@@ -1955,6 +1955,10 @@ void draw_guis()
 
 void draw_notifications()
 {
+	if (shim::font == nullptr) {
+		return;
+	}
+
 	if (notifications.size() > 0) {
 		int now = SDL_GetTicks();
 		int elapsed = now - notification_start_time;
@@ -2062,6 +2066,38 @@ void apply_screen_shake()
 
 void flip()
 {
+	if (shim::take_screenshot) {
+		shim::take_screenshot = false;
+		char *home = getenv("USERPROFILE");
+		if (home == nullptr || home[0] == 0) {
+			home = getenv("HOME");
+		}
+		if (home != nullptr) {
+			char fn[1000];
+			int n = 0;
+			for (; n < 1000000; n++) {
+				snprintf(fn, 1000, "%s/shim-screenshot-%06d.png", home, n);
+				FILE *f = fopen(fn, "r");
+				if (f == nullptr) {
+					break;
+				}
+				else {
+					fclose(f);
+				}
+			}
+			if (n < 1000000) {
+				int w, h;
+				unsigned char *data = gfx::Image::read_backbuffer(TRUE, &w, &h);
+				if (data != nullptr) {
+					if (gfx::Image::save_png(fn, data, util::Size<int>(w, h))) {
+						gfx::add_notification("Screenshot saved in home directory!");
+					}
+					delete[] data;
+				}
+			}
+		}
+	}
+
 #if !defined IOS && !defined ANDROID
 	// Handle screen orientation changes on desktop
 	if (internal::gfx_context.fullscreen && internal::gfx_context.restarting == false) {
