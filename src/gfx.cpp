@@ -2087,7 +2087,7 @@ void flip()
 			}
 			if (n < 1000000) {
 				int w, h;
-				unsigned char *data = gfx::Image::read_backbuffer(TRUE, &w, &h);
+				unsigned char *data = gfx::Image::read_backbuffer(true, &w, &h);
 				if (data != nullptr) {
 					if (gfx::Image::save_png(fn, data, util::Size<int>(w, h))) {
 						gfx::add_notification("Screenshot saved in home directory!");
