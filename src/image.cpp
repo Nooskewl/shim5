@@ -98,7 +98,7 @@ void Image::static_start()
 	keep_data = root->get_nested_bool("shim>gfx>image>keep_data", &keep_data, false);
 	save_rle = root->get_nested_bool("shim>gfx>image>save_rle", &save_rle, true);
 	ignore_palette = root->get_nested_bool("shim>gfx>image>ignore_palette", &ignore_palette, false);
-	create_depth_buffer = root->get_nested_bool("shim>gfx>image>create_depth_buffer", &create_depth_buffer, false);
+	create_depth_buffer = root->get_nested_bool("shim>gfx>image>create_depth_buffer", &create_depth_buffer, true);
 	create_stencil_buffer = root->get_nested_bool("shim>gfx>image>create_stencil_buffer", &create_stencil_buffer, false);
 	premultiply_alpha = root->get_nested_bool("shim>gfx>image>premultiply_alpha", &premultiply_alpha, true);
 	save_rgba = root->get_nested_bool("shim>gfx>image>save_rgba", &save_rgba, true);
