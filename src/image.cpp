@@ -96,12 +96,12 @@ void Image::static_start()
 
 	dumping_colours = root->get_nested_bool("shim>gfx>image>dumping_colours", &dumping_colours, false);
 	keep_data = root->get_nested_bool("shim>gfx>image>keep_data", &keep_data, false);
-	save_rle = root->get_nested_bool("shim>gfx>image>save_rle", &save_rle, false);
+	save_rle = root->get_nested_bool("shim>gfx>image>save_rle", &save_rle, true);
 	ignore_palette = root->get_nested_bool("shim>gfx>image>ignore_palette", &ignore_palette, false);
 	create_depth_buffer = root->get_nested_bool("shim>gfx>image>create_depth_buffer", &create_depth_buffer, false);
 	create_stencil_buffer = root->get_nested_bool("shim>gfx>image>create_stencil_buffer", &create_stencil_buffer, false);
 	premultiply_alpha = root->get_nested_bool("shim>gfx>image>premultiply_alpha", &premultiply_alpha, true);
-	save_rgba = root->get_nested_bool("shim>gfx>image>save_rgba", &save_rgba, false);
+	save_rgba = root->get_nested_bool("shim>gfx>image>save_rgba", &save_rgba, true);
 	save_palettes = root->get_nested_bool("shim>gfx>image>save_palettes", &save_palettes, true);
 }
 
@@ -975,12 +975,25 @@ void Image::reload(bool load_from_filesystem)
 	loaded_images.push_back(internal);
 }
 
-bool Image::save(std::string filename)
+unsigned char Image::find_colour_in_palette(unsigned char *p)
 {
-	bool _save_rgba = internal->has_alpha || save_rgba; // FIXME: should be able to force NOT saving RGBA
+	if (p[3] == 0) {
+		return 0;
+	}
 
-	unsigned char *loaded_data = internal->loaded_data;
+	for (unsigned int i = 0; i < 256; i++) {
+		if (p[0] == shim::palette[i].r && p[1] == shim::palette[i].g && p[2] == shim::palette[i].b) {
+			return i;
+		}
+	}
 
+	util::errormsg("Error: colour %d,%d,%d not found!\n", p[0], p[1], p[2]);
+
+	return 0;
+}
+
+bool Image::save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba)
+{
 	unsigned char header[] = {
 		(unsigned char)0x00, // idlength
 		(unsigned char)0x01, // colourmap type 1 == palette
@@ -1099,21 +1112,11 @@ bool Image::save(std::string filename)
 	return true;
 }
 
-unsigned char Image::find_colour_in_palette(unsigned char *p)
+bool Image::save(std::string filename)
 {
-	if (p[3] == 0) {
-		return 0;
-	}
+	bool _save_rgba = internal->has_alpha || save_rgba; // FIXME: should be able to force NOT saving RGBA
 
-	for (unsigned int i = 0; i < 256; i++) {
-		if (p[0] == shim::palette[i].r && p[1] == shim::palette[i].g && p[2] == shim::palette[i].b) {
-			return i;
-		}
-	}
-
-	util::errormsg("Error: colour %d,%d,%d not found!\n", p[0], p[1], p[2]);
-
-	return 0;
+	return save_tga(filename, internal->loaded_data, size, _save_rgba);
 }
 
 void Image::set_target()

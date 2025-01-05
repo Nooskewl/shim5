@@ -27,6 +27,8 @@ public:
 	static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
 	static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
 	static unsigned char *read_texture(gfx::Image *image);
+	static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
+	static unsigned char find_colour_in_palette(unsigned char *p);
 
 	// These parameters affect newly created images
 	static bool dumping_colours;
@@ -118,8 +120,6 @@ protected:
 
 	// returns true if pixel is transparent
 	static bool merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha);
-
-	SHIM5_EXPORT unsigned char find_colour_in_palette(unsigned char *p);
 
 	SHIM5_EXPORT struct Internal {
 		Internal(std::string filename, bool keep_data, bool support_render_to_texture = false, bool load_from_filesystem = false);
