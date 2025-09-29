@@ -42,7 +42,6 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 
 #if defined USE_VORBIS
 	if (filename.find(".ogg") != std::string::npos) {
-		// We can't close the file yet... forget why (I think FreeWAV closes it)
 		if (load_from_filesystem) {
 			file = SDL_IOFromFile(filename.c_str(), "r");
 		}
@@ -65,6 +64,8 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 			util::close_file(file);
 		}
 
+		file = nullptr;
+
 		if (data == 0) {
 			delete spec;
 			throw util::Error(errmsg);
@@ -78,7 +79,6 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 #endif
 #if defined USE_FLAC
 	if (filename.find(".flac") != std::string::npos) {
-		// We can't close the file yet... forget why (I think FreeWAV closes it)
 		if (load_from_filesystem) {
 			file = SDL_IOFromFile(filename.c_str(), "r");
 			if (file == nullptr) {
@@ -104,6 +104,8 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 			util::close_file(file);
 		}
 
+		file = nullptr;
+
 		if (data == 0) {
 			delete spec;
 			util::debugmsg(errmsg);
@@ -117,7 +119,6 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 	else
 #endif
 	{
-		// We can't close the file yet... forget why (I think FreeWAV closes it)
 		if (load_from_filesystem) {
 			file = SDL_IOFromFile(filename.c_str(), "r");
 		}
@@ -156,7 +157,12 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 
 		SDL_ConvertAudioSamples(spec, buf, orig_len, &out_spec, &data, &out_len);
 
-		util::close_file(file);
+		if (load_from_filesystem) {
+			SDL_CloseIO(file);
+		}
+		else {
+			util::close_file(file);
+		}
 		file = nullptr;
 
 		spec->format = out_format;
@@ -167,15 +173,19 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 
 void Sample::delete_instances()
 {
-	std::vector<Sample_Instance *>::iterator it;
-	for (it = internal::audio_context.playing_samples.begin(); it != internal::audio_context.playing_samples.end();) {
-		Sample_Instance *s = *it;
-		if (s->spec == spec) {
-			it = internal::audio_context.playing_samples.erase(it);
-			delete s;
+	while (true) {
+		bool done = true;
+		std::vector<Sample_Instance *>::iterator it;
+		for (it = internal::audio_context.playing_samples.begin(); it != internal::audio_context.playing_samples.end(); it++) {
+			Sample_Instance *s = *it;
+			if (s->spec == spec) {
+				done = false;
+				Sample::stop_instance(s);
+				break;
+			}
 		}
-		else {
-			it++;
+		if (done) {
+			break;
 		}
 	}
 }
@@ -183,14 +193,7 @@ void Sample::delete_instances()
 Sample::~Sample()
 {
 	delete_instances();
-	if (file) {
-		SDL_free(data);
-		util::close_file(file);
-	}
-	else {
-		delete[] data;
-	}
-
+	delete[] data;
 	delete spec;
 }
 

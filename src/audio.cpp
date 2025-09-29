@@ -450,9 +450,9 @@ bool start()
 
 void stop_all_samples()
 {
-	std::vector<Sample_Instance *> v = internal::audio_context.playing_samples;
-	for (size_t i = 0; i < v.size(); i++) {
-		Sample_Instance *s = v[i];
+	std::vector<Sample_Instance *> &v = internal::audio_context.playing_samples;
+	while (v.size() > 0) {
+		Sample_Instance *s = v[0];
 		Sample::stop_instance(s); // this locks mutex
 	}
 }
