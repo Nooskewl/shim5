@@ -71,6 +71,8 @@ private:
 	Uint8 *data;
 	Uint32 length;
 	bool done;
+
+	bool do_free;
 };
 
 } // End namespace audio

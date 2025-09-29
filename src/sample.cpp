@@ -40,6 +40,8 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		return;
 	}
 
+	do_free = false;
+
 #if defined USE_VORBIS
 	if (filename.find(".ogg") != std::string::npos) {
 		if (load_from_filesystem) {
@@ -168,6 +170,8 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		spec->format = out_format;
 		spec->channels = 2;
 		spec->freq = internal::audio_context.device_spec.freq;
+
+		do_free = true;
 	}
 }
 
@@ -193,7 +197,12 @@ void Sample::delete_instances()
 Sample::~Sample()
 {
 	delete_instances();
-	delete[] data;
+	if (do_free) {
+		SDL_free(data);
+	}
+	else {
+		delete[] data;
+	}
 	delete spec;
 }
 
