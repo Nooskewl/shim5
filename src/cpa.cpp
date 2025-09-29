@@ -28,24 +28,23 @@ namespace noo {
 
 namespace util {
 
-SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
+SDL_IOStream *CPA::open(std::string filename, int *sz, bool data_only)
 {
 	if (load_from_filesystem) {
 #if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		if (shim::use_cwd == false) {
-			char *base = SDL_GetBasePath();
+			const char *base = SDL_GetBasePath();
 			filename = std::string(base) + "data/" + filename;
-			SDL_free(base);
 		}
 		else
 #endif
 		{
 			filename = "data/" + filename;
 		}
-		SDL_RWops *file = SDL_RWFromFile(filename.c_str(), "rb");
+		SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "rb");
 		int size = 0;
 		if (file) {
-			size = (int)SDL_RWsize(file);
+			size = (int)SDL_GetIOSize(file);
 			if (sz) {
 				*sz = size;
 			}
@@ -58,24 +57,24 @@ SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
 		if (buf) {
 			int remain = size;
 			while (remain >= 8192) {
-				int result = (int)SDL_RWread(file, buf+(size-remain), 8192, 1);
-				if (result != 1) {
+				int result = (int)SDL_ReadIO(file, buf+(size-remain), 8192);
+				if (result != 8192) {
 					break;
 				}
 				remain -= 8192;
 			}
 			if (remain > 0) {
-				int result = (int)SDL_RWread(file, buf+(size-remain), remain, 1);
-				if (result == 1) {
+				int result = (int)SDL_ReadIO(file, buf+(size-remain), remain);
+				if (result == remain) {
 					remain = 0;
 				}
 			}
-			SDL_RWclose(file);
+			SDL_CloseIO(file);
 			if (data_only) {
-				return (SDL_RWops *)buf;
+				return (SDL_IOStream *)buf;
 			}
 			if (remain == 0) {
-				SDL_RWops *memfile = SDL_RWFromMem(buf, size);
+				SDL_IOStream *memfile = SDL_IOFromMem(buf, size);
 				if (memfile) {
 					bytes[memfile] = buf;
 					return memfile;
@@ -91,7 +90,7 @@ SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
 			}
 		}
 		else {
-			SDL_RWclose(file);
+			SDL_CloseIO(file);
 			return 0;
 		}
 	}
@@ -106,7 +105,7 @@ SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
 		*sz = (int)i.uncompressed_size;
 	}
 
-	SDL_RWseek(file, i.offset + exe_data_offset, RW_SEEK_SET);
+	SDL_SeekIO(file, i.offset + exe_data_offset, SDL_IO_SEEK_SET);
 
 	Uint8 *uncompressed;
 
@@ -124,15 +123,15 @@ SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
 			
 	int remain = i.compressed_size;
 	while (remain >= 8192) {
-		int result = (int)SDL_RWread(file, compressed+(i.compressed_size-remain), 8192, 1);
-		if (result != 1) {
+		int result = (int)SDL_ReadIO(file, compressed+(i.compressed_size-remain), 8192);
+		if (result != 8192) {
 			break;
 		}
 		remain -= 8192;
 	}
 	if (remain > 0) {
-		int result = (int)SDL_RWread(file, compressed+(i.compressed_size-remain), remain, 1);
-		if (result == 1) {
+		int result = (int)SDL_ReadIO(file, compressed+(i.compressed_size-remain), remain);
+		if (result == remain) {
 			remain = 0;
 		}
 	}
@@ -165,17 +164,17 @@ SDL_RWops *CPA::open(std::string filename, int *sz, bool data_only)
 		if (i.num_open == 0) {
 			i.data = 0;
 		}
-		return (SDL_RWops *)uncompressed;
+		return (SDL_IOStream *)uncompressed;
 	}
 
-	SDL_RWops *f = SDL_RWFromMem(uncompressed, (int)u);
+	SDL_IOStream *f = SDL_IOFromMem(uncompressed, (int)u);
 
 	files[f] = filename;
 
 	return f;
 }
 
-void CPA::free_data(SDL_RWops *file)
+void CPA::free_data(SDL_IOStream *file)
 {
 	if (load_from_filesystem == false) {
 		std::string filename = files[file];
@@ -191,7 +190,7 @@ void CPA::free_data(SDL_RWops *file)
 		}
 	}
 	else {
-		std::map<SDL_RWops *, Uint8 *>::iterator it = bytes.find(file);
+		std::map<SDL_IOStream *, Uint8 *>::iterator it = bytes.find(file);
 		if (it != bytes.end()) {
 			Uint8 *buf = (*it).second;
 			delete[] buf;
@@ -199,9 +198,9 @@ void CPA::free_data(SDL_RWops *file)
 		}
 	}
 }
-void CPA::close(SDL_RWops *file)
+void CPA::close(SDL_IOStream *file)
 {
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 	free_data(file);
 }
 
@@ -216,7 +215,7 @@ std::vector<std::string> CPA::get_all_filenames()
 	
 #if !defined ANDROID && !defined IOS
 	if (load_from_filesystem) {
-		char *base = SDL_GetBasePath();
+		const char *base = SDL_GetBasePath();
 		std::string add = shim::use_cwd ? "" : std::string(base);
 
 		// Read directory listing from filesystem
@@ -277,8 +276,6 @@ std::vector<std::string> CPA::get_all_filenames()
 			stack.erase(stack.begin());
 			name_stack.erase(name_stack.begin());
 		}
-
-		SDL_free(base);
 	}
 	else
 #else
@@ -310,22 +307,21 @@ CPA::CPA() :
 	load_from_filesystem = true;
 #elif defined ANDROID_XXX
 	// Don't use a compressed .cpa on Android -- the APK is already compressed
-	//file = SDL_RWFromFile("data.cpa", "rb");
+	//file = SDL_IOFromFile("data.cpa", "rb");
 #elif defined IOS_XXX 
 	// Don't use a compressed .cpa on iOS -- it's too slow
 	//std::string path = ios_get_resource_path("data.cpa");
-	//file = SDL_RWFromFile(path.c_str(), "rb");
-#elif defined __APPLE__
-	char *base = SDL_GetBasePath();
+	//file = SDL_IOFromFile(path.c_str(), "rb");
+#elif defined SDL_PLATFORM_APPLE
+	const char *base = SDL_GetBasePath();
 	std::string filename = std::string(base) + "data.cpa";
-	SDL_free(base);
-	file = SDL_RWFromFile(filename.c_str(), "rb");
+	file = SDL_IOFromFile(filename.c_str(), "rb");
 #else
 	List_Directory ld("*.cpa");
 	std::string filename;
 
 	while ((filename = ld.next()) != "") {
-		file = SDL_RWFromFile(filename.c_str(), "rb");
+		file = SDL_IOFromFile(filename.c_str(), "rb");
 		if (file != 0) {
 			infomsg("Using %s.\n", filename.c_str());
 			break;
@@ -372,26 +368,27 @@ CPA::CPA(std::string argv0) :
 	GetModuleFileName(NULL, exename, MAX_PATH);
 	argv0 = exename;
 #endif
-	file = SDL_RWFromFile(argv0.c_str(), "rb");
+	file = SDL_IOFromFile(argv0.c_str(), "rb");
 
 	if (file == 0) {
 		throw FileNotFoundError("Can't open exe (" + argv0 + ")");
 	}
 
-	SDL_RWseek(file, -(4+shim::cpa_extra_bytes_after_exe_data), RW_SEEK_END);
+	SDL_SeekIO(file, -(4+shim::cpa_extra_bytes_after_exe_data), SDL_IO_SEEK_END);
 
-	int cpa_size = SDL_ReadLE32(file);
+	Uint32 cpa_size;
+       	SDL_ReadU32LE(file, &cpa_size);
 
-	SDL_RWseek(file, -(4+cpa_size+shim::cpa_extra_bytes_after_exe_data), RW_SEEK_END);
+	SDL_SeekIO(file, -(4+cpa_size+shim::cpa_extra_bytes_after_exe_data), SDL_IO_SEEK_END);
 
-	exe_data_offset = (int)SDL_RWtell(file);
+	exe_data_offset = (int)SDL_TellIO(file);
 
 	try {
 		load_datafile();
 		infomsg("Using EXE data.\n");
 	}
 	catch (Error &e) {
-		SDL_RWclose(file);
+		SDL_CloseIO(file);
 		file = 0;
 		throw Error("No data in executable!");
 	}
@@ -402,7 +399,7 @@ CPA::CPA(Uint8 *buf, int sz) :
 	load_from_exe(false),
 	exe_data_offset(0)
 {
-	file = SDL_RWFromMem(buf, sz);
+	file = SDL_IOFromMem(buf, sz);
 
 	try {
 		load_datafile();
@@ -422,20 +419,21 @@ CPA::~CPA()
 		}
 	}
 
-	for (std::map<SDL_RWops *, Uint8 *>::iterator it = bytes.begin(); it != bytes.end(); it++) {
-		std::pair<SDL_RWops *, Uint8 *> p = *it;
+	for (std::map<SDL_IOStream *, Uint8 *>::iterator it = bytes.begin(); it != bytes.end(); it++) {
+		std::pair<SDL_IOStream *, Uint8 *> p = *it;
 		util::infomsg("Unclosed file!\n");
 		delete[] p.second;
 	}
 
 	if (file) {
-		SDL_RWclose(file);
+		SDL_CloseIO(file);
 	}
 }
 
 void CPA::load_datafile()
 {
-	Uint32 magic = SDL_ReadBE32(file);
+	Uint32 magic;
+       	SDL_ReadU32BE(file, &magic);
 	Uint32 cpa2 = ((Uint32)'C' << 24) | ((Uint32)'P' << 16) | ((Uint32)'A' << 8) | (Uint32)'2';
 
 	if (magic != cpa2) {
@@ -447,7 +445,7 @@ void CPA::load_datafile()
 	int header_size = 4;
 
 	while (1) {
-		if (SDL_RWread(file, &c, 1, 1) != 1) {
+		if (SDL_ReadIO(file, &c, 1) != 1) {
 			throw Error("Invalid CPA: corrupt header");
 		}
 		header_size++;
@@ -460,7 +458,7 @@ void CPA::load_datafile()
 	int data_size = atoi(header_compressed.c_str());
 
 	// Skip to the info section at the end
-	SDL_RWseek(file, header_size + data_size + exe_data_offset, RW_SEEK_SET);
+	SDL_SeekIO(file, header_size + data_size + exe_data_offset, SDL_IO_SEEK_SET);
 	// Keep track of the byte offset of each file
 	int count = header_size;
 
@@ -471,7 +469,7 @@ void CPA::load_datafile()
 	while (1) {
 		int i;
 		for (i = 0; i < 999; i++) {
-			if (SDL_RWread(file, &c, 1, 1) != 1) {
+			if (SDL_ReadIO(file, &c, 1) != 1) {
 				// end of index
 				break;
 			}
@@ -516,7 +514,7 @@ void CPA::load_datafile()
 			total_size += inf.compressed_size;
 		}
 
-		if (load_from_exe == true && SDL_RWtell(file)+4+shim::cpa_extra_bytes_after_exe_data == SDL_RWsize(file)) {
+		if (load_from_exe == true && SDL_TellIO(file)+4+shim::cpa_extra_bytes_after_exe_data == SDL_GetIOSize(file)) {
 			break;
 		}
 	}

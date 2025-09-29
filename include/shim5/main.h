@@ -53,7 +53,7 @@
 #include <sys/time.h>
 #endif
 
-#if defined __APPLE__ || defined __linux__
+#if defined SDL_PLATFORM_APPLE || defined __linux__
 #define _strdup strdup
 #endif
 
@@ -140,7 +140,7 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #else
-#ifdef __APPLE__
+#ifdef SDL_PLATFORM_APPLE
 #include <OpenGL/gl.h>
 #else
 #ifdef _WIN32
@@ -164,7 +164,7 @@
 #include <GL/gl.h>
 #endif
 // OpenGL extensions (ES already has these)
-#ifdef __APPLE__
+#ifdef SDL_PLATFORM_APPLE
 #define APIENTRY
 #endif
 typedef char GLchar;
@@ -346,7 +346,8 @@ extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
 #endif
 #endif
 
-#if __linux__ || (defined __APPLE__) || defined __EMSCRIPTEN__
+#ifdef SDL2
+#if __linux__ || (defined SDL_PLATFORM_APPLE) || defined __EMSCRIPTEN__
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 #else
@@ -360,9 +361,13 @@ extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
 #include <SDL_ttf.h>
 #endif
 #endif
+#else
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
+#endif
 
 #include <tgui6/tgui6.h>
-#include <tgui6/tgui6_sdl.h>
+#include <tgui6/tgui6_sdl3.h>
 
 #include "shim5/basic_types.h"
 

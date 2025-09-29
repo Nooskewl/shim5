@@ -227,7 +227,7 @@ void Vertex_Cache::reset()
 	*_count = 0;
 }
 
-void Vertex_Cache::cache(SDL_Colour vertex_colours[3], util::Point<float> da, util::Point<float> db, util::Point<float> dc)
+void Vertex_Cache::cache(SDL_Color vertex_colours[3], util::Point<float> da, util::Point<float> db, util::Point<float> dc)
 {
 	maybe_resize_cache(3);
 	
@@ -265,7 +265,7 @@ void Vertex_Cache::cache(SDL_Colour vertex_colours[3], util::Point<float> da, ut
 	*_count += 3;
 }
 
-void Vertex_Cache::cache(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> da, util::Point<float> db, util::Point<float> dc, util::Point<float> dd, int flags)
+void Vertex_Cache::cache(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> da, util::Point<float> db, util::Point<float> dc, util::Point<float> dd, int flags)
 {
 	maybe_resize_cache(6);
 	
@@ -366,7 +366,7 @@ void Vertex_Cache::cache(SDL_Colour vertex_colours[4], util::Point<float> source
 	*_count += 6;
 }
 
-void Vertex_Cache::cache_z_range(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z_top, float z_bottom, util::Size<float> dest_size, int flags)
+void Vertex_Cache::cache_z_range(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z_top, float z_bottom, util::Size<float> dest_size, int flags)
 {
 	maybe_resize_cache(6);
 
@@ -491,17 +491,17 @@ void Vertex_Cache::cache_z_range(SDL_Colour vertex_colours[4], util::Point<float
 	*_count += 6;
 }
 
-void Vertex_Cache::cache_z(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z, util::Size<float> dest_size, int flags)
+void Vertex_Cache::cache_z(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z, util::Size<float> dest_size, int flags)
 {
 	cache_z_range(vertex_colours, source_position, source_size, dest_position, z, z, dest_size, flags);
 }
 
-void Vertex_Cache::cache(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, util::Size<float> dest_size, int flags)
+void Vertex_Cache::cache(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, util::Size<float> dest_size, int flags)
 {
 	cache_z(vertex_colours, source_position, source_size, dest_position, 0.0f, dest_size, flags);
 }
 
-void Vertex_Cache::cache_z(SDL_Colour vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags)
+void Vertex_Cache::cache_z(SDL_Color vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags)
 {
 	if (*_image == 0) {
 		return;
@@ -616,12 +616,12 @@ void Vertex_Cache::cache_z(SDL_Colour vertex_colours[4], util::Point<float> pivo
 	*_count += 6;
 }
 
-void Vertex_Cache::cache(SDL_Colour vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale, int flags)
+void Vertex_Cache::cache(SDL_Color vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale, int flags)
 {
 	cache_z(vertex_colours, pivot, source_position, source_size, dest_position, angle, scale, scale, 0.0f, flags);
 }
 
-void Vertex_Cache::cache_3d(SDL_Colour tint, float *in_verts, int *in_faces, float *in_normals, float *in_texcoords, float *in_colours, int num_triangles)
+void Vertex_Cache::cache_3d(SDL_Color tint, float *in_verts, int *in_faces, float *in_normals, float *in_texcoords, float *in_colours, int num_triangles)
 {
 	maybe_resize_cache(num_triangles*3);
 

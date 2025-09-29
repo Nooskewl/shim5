@@ -14,10 +14,11 @@ namespace audio {
 
 struct My_FLAC_Info
 {
-	SDL_RWops *file;
+	SDL_IOStream *file;
 	SDL_AudioSpec *spec;
 	Uint8 *buf;
 	int p;
+	Uint32 size;
 };
 
 static FLAC__StreamDecoderWriteStatus write_callback(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 * const buffer[], void *client_data);
@@ -25,7 +26,7 @@ static void metadata_callback(const FLAC__StreamDecoder *decoder, const FLAC__St
 static FLAC__StreamDecoderReadStatus read_callback(const FLAC__StreamDecoder *decoder, FLAC__byte buffer[], size_t *bytes, void *client_data);
 static void error_callback(const FLAC__StreamDecoder *decoder, FLAC__StreamDecoderErrorStatus status, void *client_data);
 
-Uint8 *decode_flac(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
+Uint8 *decode_flac(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size)
 {
 	FLAC__bool ok = true;
 	FLAC__StreamDecoder *decoder = 0;
@@ -61,6 +62,8 @@ Uint8 *decode_flac(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
 
 	Uint8 *ret = info->buf;
 
+	*size = info->size;
+
 	delete info;
 
 	if (ok == false) {
@@ -82,7 +85,7 @@ FLAC__StreamDecoderWriteStatus write_callback(const FLAC__StreamDecoder *decoder
 
 	/* write decoded PCM samples */
 	if (info->spec->channels == 1) {
-		if (info->spec->format == AUDIO_S16) {
+		if (info->spec->format == SDL_AUDIO_S16LE) {
 			for(i = 0; i < frame->header.blocksize; i++) {
 				FLAC__int16 mono = buffer[0][i];
 				info->buf[info->p++] = mono & 0xff;
@@ -91,7 +94,7 @@ FLAC__StreamDecoderWriteStatus write_callback(const FLAC__StreamDecoder *decoder
 		}
 	}
 	else {
-		if (info->spec->format == AUDIO_S16) {
+		if (info->spec->format == SDL_AUDIO_S16LE) {
 			for(i = 0; i < frame->header.blocksize; i++) {
 				FLAC__int16 left = buffer[0][i];
 				FLAC__int16 right = buffer[1][i];
@@ -114,17 +117,14 @@ void metadata_callback(const FLAC__StreamDecoder *decoder, const FLAC__StreamMet
 	if(metadata->type == FLAC__METADATA_TYPE_STREAMINFO) {
 		info->spec->freq = metadata->data.stream_info.sample_rate;
 		info->spec->channels = metadata->data.stream_info.channels;
-		info->spec->size = int(metadata->data.stream_info.total_samples * (metadata->data.stream_info.bits_per_sample/8) * info->spec->channels);
-		info->spec->format = metadata->data.stream_info.bits_per_sample == 16 ? AUDIO_S16 : 0;
-		info->spec->silence = 0;
-		info->spec->samples = 4096;
-		info->spec->callback = 0;
-		info->spec->userdata = 0;
-		info->buf = new Uint8[info->spec->size];
+		info->spec->format = metadata->data.stream_info.bits_per_sample == 16 ? SDL_AUDIO_S16LE : SDL_AUDIO_F32LE;
+		info->size = int(metadata->data.stream_info.total_samples * (metadata->data.stream_info.bits_per_sample/8) * info->spec->channels);
+
+		info->buf = new Uint8[int(metadata->data.stream_info.total_samples * (metadata->data.stream_info.bits_per_sample/8) * info->spec->channels)];
 		//util::debugmsg("FLAC freq=%d\n", info->spec->freq);
 		//util::debugmsg("FLAC channels=%d\n", info->spec->channels);
 		//util::debugmsg("FLAC size=%d\n", info->spec->size);
-		//util::debugmsg("FLAC format=%d (S16=%d)\n", info->spec->format, AUDIO_S16);
+		//util::debugmsg("FLAC format=%d (S16=%d)\n", info->spec->format, SDL_AUDIO_S16LE);
 	}
 }
 
@@ -132,7 +132,7 @@ FLAC__StreamDecoderReadStatus read_callback(const FLAC__StreamDecoder *decoder, 
 {
 	My_FLAC_Info *info = static_cast<My_FLAC_Info *>(client_data);
 
-	*bytes = SDL_RWread(info->file, buffer, sizeof(FLAC__byte), *bytes);
+	*bytes = SDL_ReadIO(info->file, buffer, sizeof(FLAC__byte) * *bytes);
 
 	if (*bytes == 0) {
 	       return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;

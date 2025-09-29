@@ -61,10 +61,10 @@ public:
 		glm::mat4 transform;
 		float *vertices;
 		float *animated_vertices;
-		int *face_textures;
+		Uint32 *face_textures;
 		std::vector<Image *> textures;
-		int num_triangles;
-		int num_vertices;
+		Uint32 num_triangles;
+		Uint32 num_vertices;
 		Influence *influences;
 		std::vector<Weights *> weights;
 		std::vector<Node *> children;
@@ -105,9 +105,9 @@ public:
 	SHIM5_EXPORT void precalculate_animations(int fps);
 
 	SHIM5_EXPORT void draw();
-	SHIM5_EXPORT void draw_tinted(SDL_Colour tint);
+	SHIM5_EXPORT void draw_tinted(SDL_Color tint);
 	SHIM5_EXPORT void draw_textured();
-	SHIM5_EXPORT void draw_tinted_textured(SDL_Colour tint);
+	SHIM5_EXPORT void draw_tinted_textured(SDL_Color tint);
 
 	SHIM5_EXPORT bool save_binary_model(std::string filename);
 	
@@ -115,28 +115,28 @@ public:
 
 private:
 	SHIM5_EXPORT void read(std::string filename, bool load_from_filesystem);
-	SHIM5_EXPORT int read_byte(SDL_RWops *file);
+	SHIM5_EXPORT int read_byte(SDL_IOStream *file);
 	SHIM5_EXPORT void unget(int c);
-	SHIM5_EXPORT void skip_whitespace(SDL_RWops *file);
+	SHIM5_EXPORT void skip_whitespace(SDL_IOStream *file);
 	SHIM5_EXPORT void destroy(Node *node);
 	SHIM5_EXPORT void destroy(Animation *animation);
-	SHIM5_EXPORT std::string read_word(SDL_RWops *file);
-	SHIM5_EXPORT Node *read_text_frame(SDL_RWops *file);
-	SHIM5_EXPORT void skip_section(SDL_RWops *file);
-	SHIM5_EXPORT void read_text_model(SDL_RWops *file);
-	SHIM5_EXPORT Animation *read_animationset(SDL_RWops *file);
-	SHIM5_EXPORT Bone *read_animation(SDL_RWops *file);
+	SHIM5_EXPORT std::string read_word(SDL_IOStream *file);
+	SHIM5_EXPORT Node *read_text_frame(SDL_IOStream *file);
+	SHIM5_EXPORT void skip_section(SDL_IOStream *file);
+	SHIM5_EXPORT void read_text_model(SDL_IOStream *file);
+	SHIM5_EXPORT Animation *read_animationset(SDL_IOStream *file);
+	SHIM5_EXPORT Bone *read_animation(SDL_IOStream *file);
 	SHIM5_EXPORT void precalculate_animation(std::string name, int fps);
-	SHIM5_EXPORT void draw(SDL_Colour tint, bool textured);
-	SHIM5_EXPORT void read_binary_model(SDL_RWops *file);
-	SHIM5_EXPORT void write_string(SDL_RWops *file, std::string s);
-	SHIM5_EXPORT void write_matrix(SDL_RWops *file, glm::mat4 &matrix);
-	SHIM5_EXPORT void save_binary_frame(SDL_RWops *file, Node *n);
-	SHIM5_EXPORT void save_binary_animation(SDL_RWops *file, Animation *a);
-	SHIM5_EXPORT std::string read_string(SDL_RWops *file);
-	SHIM5_EXPORT glm::mat4 read_matrix(SDL_RWops *file);
-	SHIM5_EXPORT Node *read_binary_frame(SDL_RWops *file);
-	SHIM5_EXPORT Animation *read_binary_animation(SDL_RWops *file);
+	SHIM5_EXPORT void draw(SDL_Color tint, bool textured);
+	SHIM5_EXPORT void read_binary_model(SDL_IOStream *file);
+	SHIM5_EXPORT void write_string(SDL_IOStream *file, std::string s);
+	SHIM5_EXPORT void write_matrix(SDL_IOStream *file, glm::mat4 &matrix);
+	SHIM5_EXPORT void save_binary_frame(SDL_IOStream *file, Node *n);
+	SHIM5_EXPORT void save_binary_animation(SDL_IOStream *file, Animation *a);
+	SHIM5_EXPORT std::string read_string(SDL_IOStream *file);
+	SHIM5_EXPORT glm::mat4 read_matrix(SDL_IOStream *file);
+	SHIM5_EXPORT Node *read_binary_frame(SDL_IOStream *file);
+	SHIM5_EXPORT Animation *read_binary_animation(SDL_IOStream *file);
 
 	struct Instance {
 		std::map<std::string, Animation *> animations;
@@ -145,7 +145,7 @@ private:
 		void *finished_callback_data;
 		bool started;
 		Uint32 elapsed;
-		int frames_per_second;
+		Uint32 frames_per_second;
 	};
 
 	static std::map<std::string, Instance *> loaded_models;

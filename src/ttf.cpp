@@ -27,10 +27,10 @@ TTF::TTF(std::string filename, int size, int sheet_size, bool load_from_filesyst
 
 	file = util::open_file(filename, &sz, load_from_filesystem); // FIXME: does this get automatically closed? (I think yes)
 
-	font = TTF_OpenFontRW(file, true, size);
+	font = TTF_OpenFontIO(file, true, size);
 
 	if (font == 0) {
-		throw util::LoadError("TTF_OpenFontRW failed");
+		throw util::LoadError("TTF_OpenFontIO failed");
 	}
 
 	// FIXME?
@@ -41,7 +41,7 @@ TTF::TTF(std::string filename, int size, int sheet_size, bool load_from_filesyst
 
 	num_glyphs = 0;
 
-	this->size = TTF_FontHeight(font);
+	this->size = TTF_GetFontHeight(font);
 
 	curr_sheet = 0;
 }
@@ -188,7 +188,7 @@ gfx::Image *TTF::load_glyph_image(Uint32 ch)
 	Image *glyph_image = new Image(surface);
 	Image::create_depth_buffer = cdb;
 	
-	SDL_FreeSurface(surface);
+	SDL_DestroySurface(surface);
 	
 	return glyph_image;
 }

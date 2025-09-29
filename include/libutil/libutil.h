@@ -54,6 +54,8 @@ SHIM5_EXPORT std::string load_text_from_filesystem(std::string filename);
 
 SHIM5_EXPORT std::string remove_quotes(std::string s);
 
+SHIM5_EXPORT std::string itos(int i);
+
 SHIM5_EXPORT int utf8_len(std::string text);
 SHIM5_EXPORT int utf8_len_bytes(std::string text, int char_count);
 SHIM5_EXPORT uint32_t utf8_char_next(std::string text, int &offset);
@@ -61,6 +63,10 @@ SHIM5_EXPORT uint32_t utf8_char_offset(std::string text, int o);
 SHIM5_EXPORT uint32_t utf8_char(std::string text, int i);
 SHIM5_EXPORT std::string utf8_char_to_string(uint32_t ch);
 SHIM5_EXPORT std::string utf8_substr(std::string s, int start, int count = -1);
+
+void SHIM5_EXPORT srand(uint32_t s);
+uint32_t SHIM5_EXPORT rand();
+uint32_t SHIM5_EXPORT rand(int min, int max_inclusive);
 
 } // End namespace util
 

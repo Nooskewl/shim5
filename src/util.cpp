@@ -1,12 +1,11 @@
 #include "shim5/cpa.h"
 #include "shim5/crash.h"
 #include "shim5/error.h"
-#include "shim5/mt.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
 
-#ifdef __APPLE__
+#ifdef SDL_PLATFORM_APPLE
 #include "shim5/apple.h"
 #ifdef IOS
 #include "shim5/ios.h"
@@ -59,7 +58,7 @@ static void print_string_console(const char *string)
 	OutputDebugString(string);
 	printf("%s", string);
 }
-#elif defined __APPLE__ && !defined IOS
+#elif defined SDL_PLATFORM_APPLE && !defined IOS
 static void print_string_console(const char *string)
 {
 	noo::util::macosx_log(string);
@@ -67,8 +66,8 @@ static void print_string_console(const char *string)
 #elif defined ANDROID
 static void print_string_console(const char *string)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jstring S = env->NewStringUTF(string);
@@ -289,21 +288,21 @@ void printGLerror(const char *fmt, ...)
 	}
 }
 
-int SDL_fgetc(SDL_RWops *file)
+int SDL_fgetc(SDL_IOStream *file)
 {
 	unsigned char c;
-	if (SDL_RWread(file, &c, 1, 1) == 0) {
+	if (SDL_ReadIO(file, &c, 1) == 0) {
 		return EOF;
 	}
 	return c;
 }
 
-int SDL_fputc(int c, SDL_RWops *file)
+int SDL_fputc(int c, SDL_IOStream *file)
 {
-	return SDL_RWwrite(file, &c, 1, 1) == 1 ? 1 : EOF;
+	return SDL_WriteIO(file, &c, 1) == 1 ? 1 : EOF;
 }
 
-char *SDL_fgets(SDL_RWops *file, char * const buf, size_t max)
+char *SDL_fgets(SDL_IOStream *file, char * const buf, size_t max)
 {
 	size_t c = 0;
 	while (c < max) {
@@ -322,13 +321,13 @@ char *SDL_fgets(SDL_RWops *file, char * const buf, size_t max)
 	return buf;
 }
 
-int SDL_fputs(const char *string, SDL_RWops *file)
+int SDL_fputs(const char *string, SDL_IOStream *file)
 {
 	size_t len = strlen(string);
-	return SDL_RWwrite(file, string, 1, len) < len ? EOF : 0;
+	return SDL_WriteIO(file, string, len) < len ? EOF : 0;
 }
 
-void SDL_fprintf(SDL_RWops *file, const char *fmt, ...)
+void SDL_fprintf(SDL_IOStream *file, const char *fmt, ...)
 {
 	char buf[1000];
 	va_list v;
@@ -339,19 +338,18 @@ void SDL_fprintf(SDL_RWops *file, const char *fmt, ...)
 	SDL_fputs(buf, file);
 }
 
-SDL_RWops *open_file(std::string filename, int *sz, bool data_only)
+SDL_IOStream *open_file(std::string filename, int *sz, bool data_only)
 {
-	SDL_RWops *file;
+	SDL_IOStream *file;
 	if (shim::cpa) {
 		file = shim::cpa->open(filename, sz, data_only);
 	}
 	else {
-		char *base = SDL_GetBasePath();
+		const char *base = SDL_GetBasePath();
 		filename = std::string(base) + "data/" + filename;
-		SDL_free(base);
-		file = SDL_RWFromFile(filename.c_str(), "rb");
+		file = SDL_IOFromFile(filename.c_str(), "rb");
 		if (file && sz) {
-			*sz = (int)SDL_RWsize(file);
+			*sz = (int)SDL_GetIOSize(file);
 			if (data_only) {
 				Uint8 *buf = new Uint8[*sz];
 				int count = 0;
@@ -359,7 +357,7 @@ SDL_RWops *open_file(std::string filename, int *sz, bool data_only)
 				while (true) {
 					int read;
 					int to_read = MIN(*sz-count, chunk_size);
-					if ((read = (int)SDL_RWread(file, buf+count, 1, to_read)) < to_read) {
+					if ((read = (int)SDL_ReadIO(file, buf+count, to_read)) < to_read) {
 						break;
 					}
 					count += read;
@@ -367,8 +365,8 @@ SDL_RWops *open_file(std::string filename, int *sz, bool data_only)
 						break;
 					}
 				}
-				SDL_RWclose(file);
-				return (SDL_RWops *)buf;
+				SDL_CloseIO(file);
+				return (SDL_IOStream *)buf;
 			}
 		}
 	}
@@ -378,29 +376,22 @@ SDL_RWops *open_file(std::string filename, int *sz, bool data_only)
 	return file;
 }
 
-void close_file(SDL_RWops *file)
+void close_file(SDL_IOStream *file)
 {
 	if (shim::cpa) {
 		shim::cpa->close(file);
 	}
 	else {
-		SDL_RWclose(file);
+		SDL_CloseIO(file);
 	}
 }
 
-void free_data(SDL_RWops *file)
+void free_data(SDL_IOStream *file)
 {
 	if (shim::cpa) {
 		shim::cpa->free_data(file);
 	}
 	// else, do nothing
-}
-
-std::string itos(int i)
-{
-	char buf[20];
-	snprintf(buf, 20, "%d", i);
-	return std::string(buf);
 }
 
 int check_args(int argc, char **argv, std::string arg)
@@ -468,11 +459,11 @@ std::string unescape_string(std::string);
 std::string load_text(std::string filename)
 {
 	int size;
-	SDL_RWops *file = open_file(filename, &size);
+	SDL_IOStream *file = open_file(filename, &size);
 
 	char *buf = new char[size+1];
 
-	if (SDL_RWread(file, buf, size, 1) != 1) {
+	if (SDL_ReadIO(file, buf, size) != size) {
 		close_file(file);
 		throw LoadError(filename);
 	}
@@ -491,11 +482,11 @@ std::string load_text(std::string filename)
 char *slurp_file(std::string filename, int *sz)
 {
 	int _sz;
-	SDL_RWops *file = open_file(filename, &_sz);
+	SDL_IOStream *file = open_file(filename, &_sz);
 
 	char *buf = new char[_sz];
 
-	if (SDL_RWread(file, buf, _sz, 1) != 1) {
+	if (SDL_ReadIO(file, buf, _sz) != _sz) {
 		close_file(file);
 		throw LoadError(filename);
 	}
@@ -511,21 +502,21 @@ char *slurp_file(std::string filename, int *sz)
 
 char *slurp_file_from_filesystem(std::string filename, int *sz)
 {
-	SDL_RWops *file = SDL_RWFromFile(filename.c_str(), "rb");
+	SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "rb");
 
 	if (file == 0) {
 		throw FileNotFoundError(filename);
 	}
 
-	int _sz = (int)SDL_RWsize(file);
+	int _sz = (int)SDL_GetIOSize(file);
 
 	char *buf = new char[_sz];
 
-	if (SDL_RWread(file, buf, _sz, 1) != 1) {
+	if (SDL_ReadIO(file, buf, _sz) != _sz) {
 		throw LoadError(filename);
 	}
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 
 	if (sz) {
 		*sz = _sz;
@@ -597,8 +588,8 @@ std::string get_standard_path(Path_Type type, bool create)
 	}
 	return path;
 #elif defined ANDROID
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id;
@@ -720,8 +711,8 @@ void open_with_system(std::string filename)
 void open_url(std::string url)
 {
 #ifdef ANDROID
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jstring S = env->NewStringUTF(url.c_str());

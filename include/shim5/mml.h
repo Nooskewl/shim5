@@ -28,7 +28,7 @@ public:
 	static void pause_all();
 	static int mix(float *buf, int samples, bool sfx_paused);
 
-	SHIM5_EXPORT MML(SDL_RWops *f, bool load_from_filesystem = false);
+	SHIM5_EXPORT MML(SDL_IOStream *f, bool load_from_filesystem = false);
 	SHIM5_EXPORT MML(std::string filename, bool load_from_filesystem = false);
 	SHIM5_EXPORT virtual ~MML();
 
@@ -184,7 +184,7 @@ private:
 		bool no_fade;
 	};
 
-	void load(SDL_RWops *f, bool load_from_filesystem);
+	void load(SDL_IOStream *f, bool load_from_filesystem);
 
 	std::vector<Track *> tracks;
 	std::vector<Track *> reverb_tracks;

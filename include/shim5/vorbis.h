@@ -7,7 +7,7 @@ namespace noo {
 
 namespace audio {
 
-Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec); // Returns 0 on error, fills errmsg
+Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size); // Returns 0 on error, fills errmsg
 
 } // End namespace audio
 

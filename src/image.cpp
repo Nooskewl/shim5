@@ -169,30 +169,30 @@ static void user_error_fn(png_structp png_ptr, png_const_charp message)
 
 static void read_data(png_structp png_ptr, png_bytep data, png_uint_32 length)
 {
-    SDL_RWops *f = (SDL_RWops *)png_get_io_ptr(png_ptr);
-    if ((png_uint_32)SDL_RWread(f, data, length, 1) != 1)
+    SDL_IOStream *f = (SDL_IOStream *)png_get_io_ptr(png_ptr);
+    if ((png_uint_32)SDL_ReadIO(f, data, length) != length)
 	png_error(png_ptr, "read error (loadpng calling pack_fread)");
 }
 
 #define PNG_BYTES_TO_CHECK 4
 
-static int check_if_png(SDL_RWops *fp)
+static int check_if_png(SDL_IOStream *fp)
 {
     unsigned char buf[PNG_BYTES_TO_CHECK];
 
-    if (SDL_RWread(fp, buf, PNG_BYTES_TO_CHECK, 1) != 1)
+    if (SDL_ReadIO(fp, buf, PNG_BYTES_TO_CHECK) != PNG_BYTES_TO_CHECK)
 	return 0;
 
     return (png_sig_cmp(buf, (png_size_t)0, PNG_BYTES_TO_CHECK) == 0);
 }
 
-unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem)
+unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem)
 {
-	SDL_Colour tmppal[256];
+	SDL_Color tmppal[256];
 
-	SDL_RWops *fp;
+	SDL_IOStream *fp;
 	if (load_from_filesystem) {
-		fp = SDL_RWFromFile(filename.c_str(), "rb");
+		fp = SDL_IOFromFile(filename.c_str(), "rb");
 	}
 	else {
 		fp = util::open_file(filename, 0);
@@ -418,11 +418,11 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 }
 #endif
 
-unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem)
+unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem)
 {
-	SDL_RWops *file;
+	SDL_IOStream *file;
 	if (load_from_filesystem) {
-		file = SDL_RWFromFile(filename.c_str(), "rb");
+		file = SDL_IOFromFile(filename.c_str(), "rb");
 	}
 	else {
 		file = util::open_file(filename, 0);
@@ -444,13 +444,13 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 	header.idlength = util::SDL_fgetc(file);
 	header.colourmaptype = util::SDL_fgetc(file);
 	header.datatypecode = util::SDL_fgetc(file);
-	header.colourmaporigin = SDL_ReadLE16(file);
-	header.colourmaplength = SDL_ReadLE16(file);
+	SDL_ReadU16LE(file, &header.colourmaporigin);
+	SDL_ReadU16LE(file, &header.colourmaplength);
 	header.colourmapdepth = util::SDL_fgetc(file);
-	header.x_origin = SDL_ReadLE16(file);
-	header.y_origin = SDL_ReadLE16(file);
-	header.width = SDL_ReadLE16(file);
-	header.height = SDL_ReadLE16(file);
+	SDL_ReadU16LE(file, &header.x_origin);
+	SDL_ReadU16LE(file, &header.y_origin);
+	SDL_ReadU16LE(file, &header.width);
+	SDL_ReadU16LE(file, &header.height);
 	header.bitsperpixel = util::SDL_fgetc(file);
 	header.imagedescriptor = util::SDL_fgetc(file);
 
@@ -480,7 +480,7 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 		}
 
 		/* Skip over unnecessary stuff */
-		SDL_RWseek(file, header.idlength, RW_SEEK_CUR);
+		SDL_SeekIO(file, header.idlength, SDL_IO_SEEK_CUR);
 
 		/* Read the palette if there is one */
 		if (header.colourmaptype == 1) {
@@ -491,7 +491,7 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 				throw util::LoadError("can only read 8 bpp paletted images");
 			}
 			int skip = header.colourmaporigin * (header.colourmapdepth / 8);
-			SDL_RWseek(file, skip, RW_SEEK_CUR);
+			SDL_SeekIO(file, skip, SDL_IO_SEEK_CUR);
 			// We can only read 256 colour palettes max, skip the rest
 			int size = MIN(header.colourmaplength-skip, 256);
 			skip = (header.colourmaplength - size) * (header.colourmapdepth / 8);
@@ -500,11 +500,11 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 				header.palette[i].g = util::SDL_fgetc(file);
 				header.palette[i].r = util::SDL_fgetc(file);
 			}
-			SDL_RWseek(file, skip, RW_SEEK_CUR);
+			SDL_SeekIO(file, skip, SDL_IO_SEEK_CUR);
 		}
 		else {
 			// Skip the palette on truecolour images
-			SDL_RWseek(file, (header.colourmapdepth / 8) * header.colourmaplength, RW_SEEK_CUR);
+			SDL_SeekIO(file, (header.colourmapdepth / 8) * header.colourmaplength, SDL_IO_SEEK_CUR);
 		}
 
 		bool flip = (header.imagedescriptor & 0x20) != 0;
@@ -513,7 +513,7 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 		bytes2read = header.bitsperpixel / 8;
 		while (n < header.width * header.height) {
 			if (header.datatypecode == 1 || header.datatypecode == 2) {                     /* Uncompressed */
-				if (SDL_RWread(file, p, 1, bytes2read) != (size_t)bytes2read) {
+				if (SDL_ReadIO(file, p, bytes2read) != (size_t)bytes2read) {
 					delete[] pixels;
 					throw util::LoadError("unexpected end of file at pixel " + util::itos(i));
 				}
@@ -529,7 +529,7 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 				}
 			}
 			else if (header.datatypecode == 9 || header.datatypecode == 10) {             /* Compressed */
-				if (SDL_RWread(file, p, 1, bytes2read+1) != (size_t)bytes2read+1) {
+				if (SDL_ReadIO(file, p, bytes2read+1) != (size_t)bytes2read+1) {
 					delete[] pixels;
 					throw util::LoadError("unexpected end of file at pixel " + util::itos(i));
 				}
@@ -560,7 +560,7 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 				}
 				else {                   /* Normal chunk */
 					for (i = 0; i < j; i++) {
-						if (SDL_RWread(file, p, 1, bytes2read) != (size_t)bytes2read) {
+						if (SDL_ReadIO(file, p, bytes2read) != (size_t)bytes2read) {
 							delete[] pixels;
 							throw util::LoadError("unexpected end of file at pixel " + util::itos(i));
 						}
@@ -721,7 +721,7 @@ unsigned char *Image::read_texture(gfx::Image *image)
 bool Image::merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha)
 {
 	if (header->colourmaptype == 1) {
-		SDL_Colour *colour;
+		SDL_Color *colour;
 		if (ignore_palette) {
 			colour = &shim::palette[*p];
 		}
@@ -845,20 +845,11 @@ Image::Image(SDL_Surface *surface) :
 	SDL_Surface *tmp = 0;
 	SDL_Surface *fetch;
 
-	if (surface->format->format == SDL_PIXELFORMAT_RGBA8888) {
+	if (surface->format == SDL_PIXELFORMAT_ABGR8888) {
 		fetch = surface;
 	}
 	else {
-		SDL_PixelFormat format;
-		format.format = SDL_PIXELFORMAT_RGBA8888;
-		format.palette = 0;
-		format.BitsPerPixel = 32;
-		format.BytesPerPixel = 4;
-		format.Rmask = 0xff;
-		format.Gmask = 0xff00;
-		format.Bmask = 0xff0000;
-		format.Amask = 0xff000000;
-		tmp = SDL_ConvertSurface(surface, &format, 0);
+		tmp = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_ABGR8888);
 		if (tmp == 0) {
 			throw util::Error("SDL_ConvertSurface returned 0");
 		}
@@ -893,7 +884,7 @@ Image::Image(SDL_Surface *surface) :
 		internal = new Internal(pixels, size);
 	}
 	catch (util::Error &) {
-		if (tmp) SDL_FreeSurface(tmp);
+		if (tmp) SDL_DestroySurface(tmp);
 		throw;
 	}
 
@@ -908,7 +899,7 @@ Image::Image(SDL_Surface *surface) :
 	}
 
 	if (tmp) {
-		SDL_FreeSurface(tmp);
+		SDL_DestroySurface(tmp);
 	}
 
 	if (packed) {
@@ -1142,7 +1133,7 @@ bool Image::save_tga(std::string filename, unsigned char *loaded_data, util::Siz
 
 	int header_size = 18;
 
-	SDL_RWops *file = SDL_RWFromFile(filename.c_str(), "wb");
+	SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "wb");
 	if (file == 0) {
 		throw util::Error("Couldn't open " + filename + " for writing");
 	}
@@ -1226,7 +1217,7 @@ bool Image::save_tga(std::string filename, unsigned char *loaded_data, util::Siz
 			*p++ = r;
 			*p++ = a;
 		}
-		SDL_RWwrite(file, tmp, size.w * size.h * 4, 1);
+		SDL_WriteIO(file, tmp, size.w * size.h * 4);
 		delete[] tmp;
 	}
 
@@ -1385,9 +1376,9 @@ void Image::end_batch()
 	get_root()->batching = false;
 }
 
-void Image::stretch_region_tinted_repeat(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags)
+void Image::stretch_region_tinted_repeat(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = tint;
 
 	int wt = dest_size.w / source_size.w;
@@ -1424,9 +1415,9 @@ void Image::stretch_region_tinted_repeat(SDL_Colour tint, util::Point<float> sou
 	if (was_batching == false) end_batch();
 }
 
-void Image::stretch_region_tinted(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags)
+void Image::stretch_region_tinted(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = tint;
 	bool was_batching = get_root()->batching;
 	if (was_batching == false) start_batch();
@@ -1439,7 +1430,7 @@ void Image::stretch_region(util::Point<float> source_position, util::Size<int> s
 	stretch_region_tinted(shim::white, source_position, source_size, dest_position, dest_size, flags);
 }
 
-void Image::draw_region_lit_z_range(SDL_Colour colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags)
+void Image::draw_region_lit_z_range(SDL_Color colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags)
 {
 	bool was_batching = get_root()->batching;
 	if (was_batching == false) start_batch();
@@ -1447,33 +1438,33 @@ void Image::draw_region_lit_z_range(SDL_Colour colours[4], util::Point<float> so
 	if (was_batching == false) end_batch();
 }
 
-void Image::draw_region_lit_z(SDL_Colour colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags)
+void Image::draw_region_lit_z(SDL_Color colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags)
 {
 	draw_region_lit_z_range(colours, source_position, source_size, dest_position, z, z, flags);
 }
 
-void Image::draw_region_tinted_z_range(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags)
+void Image::draw_region_tinted_z_range(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = tint;
 	draw_region_lit_z_range(colours, source_position, source_size, dest_position, z_top, z_bottom, flags);
 }
 
-void Image::draw_region_tinted_z(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags)
+void Image::draw_region_tinted_z(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags)
 {
 	draw_region_tinted_z_range(tint, source_position, source_size, dest_position, z, z, flags);
 }
 
-void Image::draw_region_tinted(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, int flags)
+void Image::draw_region_tinted(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = tint;
 	draw_region_lit_z_range(colours, source_position, source_size, dest_position, 0.0f, 0.0f, flags);
 }
 
 void Image::draw_region_z_range(util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = shim::white;
 	draw_region_lit_z_range(colours, source_position, source_size, dest_position, z_top, z_bottom, flags);
 }
@@ -1493,7 +1484,7 @@ void Image::draw_z(util::Point<float> dest_position, float z, int flags)
 	draw_region_z({0.0f, 0.0f}, size, dest_position, z, flags);
 }
 
-void Image::draw_tinted(SDL_Colour tint, util::Point<float> dest_position, int flags)
+void Image::draw_tinted(SDL_Color tint, util::Point<float> dest_position, int flags)
 {
 	draw_region_tinted(tint, {0.0f, 0.0f}, size, dest_position, flags);
 }
@@ -1503,9 +1494,9 @@ void Image::draw(util::Point<float> dest_position, int flags)
 	draw_z(dest_position, 0.0f, flags);
 }
 
-void Image::draw_tinted_rotated(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, int flags)
+void Image::draw_tinted_rotated(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = tint;
 	bool was_batching = get_root()->batching;
 	if (was_batching == false) start_batch();
@@ -1513,9 +1504,9 @@ void Image::draw_tinted_rotated(SDL_Colour tint, util::Point<float> centre, util
 	if (was_batching == false) end_batch();
 }
 
-void Image::draw_tinted_rotated_scaledxy_z(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags)
+void Image::draw_tinted_rotated_scaledxy_z(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags)
 {
-	SDL_Colour colours[4];
+	SDL_Color colours[4];
 	colours[0] = colours[1] = colours[2] = colours[3] = tint;
 	bool was_batching = get_root()->batching;
 	if (was_batching == false) start_batch();
@@ -1523,7 +1514,7 @@ void Image::draw_tinted_rotated_scaledxy_z(SDL_Colour tint, util::Point<float> c
 	if (was_batching == false) end_batch();
 }
 
-void Image::draw_tinted_rotated_scaled_z(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, float z, int flags)
+void Image::draw_tinted_rotated_scaled_z(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, float z, int flags)
 {
 	draw_tinted_rotated_scaledxy_z(tint, centre, dest_position, angle, scale, scale, z, flags);
 }
@@ -1533,12 +1524,12 @@ void Image::draw_rotated_scaled_z(util::Point<float> centre, util::Point<float> 
 	draw_tinted_rotated_scaledxy_z(shim::white, centre, dest_position, angle, scale, scale, z, flags);
 }
 
-void Image::draw_tinted_rotated_scaled(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, int flags)
+void Image::draw_tinted_rotated_scaled(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, int flags)
 {
 	draw_tinted_rotated_scaled_z(tint, centre, dest_position, angle, scale, 0.0f, flags);
 }
 
-void Image::draw_tinted_rotated_scaledxy(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, int flags)
+void Image::draw_tinted_rotated_scaledxy(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, int flags)
 {
 	draw_tinted_rotated_scaledxy_z(tint, centre, dest_position, angle, scale_x, scale_y, 0.0f, flags);
 }

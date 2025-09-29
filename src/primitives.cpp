@@ -9,10 +9,10 @@ using namespace noo;
 static bool primitives_held;
 static bool vertex_cache_already_held;
 
-static void draw_line_worker(SDL_Colour colour, noo::util::Point<float> a, noo::util::Point<float> b, float thickness)
+static void draw_line_worker(SDL_Color colour, noo::util::Point<float> a, noo::util::Point<float> b, float thickness)
 {
 	float half_thickness = thickness / 2.0f;
-	SDL_Colour vertex_colours[4];
+	SDL_Color vertex_colours[4];
 	for (int i = 0; i < 4; i++) {
 		vertex_colours[i] = colour;
 	}
@@ -37,9 +37,9 @@ static void draw_line_worker(SDL_Colour colour, noo::util::Point<float> a, noo::
 	noo::gfx::Vertex_Cache::instance()->cache(vertex_colours, {0.0f, 0.0f}, {0.0f, 0.0f}, da, dc, dd, db, 0);
 }
 
-static void draw_straight_line_worker(SDL_Colour colour, noo::util::Point<float> a, noo::util::Point<float> b, float thickness)
+static void draw_straight_line_worker(SDL_Color colour, noo::util::Point<float> a, noo::util::Point<float> b, float thickness)
 {
-	SDL_Colour vertex_colours[4];
+	SDL_Color vertex_colours[4];
 	for (int i = 0; i < 4; i++) {
 		vertex_colours[i] = colour;
 	}
@@ -92,7 +92,7 @@ void draw_primitives_end()
 	primitives_held = false;
 }
 
-void draw_line(SDL_Colour colour, util::Point<float> a, util::Point<float> b, float thickness)
+void draw_line(SDL_Color colour, util::Point<float> a, util::Point<float> b, float thickness)
 {
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -104,7 +104,7 @@ void draw_line(SDL_Colour colour, util::Point<float> a, util::Point<float> b, fl
 	}
 }
 
-void draw_triangle_3d(SDL_Colour vertex_colours[3], util::Vec3D<float> a, util::Vec3D<float> b, util::Vec3D<float> c)
+void draw_triangle_3d(SDL_Color vertex_colours[3], util::Vec3D<float> a, util::Vec3D<float> b, util::Vec3D<float> c)
 {
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -149,9 +149,9 @@ void draw_triangle_3d(SDL_Colour vertex_colours[3], util::Vec3D<float> a, util::
 	}
 }
 
-void draw_triangle_3d(SDL_Colour colour, util::Vec3D<float> a, util::Vec3D<float> b, util::Vec3D<float> c)
+void draw_triangle_3d(SDL_Color colour, util::Vec3D<float> a, util::Vec3D<float> b, util::Vec3D<float> c)
 {
-	SDL_Colour vertex_colours[3];
+	SDL_Color vertex_colours[3];
 
 	vertex_colours[0] = colour;
 	vertex_colours[1] = colour;
@@ -160,7 +160,7 @@ void draw_triangle_3d(SDL_Colour colour, util::Vec3D<float> a, util::Vec3D<float
 	draw_triangle_3d(vertex_colours, a, b, c);
 }
 
-void draw_filled_triangle(SDL_Colour vertex_colours[3], util::Point<float> a, util::Point<float> b, util::Point<float> c)
+void draw_filled_triangle(SDL_Color vertex_colours[3], util::Point<float> a, util::Point<float> b, util::Point<float> c)
 {
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -172,9 +172,9 @@ void draw_filled_triangle(SDL_Colour vertex_colours[3], util::Point<float> a, ut
 	}
 }
 
-void draw_filled_triangle(SDL_Colour colour, util::Point<float> a, util::Point<float> b, util::Point<float> c)
+void draw_filled_triangle(SDL_Color colour, util::Point<float> a, util::Point<float> b, util::Point<float> c)
 {
-	static SDL_Colour vertex_colours[3];
+	static SDL_Color vertex_colours[3];
 	vertex_colours[0] = colour;
 	vertex_colours[1] = colour;
 	vertex_colours[2] = colour;
@@ -265,7 +265,7 @@ static bool get_pts(double thick, double x1, double y1, double x2, double y2, do
 	return true;
 }
 
-void draw_triangle(SDL_Colour colour, util::Point<float> a, util::Point<float> b, util::Point<float> c, float thickness)
+void draw_triangle(SDL_Color colour, util::Point<float> a, util::Point<float> b, util::Point<float> c, float thickness)
 {
 	double x1 = a.x;
 	double y1 = a.y;
@@ -421,7 +421,7 @@ void draw_triangle(SDL_Colour colour, util::Point<float> a, util::Point<float> b
 	}
 }
 
-void draw_rectangle(SDL_Colour colour, util::Point<float> pos, util::Size<float> size, float thickness)
+void draw_rectangle(SDL_Color colour, util::Point<float> pos, util::Size<float> size, float thickness)
 {
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -440,9 +440,9 @@ void draw_rectangle(SDL_Colour colour, util::Point<float> pos, util::Size<float>
 	}
 }
 
-void draw_filled_ellipse(SDL_Colour colour, util::Point<float> centre, float rx, float ry, int sections, float start_angle)
+void draw_filled_ellipse(SDL_Color colour, util::Point<float> centre, float rx, float ry, int sections, float start_angle)
 {
-	SDL_Colour colours[3] = { colour, colour, colour };
+	SDL_Color colours[3] = { colour, colour, colour };
 
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -477,9 +477,9 @@ void draw_filled_ellipse(SDL_Colour colour, util::Point<float> centre, float rx,
 	}
 }
 
-void draw_ellipse(SDL_Colour colour, util::Point<float> centre, float rx, float ry, float thickness, int sections, float start_angle)
+void draw_ellipse(SDL_Color colour, util::Point<float> centre, float rx, float ry, float thickness, int sections, float start_angle)
 {
-	SDL_Colour colours[3] = { colour, colour, colour };
+	SDL_Color colours[3] = { colour, colour, colour };
 
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -522,17 +522,17 @@ void draw_ellipse(SDL_Colour colour, util::Point<float> centre, float rx, float 
 	}
 }
 
-void draw_filled_circle(SDL_Colour colour, util::Point<float> centre, float radius, int sections, float start_angle)
+void draw_filled_circle(SDL_Color colour, util::Point<float> centre, float radius, int sections, float start_angle)
 {
 	draw_filled_ellipse(colour, centre, radius, radius, sections, start_angle);
 }
 
-void draw_circle(SDL_Colour colour, util::Point<float> centre, float radius, float thickness, int sections, float start_angle)
+void draw_circle(SDL_Color colour, util::Point<float> centre, float radius, float thickness, int sections, float start_angle)
 {
 	draw_ellipse(colour, centre, radius, radius, thickness, sections, start_angle);
 }
 
-void draw_filled_rectangle(SDL_Colour vertex_colours[4], util::Point<float> dest_position, util::Size<float> dest_size)
+void draw_filled_rectangle(SDL_Color vertex_colours[4], util::Point<float> dest_position, util::Size<float> dest_size)
 {
 	bool prim_held = primitives_held;
 	if (prim_held == false) {
@@ -544,9 +544,9 @@ void draw_filled_rectangle(SDL_Colour vertex_colours[4], util::Point<float> dest
 	}
 }
 
-void draw_filled_rectangle(SDL_Colour colour, util::Point<float> dest_position, util::Size<float> dest_size)
+void draw_filled_rectangle(SDL_Color colour, util::Point<float> dest_position, util::Size<float> dest_size)
 {
-	static SDL_Colour vertex_colours[4];
+	static SDL_Color vertex_colours[4];
 	for (int i = 0; i < 4; i++) {
 		vertex_colours[i] = colour;
 	}

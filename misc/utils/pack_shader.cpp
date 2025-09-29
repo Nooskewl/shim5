@@ -2,7 +2,7 @@
 
 using namespace noo;
 
-static void write_string(SDL_RWops *f, std::string s)
+static void write_string(SDL_IOStream *f, std::string s)
 {
 	if (s.length() > 255) {
 		throw util::Error("Variable name too long! (" + s + ")");
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 		dot = out_filename.rfind('.');
 		out_filename = out_filename.substr(0, dot+1) + "shader";
 
-		SDL_RWops *f = SDL_RWFromFile(out_filename.c_str(), "wb");
+		SDL_IOStream *f = SDL_IOFromFile(out_filename.c_str(), "wb");
 
 		if (f == 0) {
 			return 1;
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 								write_string(f, n);
 								util::SDL_fputc(reg[0], f);
 								util::SDL_fputc(reg_num, f);
-								SDL_WriteLE32(f, sz_num);
+								SDL_WriteU32LE(f, sz_num);
 							}
 						}
 						else {
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		SDL_RWclose(f);
+		SDL_CloseIO(f);
 
 		util::end();
 

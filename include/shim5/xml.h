@@ -30,10 +30,10 @@ public:
 private:
 	void read(std::string filename);
 	void read(char *bytes, int size);
-	int read_char(SDL_RWops *file);
-	void read_tag(Node *node, SDL_RWops *file);
+	int read_char(SDL_IOStream *file);
+	void read_tag(Node *node, SDL_IOStream *file);
 	void unget(int c);
-	void skip_whitespace(SDL_RWops *file);
+	void skip_whitespace(SDL_IOStream *file);
 	void destroy(Node *node);
 
 	Node *root;

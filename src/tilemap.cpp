@@ -135,9 +135,9 @@ Tilemap::Tilemap(std::string map_filename, bool load_from_filesystem)
 		reload_sheets(load_from_filesystem);
 	}
 
-	SDL_RWops *f;
+	SDL_IOStream *f;
 	if (load_from_filesystem) {
-		f = SDL_RWFromFile(map_filename.c_str(), "rb");
+		f = SDL_IOFromFile(map_filename.c_str(), "rb");
 		if (f == nullptr) {
 			throw util::FileNotFoundError("Can't open exe (" + map_filename + ")");
 		}
@@ -146,10 +146,15 @@ Tilemap::Tilemap(std::string map_filename, bool load_from_filesystem)
 		f = util::open_file(map_filename, 0);
 	}
 
-	(void)SDL_ReadLE32(f); // Skip "WM3!"
+	Uint32 bogus;
+	SDL_ReadU32LE(f, &bogus); // Skip "WM3!"
 
-	size.w = SDL_ReadLE16(f);
-	size.h = SDL_ReadLE16(f);
+	Uint16 ww, hh;
+
+	SDL_ReadU16LE(f, &ww);
+	SDL_ReadU16LE(f, &hh);
+	size.w = ww;
+	size.h = hh;
 	num_layers = (unsigned char)util::SDL_fgetc(f);
 
 	layers = new Layer[num_layers];
@@ -184,15 +189,16 @@ Tilemap::Tilemap(std::string map_filename, bool load_from_filesystem)
 		}
 	}
 
-	int num_groups = SDL_ReadLE16(f);
+	Uint16 num_groups;
+	SDL_ReadU16LE(f, &num_groups);
 
 	for (int i = 0; i < num_groups; i++) {
 		Group g;
-		g.type = SDL_ReadLE32(f);
-		g.x = SDL_ReadLE16(f);
-		g.y = SDL_ReadLE16(f);
-		g.w = SDL_ReadLE16(f);
-		g.h = SDL_ReadLE16(f);
+		SDL_ReadU32LE(f, &g.type);
+		SDL_ReadU16LE(f, &g.x);
+		SDL_ReadU16LE(f, &g.y);
+		SDL_ReadU16LE(f, &g.w);
+		SDL_ReadU16LE(f, &g.h);
 		groups.push_back(g);
 	}
 	
@@ -477,15 +483,15 @@ bool Tilemap::set_tile(int layer, util::Point<int> position, util::Point<int> ti
 
 void Tilemap::save(std::string filename)
 {
-	SDL_RWops *file = SDL_RWFromFile(filename.c_str(), "wb");
+	SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "wb");
 	
 	util::SDL_fputc('W', file);
 	util::SDL_fputc('M', file);
 	util::SDL_fputc('3', file);
 	util::SDL_fputc('!', file);
 
-	SDL_WriteLE16(file, size.w);
-	SDL_WriteLE16(file, size.h);
+	SDL_WriteU16LE(file, size.w);
+	SDL_WriteU16LE(file, size.h);
 
 	util::SDL_fputc(num_layers, file);
 
@@ -545,18 +551,18 @@ void Tilemap::save(std::string filename)
 		}
 	}
 
-	SDL_WriteLE16(file, groups.size());
+	SDL_WriteU16LE(file, groups.size());
 
 	for (size_t i = 0; i < groups.size(); i++) {
 		Group &g = groups[i];
-		SDL_WriteLE32(file, g.type);
-		SDL_WriteLE16(file, g.x);
-		SDL_WriteLE16(file, g.y);
-		SDL_WriteLE16(file, g.w);
-		SDL_WriteLE16(file, g.h);
+		SDL_WriteU32LE(file, g.type);
+		SDL_WriteU16LE(file, g.x);
+		SDL_WriteU16LE(file, g.y);
+		SDL_WriteU16LE(file, g.w);
+		SDL_WriteU16LE(file, g.h);
 	}
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 }
 
 bool Tilemap::has_alpha(int col, int row)

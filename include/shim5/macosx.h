@@ -10,7 +10,7 @@ namespace gfx {
 
 void macosx_centre_window(void *window);
 util::Size<int> macosx_get_desktop_resolution();
-void macosx_set_background_colour(void *window, SDL_Colour colour);
+void macosx_set_background_colour(void *window, SDL_Color colour);
 
 } // End namespace gfx
 

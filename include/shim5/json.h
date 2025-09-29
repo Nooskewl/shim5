@@ -95,7 +95,7 @@ public:
 	};
 
 	JSON(std::string filename, bool load_from_filesystem = false);
-	JSON(SDL_RWops *file);
+	JSON(SDL_IOStream *file);
 	~JSON();
 
 	Node *get_root();
@@ -103,17 +103,17 @@ public:
 
 private:
 	void read(std::string filename, bool load_from_filesystem = false);
-	void read(SDL_RWops *file);
-	int read_char(SDL_RWops *file);
+	void read(SDL_IOStream *file);
+	int read_char(SDL_IOStream *file);
 	void unget(int c);
-	void skip_whitespace(SDL_RWops *file);
-	std::string read_token(SDL_RWops *file, bool is_string);
-	std::string read_string(SDL_RWops *file);
-	std::string read_value(SDL_RWops *file);
-	void read_array(Node *node, SDL_RWops *file);
-	void read_hash(Node *node, SDL_RWops *file);
-	void parse_node(Node *node, SDL_RWops *file);
-	void read(Node *node, SDL_RWops *file);
+	void skip_whitespace(SDL_IOStream *file);
+	std::string read_token(SDL_IOStream *file, bool is_string);
+	std::string read_string(SDL_IOStream *file);
+	std::string read_value(SDL_IOStream *file);
+	void read_array(Node *node, SDL_IOStream *file);
+	void read_hash(Node *node, SDL_IOStream *file);
+	void parse_node(Node *node, SDL_IOStream *file);
+	void read(Node *node, SDL_IOStream *file);
 	void destroy(Node *node);
 
 	Node *root;

@@ -9,7 +9,6 @@ namespace internal {
 
 struct Audio_Context {
 	bool mute;
-	SDL_mutex *mixer_mutex;
 	SDL_AudioSpec device_spec;
 	std::vector<Sample_Instance *> playing_samples;
 };

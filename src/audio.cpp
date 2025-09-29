@@ -10,14 +10,14 @@
 //#define DUMP
 
 #ifdef DUMP
-SDL_RWops *dumpfile;
+SDL_IOStream *dumpfile;
 #endif
 
 using namespace noo;
 
 static float *music_buf;
 static float *sfx_buf;
-static SDL_AudioDeviceID audio_device;
+static SDL_AudioStream *audio_stream;
 static SDL_AudioFormat format;
 static int format_bits;
 static int format_bytes;
@@ -164,11 +164,13 @@ static float read_float_sample(audio::Sample_Instance *s, int sample)
 }
 
 // Mixes samples and MML into the audio device buffer
-static void audio_callback(void *userdata, Uint8 *stream, int stream_length)
+static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int additional_amount, int total_amount)
 {
-	SDL_LockMutex(audio::internal::audio_context.mixer_mutex);
+	SDL_LockAudioStream(audio_stream);
 
-	int samples = stream_length / format_bytes / audio::internal::audio_context.device_spec.channels; // 2 channels -- will be repeated to make stereo
+	Uint8 *stream = SDL_stack_alloc(Uint8, additional_amount);
+
+	int samples = additional_amount / format_bytes / audio::internal::audio_context.device_spec.channels; // 2 channels -- will be repeated to make stereo
 
 	for (int i = 0; i < samples*audio::internal::audio_context.device_spec.channels; i++) {
 		music_buf[i] = 0.0f;
@@ -301,7 +303,7 @@ static void audio_callback(void *userdata, Uint8 *stream, int stream_length)
 	}
 
 	// Fast paths for common sample formats...
-	if (format == AUDIO_F32 && format_should_be_swapped == false) {
+	if (format == SDL_AUDIO_F32LE && format_should_be_swapped == false) {
 		for (int i = 0; i < samples*audio::internal::audio_context.device_spec.channels; i++) {
 			float v = (music_buf[i] + sfx_buf[i]);
 			if (v < -1.0f) {
@@ -313,7 +315,7 @@ static void audio_callback(void *userdata, Uint8 *stream, int stream_length)
 			*((float *)stream + i) = v;
 		}
 	}
-	else if (format == AUDIO_S16 && format_should_be_swapped == false) {
+	else if (format == SDL_AUDIO_S16LE && format_should_be_swapped == false) {
 		for (int i = 0; i < samples*audio::internal::audio_context.device_spec.channels; i++) {
 			float v = (music_buf[i] + sfx_buf[i]) * max_sample;
 			if (v < min_sample) {
@@ -359,11 +361,15 @@ static void audio_callback(void *userdata, Uint8 *stream, int stream_length)
 		else if (v > 1.0f) {
 			v = 1.0f;
 		}
-		SDL_WriteLE16(dumpfile, v*32767);
+		SDL_WriteU16LE(dumpfile, v*32767);
 	}
 #endif
 
-	SDL_UnlockMutex(audio::internal::audio_context.mixer_mutex);
+	SDL_PutAudioStreamData(audio_stream, stream, additional_amount);
+
+	SDL_stack_free(stream);
+
+	SDL_UnlockAudioStream(audio_stream);
 }
 
 namespace noo {
@@ -384,41 +390,26 @@ bool start()
 
 	internal::audio_context.mute = util::bool_arg(false, shim::argc, shim::argv, "mute");
 
-	internal::audio_context.mixer_mutex = SDL_CreateMutex();
-
 	if (internal::audio_context.mute == false) {
 		int arg;
 
-		SDL_AudioSpec desired;
-		SDL_memset(&desired, 0, sizeof(desired));
 		if ((arg = util::check_args(shim::argc, shim::argv, "+freq")) > 0) {
-			desired.freq = atoi(shim::argv[arg+1]);
+			internal::audio_context.device_spec.freq = atoi(shim::argv[arg+1]);
 		}
 		else {
-			desired.freq = 44100;
-		}
-		if ((arg = util::check_args(shim::argc, shim::argv, "+samples")) > 0) {
-			desired.samples = atoi(shim::argv[arg+1]);
-		}
-		else {
-			desired.samples = 512;
+			internal::audio_context.device_spec.freq = 44100;
 		}
 		if (util::bool_arg(true, shim::argc, shim::argv, "float-samples")) {
-			desired.format = AUDIO_F32;
+			internal::audio_context.device_spec.format = SDL_AUDIO_F32LE;
 		}
 		else {
-			desired.format = AUDIO_S16;
+			internal::audio_context.device_spec.format = SDL_AUDIO_S16LE;
 		}
-		desired.channels = 1;
-		desired.callback = audio_callback;
-		desired.userdata = 0;
+		internal::audio_context.device_spec.channels = 2;
 
-		// resampling sounds REALLY bad with 48000 Hz isn't used, so don't allow freq changes
-		//audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-		audio_device = SDL_OpenAudioDevice(0, false, &desired, &internal::audio_context.device_spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+		audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &internal::audio_context.device_spec, audio_callback, nullptr);
 
-		if (audio_device == 0) {
-			SDL_DestroyMutex(internal::audio_context.mixer_mutex);
+		if (audio_stream == 0) {
 			internal::audio_context.mute = false;
 			util::infomsg("audio::start failed: %s\n", SDL_GetError());
 			return false;
@@ -442,35 +433,35 @@ bool start()
 			max_sample = powf(2, format_bits-1) - 1;
 		}
 
-		util::infomsg("Audio format=0x%x, frequency=%d Hz, buffer size=%d samples.\n", format, internal::audio_context.device_spec.freq, internal::audio_context.device_spec.samples);
+		util::infomsg("Audio format=0x%x, frequency=%d Hz\n", format, internal::audio_context.device_spec.freq);
+
+		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio_stream));
 	}
 
-	music_buf = new float[internal::audio_context.device_spec.samples*internal::audio_context.device_spec.channels];
-	sfx_buf = new float[internal::audio_context.device_spec.samples*internal::audio_context.device_spec.channels];
+	music_buf = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
+	sfx_buf = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
 
 	hermite = new math::I_Hermite();
 	
 	MML::static_start(); // this can't go in audio::static_start because it needs some device info
 
-	if (internal::audio_context.mute == false) {
-		SDL_PauseAudioDevice(audio_device, false);
-	}
-
 	return true;
 }
 
-void end()
+void stop_all_samples()
 {
 	std::vector<Sample_Instance *> v = internal::audio_context.playing_samples;
 	for (size_t i = 0; i < v.size(); i++) {
 		Sample_Instance *s = v[i];
 		Sample::stop_instance(s); // this locks mutex
 	}
+}
 
-	if (audio_device != 0) {
-		SDL_LockMutex(internal::audio_context.mixer_mutex);
-		SDL_CloseAudioDevice(audio_device);
-		SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+void end()
+{
+	stop_all_samples();
+	if (audio_stream != 0) {
+		SDL_DestroyAudioStream(audio_stream);
 	}
 
 	delete[] music_buf;
@@ -482,8 +473,6 @@ void end()
 	hermite = nullptr;
 
 	MML::static_stop();
-
-	SDL_DestroyMutex(internal::audio_context.mixer_mutex);
 }
 
 int millis_to_samples(int millis)
@@ -500,6 +489,16 @@ int samples_to_millis(int samples, int freq)
 void pause_sfx(bool paused)
 {
 	sfx_paused = paused;
+}
+
+void lock_mutex()
+{
+	SDL_LockAudioStream(audio_stream);
+}
+
+void unlock_mutex()
+{
+	SDL_UnlockAudioStream(audio_stream);
 }
 
 namespace internal {

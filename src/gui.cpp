@@ -4,7 +4,6 @@
 #include "shim5/gui.h"
 #include "shim5/image.h"
 #include "shim5/mml.h"
-#include "shim5/mt.h"
 #include "shim5/shader.h"
 #include "shim5/shim.h"
 #include "shim5/sprite.h"
@@ -16,7 +15,7 @@
 
 using namespace noo;
 
-#if defined __APPLE__ && !defined IOS
+#if defined SDL_PLATFORM_APPLE && !defined IOS
 #include "shim5/macosx.h"
 #endif
 
@@ -211,7 +210,7 @@ void GUI::transition_end()
 	else {
 		gfx::set_target_backbuffer();
 		Uint8 c = Uint8(last_transition_p * 255);
-		SDL_Colour whitish = { c, c, c, c };
+		SDL_Color whitish = { c, c, c, c };
 		glm::mat4 mv_backup, proj_backup, mv;
 		gfx::get_matrices(mv_backup, proj_backup);
 		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
@@ -382,7 +381,7 @@ int popup(std::string caption, std::string text, Popup_Type type)
 		result = -1;
 	}
 	return result;
-#elif defined __APPLE__ && !defined IOS
+#elif defined SDL_PLATFORM_APPLE && !defined IOS
 	return macosx_popup(caption, text, type);
 #elif !defined ANDROID && !defined IOS && !defined RASPBERRYPI_NOX && !defined __EMSCRIPTEN__
 	return x_popup(caption, text, type);

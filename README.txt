@@ -1,4 +1,4 @@
-Shim builds on top of SDL2, adding a lot of functionality used by games.
+Shim builds on top of SDL3, adding a lot of functionality used by games.
 
 This includes:
 	Music and sound support

@@ -64,18 +64,18 @@ TGUI_Event SHIM5_EXPORT *pop_pushed_event();
 // These are all global to the shim namespace
 // graphics
 extern SHIM5_EXPORT bool opengl;
-extern SHIM5_EXPORT SDL_Colour palette[256];
+extern SHIM5_EXPORT SDL_Color palette[256];
 extern SHIM5_EXPORT int palette_size;
-extern SHIM5_EXPORT SDL_Colour black;
-extern SHIM5_EXPORT SDL_Colour white;
-extern SHIM5_EXPORT SDL_Colour magenta;
-extern SHIM5_EXPORT SDL_Colour transparent;
-extern SHIM5_EXPORT SDL_Colour interface_bg;
-extern SHIM5_EXPORT SDL_Colour interface_highlight;
-extern SHIM5_EXPORT SDL_Colour interface_text;
-extern SHIM5_EXPORT SDL_Colour interface_text_shadow;
-extern SHIM5_EXPORT SDL_Colour interface_edit_fg;
-extern SHIM5_EXPORT SDL_Colour interface_edit_bg;
+extern SHIM5_EXPORT SDL_Color black;
+extern SHIM5_EXPORT SDL_Color white;
+extern SHIM5_EXPORT SDL_Color magenta;
+extern SHIM5_EXPORT SDL_Color transparent;
+extern SHIM5_EXPORT SDL_Color interface_bg;
+extern SHIM5_EXPORT SDL_Color interface_highlight;
+extern SHIM5_EXPORT SDL_Color interface_text;
+extern SHIM5_EXPORT SDL_Color interface_text_shadow;
+extern SHIM5_EXPORT SDL_Color interface_edit_fg;
+extern SHIM5_EXPORT SDL_Color interface_edit_bg;
 extern SHIM5_EXPORT std::vector<gui::GUI *> guis;
 extern SHIM5_EXPORT float scale;
 extern SHIM5_EXPORT std::string window_title; // set this first thing to change it (before call to shim::start)

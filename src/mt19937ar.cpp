@@ -41,7 +41,7 @@
    email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
 */
 
-#include "shim5/mt.h"
+#include "libutil/libutil.h"
 
 using namespace noo;
 

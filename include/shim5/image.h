@@ -24,8 +24,8 @@ public:
 	static void reload_all(bool include_managed = false);
 	static int get_unfreed_count();
 	static void audit();
-	static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
-	static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Colour *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
+	static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
+	static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
 	static unsigned char *read_backbuffer(bool include_black_bars = true, int *out_w = nullptr, int *out_h = nullptr);
 	static unsigned char *read_texture(gfx::Image *image);
 	static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
@@ -75,26 +75,26 @@ public:
 	SHIM5_EXPORT void start_batch(bool repeat = false);
 	SHIM5_EXPORT void end_batch();
 
-	SHIM5_EXPORT void stretch_region_tinted_repeat(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags = 0);
-	SHIM5_EXPORT void stretch_region_tinted(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags = 0);
+	SHIM5_EXPORT void stretch_region_tinted_repeat(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags = 0);
+	SHIM5_EXPORT void stretch_region_tinted(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags = 0);
 	SHIM5_EXPORT void stretch_region(util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, util::Size<int> dest_size, int flags = 0);
-	SHIM5_EXPORT void draw_region_lit_z_range(SDL_Colour colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags = 0);
-	SHIM5_EXPORT void draw_region_lit_z(SDL_Colour colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags = 0);
-	SHIM5_EXPORT void draw_region_tinted_z_range(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags = 0);
-	SHIM5_EXPORT void draw_region_tinted_z(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags = 0);
-	SHIM5_EXPORT void draw_region_tinted(SDL_Colour tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, int flags = 0);
+	SHIM5_EXPORT void draw_region_lit_z_range(SDL_Color colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags = 0);
+	SHIM5_EXPORT void draw_region_lit_z(SDL_Color colours[4], util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags = 0);
+	SHIM5_EXPORT void draw_region_tinted_z_range(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags = 0);
+	SHIM5_EXPORT void draw_region_tinted_z(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags = 0);
+	SHIM5_EXPORT void draw_region_tinted(SDL_Color tint, util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, int flags = 0);
 	SHIM5_EXPORT void draw_region_z_range(util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z_top, float z_bottom, int flags = 0);
 	SHIM5_EXPORT void draw_region_z(util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, float z, int flags = 0);
 	SHIM5_EXPORT void draw_region(util::Point<float> source_position, util::Size<int> source_size, util::Point<float> dest_position, int flags = 0);
 	SHIM5_EXPORT void draw_z(util::Point<float> dest_position, float z, int flags = 0);
-	SHIM5_EXPORT void draw_tinted(SDL_Colour tint, util::Point<float> dest_position, int flags = 0);
+	SHIM5_EXPORT void draw_tinted(SDL_Color tint, util::Point<float> dest_position, int flags = 0);
 	SHIM5_EXPORT void draw(util::Point<float> dest_position, int flags = 0);
-	SHIM5_EXPORT void draw_tinted_rotated(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, int flags = 0);
-	SHIM5_EXPORT void draw_tinted_rotated_scaledxy_z(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags = 0);
-	SHIM5_EXPORT void draw_tinted_rotated_scaled_z(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, float z, int flags = 0);
+	SHIM5_EXPORT void draw_tinted_rotated(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, int flags = 0);
+	SHIM5_EXPORT void draw_tinted_rotated_scaledxy_z(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags = 0);
+	SHIM5_EXPORT void draw_tinted_rotated_scaled_z(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, float z, int flags = 0);
 	SHIM5_EXPORT void draw_rotated_scaled_z(util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, float z, int flags = 0);
-	SHIM5_EXPORT void draw_tinted_rotated_scaled(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, int flags = 0);
-	SHIM5_EXPORT void draw_tinted_rotated_scaledxy(SDL_Colour tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, int flags = 0);
+	SHIM5_EXPORT void draw_tinted_rotated_scaled(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, int flags = 0);
+	SHIM5_EXPORT void draw_tinted_rotated_scaledxy(SDL_Color tint, util::Point<float> centre, util::Point<float> dest_position, float angle, float scale_x, float scale_y, int flags = 0);
 	SHIM5_EXPORT void draw_rotated(util::Point<float> centre, util::Point<float> dest_position, float angle, int flags = 0);
 	SHIM5_EXPORT void draw_rotated_scaled(util::Point<float> centre, util::Point<float> dest_position, float angle, float scale, int flags = 0);
 
@@ -108,16 +108,16 @@ protected:
 		char idlength;
 		char colourmaptype;
 		char datatypecode;
-		short int colourmaporigin;
-		short int colourmaplength;
+		Uint16 colourmaporigin;
+		Uint16 colourmaplength;
 		char colourmapdepth;
-		short int x_origin;
-		short int y_origin;
-		short width;
-		short height;
+		Uint16 x_origin;
+		Uint16 y_origin;
+		Uint16 width;
+		Uint16 height;
 		char bitsperpixel;
 		char imagedescriptor;
-		SDL_Colour palette[256];
+		SDL_Color palette[256];
 	};
 
 	// returns true if pixel is transparent

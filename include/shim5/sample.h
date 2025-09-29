@@ -66,7 +66,7 @@ public:
 private:
 	void delete_instances();
 
-	SDL_RWops *file;
+	SDL_IOStream *file;
 	SDL_AudioSpec *spec;
 	Uint8 *data;
 	Uint32 length;

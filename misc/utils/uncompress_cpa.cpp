@@ -33,10 +33,24 @@ int main(int argc, char **argv)
 				p--;
 			}
 			std::string dir = "data/" + s.substr(0, p);
-			system(std::string("mkdir -p " + dir).c_str());
+			for (size_t j = 0; j < dir.length(); j++) {
+				if (dir[j] == '\\') {
+					dir[j] = '/';
+				}
+			}
+			if (dir[dir.length()-1] == '/') {
+				dir = dir.substr(dir.length()-1);
+			}
+			util::Tokenizer t(dir, '/');
+			std::string tok;
+			std::string full = "";
+			while ((tok = t.next()) != "") {
+				full = full + (full == "" ? "" : "/") + tok;
+				util::mkdir(full);
+			}
 			FILE *out = fopen(("data/" + s).c_str(), "wb");
 			int sz;
-			SDL_RWops *in = cpa->open(s, &sz);
+			SDL_IOStream *in = cpa->open(s, &sz);
 			for (int j = 0; j < sz; j++) {
 				int c = util::SDL_fgetc(in);
 				fputc(c, out);

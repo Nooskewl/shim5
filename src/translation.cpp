@@ -9,7 +9,7 @@ namespace util {
 
 Translation::Translation(std::string text)
 {
-	SDL_RWops *file = SDL_RWFromMem((void *)text.c_str(), (int)text.length());
+	SDL_IOStream *file = SDL_IOFromMem((void *)text.c_str(), (int)text.length());
 
 	if (file) {
 		const int max = 5000;
@@ -28,7 +28,7 @@ Translation::Translation(std::string text)
 		}
 	}
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 }
 
 

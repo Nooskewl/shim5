@@ -12,8 +12,8 @@ using namespace noo;
 
 Sint64 cloud_date_android(std::string filename)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "cloud_date", "(Ljava/lang/String;)J");
@@ -38,8 +38,8 @@ Sint64 cloud_date_android(std::string filename)
 
 bool cloud_delete_android(std::string filename)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "cloud_delete", "(Ljava/lang/String;)Z");
@@ -64,8 +64,8 @@ bool cloud_delete_android(std::string filename)
 
 char *cloud_read_android(std::string filename, int *sz)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jstring S = env->NewStringUTF(filename.c_str());
@@ -99,8 +99,8 @@ char *cloud_read_android(std::string filename, int *sz)
 
 bool cloud_save_android(std::string filename, const char *bytes, int sz)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jstring S = env->NewStringUTF(filename.c_str());
@@ -128,8 +128,8 @@ bool cloud_save_android(std::string filename, const char *bytes, int sz)
 
 void cloud_synchronise_android()
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "cloud_synchronise", "()V");
@@ -144,8 +144,8 @@ void cloud_synchronise_android()
 
 int cloud_get_error_code_android()
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "cloud_get_error_code", "()I");
@@ -167,8 +167,8 @@ int cloud_get_error_code_android()
 /*
 bool cloud_exists_android(std::string filename)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "cloud_exists", "(Ljava/lang/String;)Z");
@@ -193,8 +193,8 @@ bool cloud_exists_android(std::string filename)
 
 bool cloud_mkdir_android(std::string filename)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "cloud_mkdir", "(Ljava/lang/String;)Z");

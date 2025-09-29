@@ -27,7 +27,7 @@ util::Size<int> macosx_get_desktop_resolution()
 	return size;
 }
 
-void macosx_set_background_colour(void *window, SDL_Colour colour)
+void macosx_set_background_colour(void *window, SDL_Color colour)
 {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	NSWindow *nswindow = (NSWindow *)window;

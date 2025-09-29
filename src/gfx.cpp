@@ -4,7 +4,6 @@
 #include "shim5/image.h"
 #include "shim5/json.h"
 #include "shim5/model.h"
-#include "shim5/mt.h"
 #include "shim5/pixel_font.h"
 #include "shim5/primitives.h"
 #include "shim5/shader.h"
@@ -19,6 +18,10 @@
 
 #include "shim5/internal/gfx.h"
 #include "shim5/internal/shim.h"
+
+#ifdef __linux__
+#include <X11/Xlib.h>
+#endif
 
 #ifdef _WIN32
 #define NOOSKEWL_SHIM_DEFAULT_FVF (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE4(1))
@@ -108,7 +111,7 @@ glDrawArrays_func glDrawArrays_ptr;
 glReadPixels_func glReadPixels_ptr;
 #endif
 
-#if defined __APPLE__ && !defined IOS
+#if defined SDL_PLATFORM_APPLE && !defined IOS
 #include "shim5/macosx.h"
 #endif
 
@@ -180,7 +183,7 @@ static IDirect3D9 *d3d;
 static HICON icon_small, icon_big;
 #endif
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
+#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 static bool use_custom_cursor;
 SDL_Surface *mouse_cursor_surface;
 SDL_Cursor *mouse_cursor;
@@ -204,6 +207,13 @@ static void set_viewport()
 		shim::d3d_device->SetViewport(&viewport);
 	}
 #endif
+}
+
+static SDL_DisplayID to_display_id(int adapter)
+{
+	int count;
+	SDL_DisplayID *disp = SDL_GetDisplays(&count);
+	return adapter >= count ? disp[0] : disp[adapter];
 }
 
 namespace noo {
@@ -633,12 +643,13 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		internal::gfx_context.fullscreen = true; // try and go fullscreen because we have no good information
 	}
 
-	SDL_DisplayMode mode;
+	const SDL_DisplayMode *mode;
+	SDL_DisplayID id = to_display_id(shim::adapter);
 
 #ifdef IOS
-	SDL_GetDesktopDisplayMode(shim::adapter, &mode);
-	window_w = mode.w;
-	window_h = mode.h;
+	mode = SDL_GetDesktopDisplayMode(id);
+	window_w = mode->w;
+	window_h = mode->h;
 #endif
 
 	int flags = 0;
@@ -651,12 +662,12 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 	int centre_y;
 #if defined IOS || defined ANDROID
-	flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALLOW_HIGHDPI;
+	flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	centre_y = 0;
 #elif defined RASPBERRYPI_NOX
 	flags |= SDL_WINDOW_FULLSCREEN;
 #elif defined __EMSCRIPTEN__
-	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	centre_y = 0;
 #else
 	util::Size<int> desktop_size = get_desktop_resolution();
@@ -677,10 +688,11 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	}
 
 	if (internal::gfx_context.inited == false && internal::gfx_context.restarting == false && internal::gfx_context.fullscreen) {
-		int ret = internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &mode);
+		SDL_DisplayMode m;
+		int ret = internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &m);
 		
 		if (ret == 0) {
-			if ((mode.w > mode.h) != (window_w > window_h)) {
+			if ((m.w > m.h) != (window_w > window_h)) {
 				int tmp = window_w;
 				window_w = window_h;
 				window_h = tmp;
@@ -698,9 +710,9 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		win_x = r.x;
 		win_y = r.y;
 		if (window_w <= 0 || window_h <= 0) {
-			SDL_GetDesktopDisplayMode(shim::adapter, &mode);
-			window_w = mode.w;
-			window_h = mode.h;
+			mode = SDL_GetDesktopDisplayMode(id);
+			window_w = mode->w;
+			window_h = mode->h;
 		}
 	}
 	else {
@@ -716,7 +728,8 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	}
 #endif
 	
-	internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), win_x, win_y, window_w, window_h, flags);
+	//internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), win_x, win_y, window_w, window_h, flags);
+	internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), window_w, window_h, flags);
 	
 	// I guess on Android the window IS 0
 #if !defined ANDROID
@@ -726,10 +739,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 #endif
 
 #if defined _WIN32
-	SDL_SysWMinfo wm_info;
-	SDL_VERSION(&wm_info.version);
-	SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
-	internal::gfx_context.hwnd = wm_info.info.win.window;
+	internal::gfx_context.hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 	paint_window_black(window_w, window_h);
 #endif
 
@@ -738,12 +748,9 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		paint_window_black(window_w, window_h);
 	}
 #elif defined __linux__ && !defined ANDROID
-	SDL_SysWMinfo wm_info;
-	SDL_VERSION(&wm_info.version);
-	SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
-	internal::gfx_context.x_display = wm_info.info.x11.display;
-	internal::gfx_context.x_window = wm_info.info.x11.window;
-#elif defined __APPLE__ && !defined IOS
+	internal::gfx_context.x_display = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+	internal::gfx_context.x_window = (Window)SDL_GetNumberProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL);
+#elif defined SDL_PLATFORM_APPLE && !defined IOS
 	SDL_SysWMinfo wm_info;
 	SDL_VERSION(&wm_info.version);
 	SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
@@ -820,7 +827,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		glViewport_ptr = (glViewport_func)SDL_GL_GetProcAddress("glViewport");
 		glClearColor_ptr = (glClearColor_func)SDL_GL_GetProcAddress("glClearColor");
 		glClear_ptr = (glClear_func)SDL_GL_GetProcAddress("glClear");
-#if defined __APPLE__ && !defined IOS
+#if defined SDL_PLATFORM_APPLE && !defined IOS
 		glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepth");
 #else
 		glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepthf");
@@ -1007,7 +1014,7 @@ static void destroy_window(bool destroy_d3d = false)
 #endif
 
 	if (shim::opengl) {
-		SDL_GL_DeleteContext(internal::gfx_context.opengl_context);
+		SDL_GL_DestroyContext(internal::gfx_context.opengl_context);
 		SDL_DestroyWindow(internal::gfx_context.window);
 	}
 #ifdef _WIN32
@@ -1030,7 +1037,9 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 	int index;
 	if ((index = util::check_args(shim::argc, shim::argv, "+adapter")) > 0) {
 		shim::adapter = atoi(shim::argv[index+1]);
-		if (shim::adapter > SDL_GetNumVideoDisplays()-1) {
+		int count;
+		SDL_DisplayID *disp = SDL_GetDisplays(&count);
+		if (shim::adapter >= count) {
 			shim::adapter = 0;
 		}
 	}
@@ -1191,10 +1200,10 @@ static void set_window_icon()
 	for (int y = 0; y < size.h; y++) {
 		memcpy(flip_buf+y*size.w*4, pixels+((size.h-1)-y)*size.w*4, size.w*4);
 	}
-	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(flip_buf, size.w, size.h, 32, size.w * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
+	SDL_Surface *surface = SDL_CreateSurfaceFrom(size.w, size.h, SDL_PIXELFORMAT_ABGR8888, flip_buf, size.w * 4);
 	gfx::internal::premultiply_surface(surface);
 	SDL_SetWindowIcon(internal::gfx_context.window, surface);
-	SDL_FreeSurface(surface);
+	SDL_DestroySurface(surface);
 	delete[] flip_buf;
 #else
 	icon_small = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8 *)pixels, size, 0, 0, false);
@@ -1259,7 +1268,7 @@ static void set_window_icon()
 }
 #endif
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
+#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 void create_mouse_cursors()
 {
 	// Note: this needs to be a specific size on Windows, 32x32 works for me
@@ -1303,7 +1312,7 @@ void create_mouse_cursors()
 		for (int y = 0; y < size.h; y++) {
 			memcpy(flip_buf+y*size.w*4, pixels+((size.h-1)-y)*size.w*4, size.w*4);
 		}
-		mouse_cursor_surface = SDL_CreateRGBSurfaceFrom(flip_buf, size.w, size.h, 32, size.w*4, 0xff, 0xff00, 0xff0000, 0xff000000);
+		mouse_cursor_surface = SDL_CreateSurfaceFrom(size.w, size.h, SDL_PIXELFORMAT_ABGR8888, flip_buf, size.w*4);
 		mouse_cursor = SDL_CreateColorCursor(mouse_cursor_surface, shim::cursor_hotspot.x, shim::cursor_hotspot.y);
 		delete[] flip_buf;
 	}
@@ -1318,11 +1327,11 @@ void delete_mouse_cursors()
 {
 	if (use_custom_cursor) {
 		if (mouse_cursor) {
-			SDL_FreeCursor(mouse_cursor);
+			SDL_DestroyCursor(mouse_cursor);
 			mouse_cursor = nullptr;
 		}
 		if (mouse_cursor_surface) {
-			SDL_FreeSurface(mouse_cursor_surface);
+			SDL_DestroySurface(mouse_cursor_surface);
 			mouse_cursor_surface = nullptr;
 		}
 	}
@@ -1571,7 +1580,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		util::infomsg(e.error_message + "\n");
 	}
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
+#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	use_custom_cursor = util::bool_arg(true, shim::argc, shim::argv, "custom-cursor");
 	if (use_custom_cursor) {
 		create_mouse_cursors();
@@ -1617,7 +1626,7 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 	internal::gfx_context.inited = false;
 	SDL_UnlockMutex(gfx::internal::gfx_context.draw_mutex);
 
-#if defined __linux__ || defined __APPLE__
+#if defined __linux__ || defined SDL_PLATFORM_APPLE
 	bool is_orientation = false;
 #else
 	bool is_orientation = internal::gfx_context.fullscreen && ((window_w > window_h) != (shim::real_screen_size.w > shim::real_screen_size.h)); // FIXME: maybe this could be only for D3D (needs lots of testing e.g., tablet, multiple computers)
@@ -1678,7 +1687,7 @@ void end()
 
 	Tilemap::release_sheets();
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
+#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	delete_mouse_cursors();
 #endif
 
@@ -2002,7 +2011,7 @@ void draw_notifications()
 			alpha = 255;
 		}
 
-		SDL_Colour colour;
+		SDL_Color colour;
 		colour.r = (shim::black.r * alpha) / 255;
 		colour.g = (shim::black.g * alpha) / 255;
 		colour.b = (shim::black.b * alpha) / 255;
@@ -2279,7 +2288,7 @@ void flip()
 #endif
 }
 
-void clear(SDL_Colour colour)
+void clear(SDL_Color colour)
 {
 	if (internal::gfx_context.target_image == 0) {
 		if (shim::opengl) {
@@ -2414,7 +2423,7 @@ void clear_buffers()
 	clear_stencil_buffer(0);
 }
 
-void draw_9patch_tinted(SDL_Colour tint, Image *image, util::Point<float> dest_position, util::Size<int> dest_size)
+void draw_9patch_tinted(SDL_Color tint, Image *image, util::Point<float> dest_position, util::Size<int> dest_size)
 {
 	float w = image->size.w;
 	float h = image->size.h;
@@ -2452,7 +2461,7 @@ void reset_fancy_draw()
 	fancy_draw_start = SDL_GetTicks();
 }
 
-void fancy_draw(SDL_Colour colour, std::string text, util::Point<int> position)
+void fancy_draw(SDL_Color colour, std::string text, util::Point<int> position)
 {
 	Uint32 t = (SDL_GetTicks() - fancy_draw_start) % 2000;
 
@@ -2517,19 +2526,19 @@ void cancel_all_notifications()
 	notifications.clear();
 }
 
-int load_palette(std::string name, SDL_Colour *out, int out_size)
+int load_palette(std::string name, SDL_Color *out, int out_size)
 {
 	name = "gfx/palettes/" + name;
 
 	int sz;
-	SDL_RWops *file = util::open_file(name, &sz);
+	SDL_IOStream *file = util::open_file(name, &sz);
 
 	char line[1000];
 	int count = 0;
 
 	util::SDL_fgets(file, line, 1000);
 	if (strncmp(line, "GIMP Palette", 12)) {
-		SDL_RWclose(file);
+		SDL_CloseIO(file);
 		throw util::LoadError("not a GIMP palette: " + name);
 	}
 	count += strlen(line);
@@ -2916,12 +2925,12 @@ util::Size<int> get_desktop_resolution()
 			size = {mode.w, mode.h};
 		}
 	}
-#elif defined __APPLE__
+#elif defined SDL_PLATFORM_APPLE
 	size = macosx_get_desktop_resolution();
 #else
-	SDL_DisplayMode mode;
-	SDL_GetDesktopDisplayMode(shim::adapter, &mode);
-	size = {mode.w, mode.h};
+	SDL_DisplayID id = to_display_id(shim::adapter);
+	const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(id);
+	size = {mode->w, mode->h};
 #endif
 	return size;
 }
@@ -2930,12 +2939,10 @@ std::vector< util::Size<int> > get_supported_video_modes()
 {
 	std::vector< util::Size<int> > modes;
 
-	int num_modes = SDL_GetNumDisplayModes(shim::adapter);
-
-	SDL_DisplayMode mode;
-
 	int w = -1;
 	int h = -1;
+
+	SDL_DisplayMode mode;
 
 	if ((internal::gfx_context.inited || internal::gfx_context.restarting) && internal::gfx_context.fullscreen) {
 		w = shim::real_screen_size.w;
@@ -2946,11 +2953,13 @@ std::vector< util::Size<int> > get_supported_video_modes()
 		h = mode.h;
 	}
 
-	for (int i = 0; i < num_modes; i++) {
-		SDL_DisplayMode mode;
-		if (SDL_GetDisplayMode(shim::adapter, i, &mode) == 0) {
-			util::Size<int> sz(mode.w, mode.h);
-			if (w > 0 && ((mode.w > mode.h && h > w) || (mode.h > mode.w && w > h))) {
+	SDL_DisplayID id = to_display_id(shim::adapter);
+	int count;
+	SDL_DisplayMode **m = SDL_GetFullscreenDisplayModes(id, &count);
+	if (m != nullptr) {
+		for (int i = 0; i < count; i++) {
+			util::Size<int> sz(m[i]->w, m[i]->h);
+			if (w > 0 && ((m[i]->w > m[i]->h && h > w) || (m[i]->h > m[i]->w && w > h))) {
 				int tmp = sz.w;
 				sz.w = sz.h;
 				sz.h = tmp;
@@ -2966,7 +2975,7 @@ std::vector< util::Size<int> > get_supported_video_modes()
 
 void set_custom_mouse_cursor()
 {
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
+#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	if (internal::gfx_context.inited == false) {
 		return;
 	}
@@ -2976,13 +2985,13 @@ void set_custom_mouse_cursor()
 	}
 
 	if (mouse_cursor_shown) {
-		SDL_ShowCursor(1);
+		SDL_ShowCursor();
 		if (use_custom_cursor) {
 			SDL_SetCursor(mouse_cursor);
 		}
 	}
 	else {
-		SDL_ShowCursor(0);
+		SDL_HideCursor();
 	}
 #endif
 }
@@ -3115,7 +3124,7 @@ void resize_window(int width, int height)
 	}
 }
 
-gfx::Image *gen_plasma(int seed, float alpha1, float alpha2, SDL_Colour tint)
+gfx::Image *gen_plasma(int seed, float alpha1, float alpha2, SDL_Color tint)
 {
 	// set a seed so it's always the same
 	util::srand(seed);
@@ -3174,7 +3183,7 @@ gfx::Image *gen_plasma(int seed, float alpha1, float alpha2, SDL_Colour tint)
 		for (int x = 0; x < w; x++) {
 			int val = v[y][x];
 			float af = val / 255.0f;
-			SDL_Colour colour;
+			SDL_Color colour;
 			colour.r = tint.r * af;
 			colour.g = tint.g * af;
 			colour.b = tint.b * af;
@@ -3368,15 +3377,22 @@ int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 	mode->h = m.dmPelsHeight;
 	mode->refresh_rate = m.dmDisplayFrequency;
 	return 0;
-#elif defined __APPLE__ && !defined IOS && defined XXX
+#elif defined SDL_PLATFORM_APPLE && !defined IOS && defined XXX
 	util::Size<int> size = macosx_get_desktop_resolution();
 	mode->w = size.w;
 	mode->h = size.h;
 	mode->refresh_rate = 0;
 	return 0;
 #else
-	int ret = SDL_GetCurrentDisplayMode(shim::adapter, mode);
-	return ret;
+	SDL_DisplayID id = to_display_id(shim::adapter);
+	const SDL_DisplayMode *m = SDL_GetCurrentDisplayMode(id);
+	if (m != nullptr) {
+		*mode = *m;
+		return 0;
+	}
+	else {
+		return 1;
+	}
 #endif
 }
 

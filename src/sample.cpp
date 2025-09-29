@@ -1,3 +1,4 @@
+#include "shim5/audio.h"
 #include "shim5/error.h"
 #include "shim5/flac.h"
 #include "shim5/sample.h"
@@ -15,7 +16,7 @@ namespace audio {
 
 void Sample::stop_instance(Sample_Instance *s)
 {
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	for (std::vector<Sample_Instance *>::iterator it = internal::audio_context.playing_samples.begin(); it != internal::audio_context.playing_samples.end(); it++) {
 		Sample_Instance *s2 = *it;
@@ -26,7 +27,7 @@ void Sample::stop_instance(Sample_Instance *s)
 		}
 	}
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 Sample::Sample(std::string filename, bool load_from_filesystem) :
@@ -43,7 +44,7 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 	if (filename.find(".ogg") != std::string::npos) {
 		// We can't close the file yet... forget why (I think FreeWAV closes it)
 		if (load_from_filesystem) {
-			file = SDL_RWFromFile(filename.c_str(), "r");
+			file = SDL_IOFromFile(filename.c_str(), "r");
 		}
 		else {
 			filename = "audio/samples/" + filename;
@@ -53,11 +54,12 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		char errmsg[1000];
 
 		spec = new SDL_AudioSpec;
+		Uint32 size;
 
-		data = audio::decode_vorbis(file, errmsg, spec);
+		data = audio::decode_vorbis(file, errmsg, spec, &size);
 		
 		if (load_from_filesystem) {
-			SDL_RWclose(file);
+			SDL_CloseIO(file);
 		}
 		else {
 			util::close_file(file);
@@ -68,7 +70,7 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 			throw util::Error(errmsg);
 		}
 
-		length = spec->size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
+		length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
 
 		file = 0;
 	}
@@ -78,7 +80,7 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 	if (filename.find(".flac") != std::string::npos) {
 		// We can't close the file yet... forget why (I think FreeWAV closes it)
 		if (load_from_filesystem) {
-			file = SDL_RWFromFile(filename.c_str(), "r");
+			file = SDL_IOFromFile(filename.c_str(), "r");
 			if (file == nullptr) {
 				throw util::LoadError("Error loading " + filename);
 			}
@@ -91,11 +93,12 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		char errmsg[1000];
 
 		spec = new SDL_AudioSpec;
+		Uint32 size;
 
-		data = audio::decode_flac(file, errmsg, spec);
+		data = audio::decode_flac(file, errmsg, spec, &size);
 		
 		if (load_from_filesystem) {
-			SDL_RWclose(file);
+			SDL_CloseIO(file);
 		}
 		else {
 			util::close_file(file);
@@ -107,7 +110,7 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 			throw util::Error(errmsg);
 		}
 
-		length = spec->size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
+		length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
 
 		file = 0;
 	}
@@ -116,7 +119,7 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 	{
 		// We can't close the file yet... forget why (I think FreeWAV closes it)
 		if (load_from_filesystem) {
-			file = SDL_RWFromFile(filename.c_str(), "r");
+			file = SDL_IOFromFile(filename.c_str(), "r");
 		}
 		else {
 			filename = "audio/samples/" + filename;
@@ -125,43 +128,40 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 
 		spec = new SDL_AudioSpec;
 
-		if (SDL_LoadWAV_RW(file, false, spec, &data, &length) == 0) {
+		Uint8 *buf;
+
+		if (SDL_LoadWAV_IO(file, false, spec, &buf, &length) == 0) {
 			util::close_file(file);
-			throw util::LoadError("SDL_LoadWAV_RW failed");
+			throw util::LoadError("SDL_LoadWAV_IO failed");
 		}
 
 		int orig_len = length;
 		length = length / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
 
-		SDL_AudioCVT cvt;
 		SDL_AudioFormat out_format;
 		if (util::bool_arg(false, shim::argc, shim::argv, "16bit-samples")) {
-			out_format = AUDIO_S16;
+			out_format = SDL_AUDIO_S16LE;
 		}
 		else {
-			out_format = AUDIO_F32;
+			out_format = SDL_AUDIO_F32LE;
 		}
 
-		if (SDL_BuildAudioCVT(&cvt, spec->format, spec->channels, spec->freq, out_format, 2, internal::audio_context.device_spec.freq) == 1) {
-			SDL_assert(cvt.needed);
-			cvt.len = orig_len;
-			cvt.buf = new Uint8[cvt.len * cvt.len_mult];
-			memcpy(cvt.buf, data, orig_len);
-			SDL_ConvertAudio(&cvt);
+		int out_len = length*spec->channels*(SDL_AUDIO_BITSIZE(out_format)/8);
+		data = new Uint8[out_len];
 
-			SDL_FreeWAV(data);
-			util::close_file(file);
-			file = nullptr;
+		SDL_AudioSpec out_spec;
+		out_spec.format = out_format;
+		out_spec.freq = internal::audio_context.device_spec.freq;
+		out_spec.channels = 2;
 
-			data = cvt.buf;
+		SDL_ConvertAudioSamples(spec, buf, orig_len, &out_spec, &data, &out_len);
 
-			spec->format = out_format;
-			spec->channels = 2;
-			spec->freq = internal::audio_context.device_spec.freq;
-			spec->size = cvt.len_cvt;
-		
-			length = spec->size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
-		}
+		util::close_file(file);
+		file = nullptr;
+
+		spec->format = out_format;
+		spec->channels = 2;
+		spec->freq = internal::audio_context.device_spec.freq;
 	}
 }
 
@@ -184,7 +184,7 @@ Sample::~Sample()
 {
 	delete_instances();
 	if (file) {
-		SDL_FreeWAV(data);
+		SDL_free(data);
 		util::close_file(file);
 	}
 	else {
@@ -242,10 +242,10 @@ void Sample::play(float volume, bool loop, int type)
 	s->master_volume = 1.0f;
 	s->channels = spec->channels;
 
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 	delete_instances();
 	internal::audio_context.playing_samples.push_back(s);
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 void Sample::play(float volume, bool loop)
@@ -297,9 +297,9 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 	s->master_volume = 1.0f;
 	s->channels = spec->channels;
 	
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 	internal::audio_context.playing_samples.push_back(s);
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 
 	return s;
 }
@@ -317,7 +317,7 @@ void Sample::set_done(bool done)
 // We don't return sample instances to the user (we could) so stop has to stop all instances of this sample
 void Sample::stop_all()
 {
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	std::vector<Sample_Instance *>::iterator it;
 
@@ -334,7 +334,7 @@ void Sample::stop_all()
 
 	done = false;
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 void Sample::stop()
@@ -346,7 +346,7 @@ bool Sample::is_playing()
 {
 	bool playing = false;
 
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	std::vector<Sample_Instance *>::iterator it;
 
@@ -358,7 +358,7 @@ bool Sample::is_playing()
 		}
 	}
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 
 	return playing;
 }

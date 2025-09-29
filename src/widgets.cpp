@@ -355,7 +355,7 @@ void DevSettings_List::set_nr()
 	nr = MIN(shim::devsettings_num_rows, (int)node->children.size());
 }
 
-void DevSettings_List::draw_text_clamped(SDL_Colour colour, std::string text, util::Point<int> pos, int max_width)
+void DevSettings_List::draw_text_clamped(SDL_Color colour, std::string text, util::Point<int> pos, int max_width)
 {
 	if (text.length() == 0) {
 		return;
@@ -378,7 +378,7 @@ void DevSettings_List::draw_text_clamped(SDL_Colour colour, std::string text, ut
 	shim::font->draw(colour, new_text, pos);
 }
 
-void DevSettings_List::draw_text_scroll(SDL_Colour colour, std::string text, util::Point<int> pos, int max_width)
+void DevSettings_List::draw_text_scroll(SDL_Color colour, std::string text, util::Point<int> pos, int max_width)
 {
 	if (text.length() == 0) {
 		return;

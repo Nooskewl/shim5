@@ -42,26 +42,26 @@ namespace audio {
 
 static size_t sdl_vorbis_read(void *ptr, size_t size, size_t nmemb, void *datasource)
 {
-	return SDL_RWread((SDL_RWops *)datasource, ptr, size, nmemb);
+	return SDL_ReadIO((SDL_IOStream *)datasource, ptr, size * nmemb);
 }
 
 static int sdl_vorbis_seek(void *datasource, ogg_int64_t offset, int whence)
 {
 	switch (whence) { // from Allegro, changed to SDL
-		case SEEK_SET: whence = RW_SEEK_SET; break;
-		case SEEK_CUR: whence = RW_SEEK_CUR; break;
-		case SEEK_END: whence = RW_SEEK_END; break;
+		case SEEK_SET: whence = IO_SEEK_SET; break;
+		case SEEK_CUR: whence = SDL_IO_SEEK_CUR; break;
+		case SEEK_END: whence = IO_SEEK_END; break;
 	}
 
-	return (int)SDL_RWseek((SDL_RWops *)datasource, offset, whence);
+	return (int)SDL_SeekIO((SDL_IOStream *)datasource, offset, whence);
 }
 
 static long sdl_vorbis_tell(void *datasource)
 {
-	return (long)SDL_RWtell((SDL_RWops *)datasource);
+	return (long)SDL_TellIO((SDL_IOStream *)datasource);
 }
 
-Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
+Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size)
 {
 	char pcmout[4096];
 
@@ -85,14 +85,10 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
 
 	spec->freq = (int)vi->rate;
 	spec->channels = vi->channels;
-	spec->size = int(total_samples * 2/*16 bit samples*/ * vi->channels);
-	spec->format = AUDIO_S16; // FIXME!
-	spec->silence = 0;
-	spec->samples = 4096;
-	spec->callback = 0;
-	spec->userdata = 0;
+	*size = int(total_samples * 2/*16 bit samples*/ * vi->channels);
+	spec->format = SDL_AUDIO_S16LE; // FIXME!
 
-	Uint8 *data = new Uint8[spec->size];
+	Uint8 *data = new Uint8[*size];
 
 	int count = 0;
 
@@ -120,7 +116,7 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
 ogg_int16_t convbuffer[4096]; /* take 8k out of the data segment, not the stack */
 int convsize=4096;
 
-Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
+Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size)
 {
     ogg_sync_state   oy; /* sync and verify incoming physical bitstream */
     ogg_stream_state os; /* take physical pages, weld into a logical
@@ -156,7 +152,7 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
 
         /* submit a 4k block to libvorbis' Ogg layer */
         buffer=ogg_sync_buffer(&oy,4096);
-        bytes=(int)SDL_RWread(file,buffer,1,4096);
+        bytes=(int)SDL_ReadIO(file,buffer,4096);
         ogg_sync_wrote(&oy,bytes);
 
         /* Get the first page. */
@@ -243,7 +239,7 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
             }
             /* no harm in not checking before adding more */
             buffer=ogg_sync_buffer(&oy,4096);
-            bytes=(int)SDL_RWread(file,buffer,1,4096);
+            bytes=(int)SDL_ReadIO(file,buffer,4096);
             if(bytes==0 && i<2){
                 strcpy(errmsg,"End of file before finding all Vorbis headers!\n");
                 return 0;
@@ -372,7 +368,7 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
                 }
                 if(!eos){
                     buffer=ogg_sync_buffer(&oy,4096);
-                    bytes=(int)SDL_RWread(file,buffer,1,4096);
+                    bytes=(int)SDL_ReadIO(file,buffer,4096);
                     ogg_sync_wrote(&oy,bytes);
                     if(bytes==0)eos=1;
                 }
@@ -387,7 +383,7 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
             strcpy(errmsg,"Error: Corrupt header during playback initialization.\n");
         }
 
-        spec->size = decoded_size;
+        *size = decoded_size;
 
         /* clean up this logical bitstream; before exit we see if we're
            followed by another [chained] */
@@ -404,11 +400,7 @@ Uint8 *decode_vorbis(SDL_RWops *file, char *errmsg, SDL_AudioSpec *spec)
 
     strcpy(errmsg,"Done.\n");
 
-    spec->format = AUDIO_S16; // FIXME!
-    spec->silence = 0;
-    spec->samples = 4096;
-    spec->callback = 0;
-    spec->userdata = 0;
+    spec->format = SDL_AUDIO_S16LE; // FIXME!
 
     return decoded;
 }

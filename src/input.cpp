@@ -8,7 +8,7 @@
 ControllerHandle_t all_controllers[STEAM_CONTROLLER_MAX_COUNT];
 #endif
 
-#ifdef __APPLE__
+#ifdef SDL_PLATFORM_APPLE
 #define USE_CONSTANT_RUMBLE 1
 #else
 #define USE_CONSTANT_RUMBLE 0
@@ -21,7 +21,7 @@ ControllerHandle_t all_controllers[STEAM_CONTROLLER_MAX_COUNT];
 #define REPEAT_VEC std::vector<Joy_Repeat>
 
 #if defined ANDROID || defined TVOS
-const Uint32 JOYSTICK_SUBSYSTEMS = SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC;
+const Uint32 JOYSTICK_SUBSYSTEMS = SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC;
 #endif
 
 #ifdef IOS
@@ -71,7 +71,7 @@ struct Joystick {
 	SDL_HapticEffect haptic_effect;
 	int haptic_effect_id;
 #endif
-	SDL_GameController *gc;
+	SDL_Gamepad *gc;
 	SDL_Joystick *joy;
 	SDL_JoystickID id;
 	Joystick_Type type;
@@ -178,7 +178,7 @@ static bool check_mouse_button_repeat(Mouse_Button_Repeat &mr)
 }
 
 #if 0
-void SDL_GetJoystickGUIDInfo(SDL_JoystickGUID guid, Uint16 *vendor, Uint16 *product, Uint16 *version)
+void SDL_GetJoystickGUIDInfo(SDL_GUID guid, Uint16 *vendor, Uint16 *product, Uint16 *version)
 {
     Uint16 *guid16 = (Uint16 *)guid.data;
 
@@ -216,9 +216,9 @@ void SDL_GetJoystickGUIDInfo(SDL_JoystickGUID guid, Uint16 *vendor, Uint16 *prod
 
 static void add_haptics(Joystick *j)
 {
-	if (SDL_JoystickIsHaptic(j->joy)) {
+	if (SDL_IsJoystickHaptic(j->joy)) {
 		util::infomsg("Joystick has haptics.\n");
-		j->haptic = SDL_HapticOpenFromJoystick(j->joy);
+		j->haptic = SDL_OpenHapticFromJoystick(j->joy);
 		if (j->haptic == 0) {
 			util::infomsg("Haptic init failed: %s.\n", SDL_GetError());
 		}
@@ -228,16 +228,16 @@ static void add_haptics(Joystick *j)
 			j->haptic_effect.type = SDL_HAPTIC_CONSTANT;
 			j->haptic_effect.constant.level = 0x7fff;
 			j->haptic_effect.constant.length = 1000;
-			j->haptic_effect_id = SDL_HapticNewEffect(j->haptic, &j->haptic_effect);
+			j->haptic_effect_id = SDL_CreateHapticEffect(j->haptic, &j->haptic_effect);
 			if (j->haptic_effect_id < 0) {
 				util::infomsg("Couldn't create constant haptic effect.\n");
 			}
 #else
-			if (SDL_HapticRumbleInit(j->haptic) != 0) {
+			if (SDL_InitHapticRumble(j->haptic) != 0) {
 				util::infomsg("Can't init rumble effect: %s\n", SDL_GetError());
 			}
 #endif
-			if (SDL_HapticSetGain(j->haptic, 100)) {
+			if (SDL_SetHapticGain(j->haptic, 100)) {
 				util::infomsg("Can't set haptic gain: %s\n", SDL_GetError());
 			}
 		}
@@ -276,25 +276,25 @@ static void check_joysticks()
 				all_controllers[i] = controllers[i];
 			}
 			for (size_t i = 0; i < joysticks.size(); i++) {
-				SDL_GameControllerClose(joysticks[i].gc);
+				SDL_CloseGamepad(joysticks[i].gc);
 			}
 			joysticks.clear();
 			for (int i = 0; i < num_joysticks; i++) {
 				/*
-				j.joy = SDL_JoystickOpen(i);
+				j.joy = SDL_OpenJoystick(i);
 				if (j.joy == NULL) {
 					util::debugmsg("Couldn't open joystick: %s\n", SDL_GetError());
 					continue;
 				}
-				j.id = SDL_JoystickInstanceID(j.joy);
+				j.id = SDL_GetJoystickID(j.joy);
 				*/
 				j.handle = controllers[i];
-				j.gc = SDL_GameControllerOpen(i);
-				j.joy = SDL_GameControllerGetJoystick(j.gc);
-				j.id = SDL_JoystickInstanceID(j.joy);
+				j.gc = SDL_OpenGamepad(i);
+				j.joy = SDL_GetGamepadJoystick(j.gc);
+				j.id = SDL_GetJoystickID(j.joy);
 				/*
 				j.id = (SDL_JoystickID)j.handle;
-				j.joy = SDL_JoystickFromInstanceID(j.id);
+				j.joy = SDL_GetJoystickFromID(j.id);
 				*/
 				ESteamInputType inputType = SteamController()->GetInputTypeForHandle(j.handle);
 				switch ((int)inputType) {
@@ -325,7 +325,8 @@ static void check_joysticks()
 	else
 #endif
 	{
-		int nj = SDL_NumJoysticks();
+		int nj;
+	       	SDL_GetJoysticks(&nj);
 		if (nj != num_joysticks) {
 			if (nj == 0 && num_joysticks != 0) {
 				if (shim::joystick_disconnect_callback) {
@@ -335,22 +336,22 @@ static void check_joysticks()
 			num_joysticks = nj;
 			for (size_t i = 0; i < joysticks.size(); i++) {
 				if (joysticks[i].haptic) {
-					SDL_HapticClose(joysticks[i].haptic);
+					SDL_CloseHaptic(joysticks[i].haptic);
 				}
-				SDL_GameControllerClose(joysticks[i].gc);
+				SDL_CloseGamepad(joysticks[i].gc);
 			}
 			joysticks.clear();
 			for (int i = 0; i < num_joysticks; i++) {
-				j.gc = SDL_GameControllerOpen(i);
+				j.gc = SDL_OpenGamepad(i);
 				if (j.gc == NULL) {
 					util::infomsg("Error opening game controller: %s\n", SDL_GetError());
 
 					/*
-					SDL_Joystick *joy = SDL_JoystickOpen(i);
-					SDL_JoystickGUID guid;
+					SDL_Joystick *joy = SDL_OpenJoystick(i);
+					SDL_GUID guid;
 					Uint16 vendor;
 					Uint16 product;
-					guid = SDL_JoystickGetGUID(joy);
+					guid = SDL_GetJoystickGUID(joy);
 					SDL_GetJoystickGUIDInfo(guid, &vendor, &product, NULL);
 					char *c = (char *)&guid;
 					printf("guid=");
@@ -359,12 +360,12 @@ static void check_joysticks()
 					}
 					printf("\n");
 					printf("vendor=%x product=%x\n", guid, vendor, product);
-					SDL_JoystickClose(joy);
+					SDL_CloseJoystick(joy);
 					*/
 
 					continue;
 				}
-				std::string name = SDL_GameControllerName(j.gc);
+				std::string name = SDL_GetGamepadName(j.gc);
 				name = util::uppercase(name);
 				if (name.find("PS2") != std::string::npos || name.find("PS3") != std::string::npos || name.find("PS4") != std::string::npos || name.find("PLAYSTATION") != std::string::npos || name.find("DUALSHOCK") != std::string::npos) {
 					j.type = PLAYSTATION;
@@ -388,13 +389,13 @@ static void check_joysticks()
 					j.type = XBOX;
 				}
 #endif
-				j.joy = SDL_GameControllerGetJoystick(j.gc);
-				if (SDL_JoystickNumButtons(j.joy) < 5) {
-					SDL_GameControllerClose(j.gc);
+				j.joy = SDL_GetGamepadJoystick(j.gc);
+				if (SDL_GetNumJoystickButtons(j.joy) < 5) {
+					SDL_CloseGamepad(j.gc);
 					continue;
 				}
 				else {
-					j.id = SDL_JoystickInstanceID(j.joy);
+					j.id = SDL_GetJoystickID(j.joy);
 					add_haptics(&j);
 					joysticks.push_back(j);
 				}
@@ -438,7 +439,7 @@ bool start()
 
 #if defined ANDROID || defined TVOS
 	SDL_InitSubSystem(JOYSTICK_SUBSYSTEMS);
-	SDL_GameControllerEventState(SDL_ENABLE);
+	SDL_GamepadEventState(SDL_ENABLE);
 #endif
 
  	check_joysticks();
@@ -454,10 +455,10 @@ void reset()
 		if (shim::steam_init_failed)
 #endif
 			if (j.haptic) {
-			       SDL_HapticClose(j.haptic);
+			       SDL_CloseHaptic(j.haptic);
 			}
 		if (j.gc) {
-			SDL_GameControllerClose(j.gc);
+			SDL_CloseGamepad(j.gc);
 		}
 	}
 
@@ -618,7 +619,7 @@ bool convert_to_focus_event(TGUI_Event *event, Focus_Event *focus)
 		int axis = event->joystick.axis;
 		int index = find_joy_repeat(false, axis, js);
 #ifndef STEAM_INPUT // On Steam builds, we can't use JoystickGetAxis/etc because sometimes it's the dpad generating axis events
-		Sint16 other_s = SDL_JoystickGetAxis(js->joy, 1-axis);
+		Sint16 other_s = SDL_GetJoystickAxis(js->joy, 1-axis);
 		float other = TGUI6_NORMALISE_JOY_AXIS(other_s);
 
 		if (fabsf(event->joystick.value) > shim::joystick_activate_threshold && fabsf(other) < shim::joystick_deactivate_threshold) {
@@ -786,8 +787,8 @@ void rumble(Uint32 length, int num)
 #endif
 #ifdef ANDROID
 	if (is_joystick_connected() == false) {
-		JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-		jobject activity = (jobject)SDL_AndroidGetActivity();
+		JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+		jobject activity = (jobject)SDL_GetAndroidActivity();
 		jclass clazz(env->GetObjectClass(activity));
 
 		jmethodID method_id = env->GetMethodID(clazz, "rumble", "(I)V");
@@ -824,12 +825,12 @@ void rumble(Uint32 length, int num)
 				else {
 					j.haptic_effect.constant.level = 0x7fff * strength;
 					j.haptic_effect.constant.length = length;
-					SDL_HapticUpdateEffect(j.haptic, j.haptic_effect_id, &j.haptic_effect);
-					SDL_HapticRunEffect(j.haptic, j.haptic_effect_id, 1);
+					SDL_UpdateHapticEffect(j.haptic, j.haptic_effect_id, &j.haptic_effect);
+					SDL_RunHapticEffect(j.haptic, j.haptic_effect_id, 1);
 				}
 #else
 				if (SDL_HapticRumbleSupported(j.haptic)) {
-					if (SDL_HapticRumblePlay(j.haptic, strength, length) != 0) {
+					if (SDL_PlayHapticRumble(j.haptic, strength, length) != 0) {
 						util::infomsg("Error playing rumble effect!\n");
 						return;
 					}
@@ -841,7 +842,7 @@ void rumble(Uint32 length, int num)
 			}
 #endif
 			if (j.gc) {
-				SDL_GameControllerRumble(j.gc, 0x7777, 0x7777, length);
+				SDL_RumbleGamepad(j.gc, 0x7777, 0x7777, length);
 			}
 		}
 	}
@@ -1253,7 +1254,7 @@ SDL_Joystick *get_sdl_joystick(SDL_JoystickID id)
 	}
 }
 
-SDL_GameController *get_sdl_gamecontroller(SDL_JoystickID id)
+SDL_Gamepad *get_sdl_gamepad(SDL_JoystickID id)
 {
 	Joystick *j = find_joystick(id);
 	if (j) {
@@ -1290,8 +1291,8 @@ bool system_has_touchscreen()
 #ifdef _WIN32
 	result = GetSystemMetrics(/*SM_MAXIMUMTOUCHES*/95) > 0; // SM_MAXIMUMTOUCHES is only available on Windows 7+
 #elif defined ANDROID
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "has_touchscreen", "()Z");
@@ -1308,7 +1309,7 @@ bool system_has_touchscreen()
 
 	// slurp_file_from_filesystem doesn't work here because these special files return 0 for size
 
-	SDL_RWops *file = SDL_RWFromFile("/proc/bus/input/devices", "r");
+	SDL_IOStream *file = SDL_IOFromFile("/proc/bus/input/devices", "r");
 
 	if (file == 0) {
 		return false;
@@ -1317,13 +1318,13 @@ bool system_has_touchscreen()
 	char *buf = new char[1024*100];
 	int c = 0;
 
-	while (SDL_RWread(file, buf+c, 1, 1) == 1 && c < 1024*100-2) {
+	while (SDL_ReadIO(file, buf+c, 1) == 1 && c < 1024*100-2) {
 		c++;
 	}
 
 	buf[c] = 0;
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 
 	std::string s = buf;
 

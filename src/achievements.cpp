@@ -19,8 +19,8 @@ namespace util {
 
 bool achieve_android(char *id)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jstring S = env->NewStringUTF(id);
@@ -48,8 +48,8 @@ bool achieve_android(char *id)
 
 bool show_achievements_android()
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "show_achievements", "()Z");

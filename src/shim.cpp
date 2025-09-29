@@ -8,7 +8,6 @@
 #include "shim5/input.h"
 #include "shim5/json.h"
 #include "shim5/mml.h"
-#include "shim5/mt.h"
 #include "shim5/primitives.h"
 #include "shim5/sample.h"
 #include "shim5/shim.h"
@@ -54,18 +53,18 @@ static bool joy_lb;
 static bool joy_rb;
 
 bool opengl;
-SDL_Colour palette[256];
+SDL_Color palette[256];
 int palette_size;
-SDL_Colour black;
-SDL_Colour white;
-SDL_Colour magenta;
-SDL_Colour transparent;
-SDL_Colour interface_bg;
-SDL_Colour interface_highlight;
-SDL_Colour interface_text;
-SDL_Colour interface_text_shadow;
-SDL_Colour interface_edit_fg;
-SDL_Colour interface_edit_bg;
+SDL_Color black;
+SDL_Color white;
+SDL_Color magenta;
+SDL_Color transparent;
+SDL_Color interface_bg;
+SDL_Color interface_highlight;
+SDL_Color interface_text;
+SDL_Color interface_text_shadow;
+SDL_Color interface_edit_fg;
+SDL_Color interface_edit_bg;
 std::vector<gui::GUI *> guis;
 float scale;
 std::string window_title;
@@ -171,46 +170,46 @@ static void handle_resize(SDL_Event *event)
 }
 
 // this may run in a different thread :/
-static int event_filter(void *userdata, SDL_Event *event)
+static bool event_filter(void *userdata, SDL_Event *event)
 {
 	switch (event->type)
 	{
 #ifdef IOS
-		case SDL_APP_TERMINATING:
-			event->type = SDL_QUIT;
+		case SDL_EVENT_TERMINATING:
+			event->type = SDL_EVENT_QUIT;
 			return 1;
-		case SDL_APP_LOWMEMORY:
+		case SDL_EVENT_LOW_MEMORY:
 			return 0;
-		case SDL_APP_WILLENTERBACKGROUND:
+		case SDL_EVENT_WILL_ENTER_BACKGROUND:
 			return 0;
-		case SDL_APP_DIDENTERBACKGROUND:
+		case SDL_EVENT_DID_ENTER_BACKGROUND:
 			app_in_background = true;
 			return 0;
-		case SDL_APP_WILLENTERFOREGROUND:
+		case SDL_EVENT_WILL_ENTER_FOREGROUND:
 			adjust_screen_size = true;
 			return 0;
-		case SDL_APP_DIDENTERFOREGROUND:
+		case SDL_EVENT_DID_ENTER_FOREGROUND:
 			app_in_background = false;
 			SDL_SetHint(SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS, "0");
 			return 0;
 #ifdef TVOS
-		case SDL_KEYDOWN:
-		case SDL_KEYUP:
+		case SDL_EVENT_KEY_DOWN:
+		case SDL_EVENT_KEY_UP:
 			if (event->key.keysym.sym == SDLK_MENU && pass_menu_to_os) {
 				SDL_SetHint(SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS, "1");
 			}
 			return 1;
 #endif
 #elif defined ANDROID
-		case SDL_APP_WILLENTERBACKGROUND:
+		case SDL_EVENT_WILL_ENTER_BACKGROUND:
 			util::internal::flush_log_file();
 			return 0;
-		case SDL_APP_WILLENTERFOREGROUND:
+		case SDL_EVENT_WILL_ENTER_FOREGROUND:
 			return 0;
-		case SDL_APP_DIDENTERBACKGROUND:
+		case SDL_EVENT_DID_ENTER_BACKGROUND:
 			app_in_background = true;
 			return 0;
-		case SDL_APP_DIDENTERFOREGROUND:
+		case SDL_EVENT_DID_ENTER_FOREGROUND:
 			app_in_background = false;
 			return 0;
 #endif
@@ -221,16 +220,12 @@ static int event_filter(void *userdata, SDL_Event *event)
 
 static bool init_sdl(int sdl_init_flags)
 {
-	if (SDL_Init(sdl_init_flags) != 0) {
+	if (SDL_Init(sdl_init_flags) != true) {
 		throw util::Error(util::string_printf("SDL_Init failed: %s.", SDL_GetError()));
 		return false;
 	}
 	
 	SDL_SetEventFilter(event_filter, NULL);
-
-#if !defined ANDROID && !defined TVOS
-	SDL_GameControllerEventState(SDL_ENABLE);
-#endif
 
 	return true;
 }
@@ -264,11 +259,11 @@ bool static_start(int sdl_init_flags)
 
 	if (sdl_init_flags == 0) {
 #if defined ANDROID || defined TVOS
-		sdl_init_flags = SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_AUDIO; // we need to be able to shutdown/bring up the joystick system on Android
+		sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO; // we need to be able to shutdown/bring up the joystick system on Android
 #elif defined __EMSCRIPTEN__
-		sdl_init_flags = SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER;
+		sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD;
 #else
-		sdl_init_flags = SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC;
+		sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC;
 #endif
 	}
 
@@ -349,10 +344,10 @@ bool static_start(int sdl_init_flags)
 	catch (util::Error &e) {
 		// Use a default file
 		std::string json = "{}";
-		SDL_RWops *file = SDL_RWFromMem((void *)json.c_str(), 2);
+		SDL_IOStream *file = SDL_IOFromMem((void *)json.c_str(), 2);
 		assert(file);
 		shim_json = new util::JSON(file);
-		SDL_RWclose(file);
+		SDL_CloseIO(file);
 	}
 
 	util::JSON::Node *root = shim_json->get_root();
@@ -638,7 +633,7 @@ static TGUI_Event *real_handle_tgui_event(TGUI_Event *tgui_event)
 			gfx::clear(shim::black);
 			gfx::flip();
 			gfx::internal::gfx_context.fullscreen_window = !gfx::internal::gfx_context.fullscreen_window;
-			SDL_SetWindowFullscreen(gfx::internal::gfx_context.window, gfx::internal::gfx_context.fullscreen_window ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+			SDL_SetWindowFullscreen(gfx::internal::gfx_context.window, gfx::internal::gfx_context.fullscreen_window ? true : false);
 			gfx::clear(shim::black);
 			gfx::flip();
 		}
@@ -707,22 +702,22 @@ static TGUI_Event *real_handle_tgui_event(TGUI_Event *tgui_event)
 TGUI_Event *handle_event(SDL_Event *sdl_event)
 {
 #ifdef IOS
-	if (sdl_event->type == SDL_WINDOWEVENT && sdl_event->window.event == SDL_WINDOWEVENT_RESIZED) {
+	if (sdl_event->type == SDL_EVENT_WINDOW_RESIZED) {
 #elif defined ANDROID
-	if (sdl_event->type == SDL_WINDOWEVENT && (sdl_event->window.event == SDL_WINDOWEVENT_RESIZED || sdl_event->window.event == SDL_WINDOWEVENT_SIZE_CHANGED)) {
+	if (sdl_event->type == SDL_EVENT_WINDOW_RESIZED || sdl_event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
 #else
-	if (sdl_event->type == SDL_WINDOWEVENT && sdl_event->window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+	if (sdl_event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
 #endif
 		waiting_for_fullscreen_change = false;
 		handle_resize(sdl_event);
 	}
-	else if (sdl_event->type == SDL_WINDOWEVENT && sdl_event->window.event == SDL_WINDOWEVENT_ENTER) {
+	else if (sdl_event->type == SDL_EVENT_WINDOW_MOUSE_ENTER) {
 		gfx::internal::gfx_context.mouse_in_window = true;
 	}
-	else if (sdl_event->type == SDL_WINDOWEVENT && sdl_event->window.event == SDL_WINDOWEVENT_LEAVE) {
+	else if (sdl_event->type == SDL_EVENT_WINDOW_MOUSE_LEAVE) {
 		gfx::internal::gfx_context.mouse_in_window = false;
 	}
-	else if (sdl_event->type == SDL_QUIT) {
+	else if (sdl_event->type == SDL_EVENT_QUIT) {
 		quitting = true;
 	}
 
@@ -734,9 +729,9 @@ TGUI_Event *handle_event(SDL_Event *sdl_event)
 		bool go;
 		if (shim::steam_init_failed == false) {
 			switch (sdl_event->type) {
-				case SDL_CONTROLLERBUTTONDOWN:
-				case SDL_CONTROLLERBUTTONUP:
-				case SDL_CONTROLLERAXISMOTION:
+				case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+				case SDL_EVENT_GAMEPAD_BUTTON_UP:
+				case SDL_EVENT_GAMEPAD_AXIS_MOTION:
 				{
 					go = false;
 					TGUI_Event e;
@@ -825,50 +820,50 @@ bool event_in_queue(TGUI_Event e)
 	
 	SDL_Event events[100];
 	int n;
-	n = SDL_PeepEvents(&events[0], 100, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+	n = SDL_PeepEvents(&events[0], 100, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
 	for (int i = 0; i < n; i++) {
 		SDL_Event &e2 = events[i];
-		if (e2.type == SDL_KEYDOWN && e.type == TGUI_KEY_DOWN) {
+		if (e2.type == SDL_EVENT_KEY_DOWN && e.type == TGUI_KEY_DOWN) {
 			if (e.keyboard.code == e2.key.keysym.sym && e.keyboard.is_repeat == (e2.key.repeat != 0)) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_KEYUP && e.type == TGUI_KEY_UP) {
+		if (e2.type == SDL_EVENT_KEY_UP && e.type == TGUI_KEY_UP) {
 			if (e.keyboard.code == e2.key.keysym.sym && e.keyboard.is_repeat == (e2.key.repeat != 0)) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_MOUSEBUTTONDOWN && e.type == TGUI_MOUSE_DOWN) {
+		if (e2.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.type == TGUI_MOUSE_DOWN) {
 			if (e.mouse.button == e2.button.button && e.mouse.x == e2.button.x && e.mouse.y == e2.button.y) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_MOUSEBUTTONUP && e.type == TGUI_MOUSE_UP) {
+		if (e2.type == SDL_EVENT_MOUSE_BUTTON_UP && e.type == TGUI_MOUSE_UP) {
 			if (e.mouse.button == e2.button.button && e.mouse.x == e2.button.x && e.mouse.y == e2.button.y) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_MOUSEMOTION && e.type == TGUI_MOUSE_AXIS) {
+		if (e2.type == SDL_EVENT_MOUSE_MOTION && e.type == TGUI_MOUSE_AXIS) {
 			if (e.mouse.x == e2.motion.x && e.mouse.y == e2.motion.y) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_MOUSEWHEEL && e.type == TGUI_MOUSE_WHEEL) {
+		if (e2.type == SDL_EVENT_MOUSE_WHEEL && e.type == TGUI_MOUSE_WHEEL) {
 			if (e.mouse.x == e2.wheel.x && e.mouse.y == e2.wheel.y) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_CONTROLLERBUTTONDOWN && e.type == TGUI_JOY_DOWN) {
+		if (e2.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN && e.type == TGUI_JOY_DOWN) {
 			if (e.joystick.id == e2.cbutton.which && e.joystick.button == e2.cbutton.button) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_CONTROLLERBUTTONUP && e.type == TGUI_JOY_UP) {
+		if (e2.type == SDL_EVENT_GAMEPAD_BUTTON_UP && e.type == TGUI_JOY_UP) {
 			if (e.joystick.id == e2.jbutton.which && e.joystick.button == e2.jbutton.button) {
 				return true;
 			}
 		}
-		if (e2.type == SDL_CONTROLLERAXISMOTION && e.type == TGUI_JOY_AXIS) {
+		if (e2.type == SDL_EVENT_GAMEPAD_AXIS_MOTION && e.type == TGUI_JOY_AXIS) {
 			float v = TGUI4_NORMALISE_JOY_AXIS(e2.caxis.value);
 			if (e2.caxis.which == e.joystick.id && e2.caxis.axis == e.joystick.axis && v == e.joystick.value) {
 				return true;

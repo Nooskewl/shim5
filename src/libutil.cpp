@@ -178,8 +178,8 @@ std::string get_system_language_linux()
 #ifdef ANDROID
 std::string get_system_language_android()
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "get_android_language", "()Ljava/lang/String;");
@@ -245,8 +245,8 @@ std::string get_system_language_android()
 
 bool is_chromebook()
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "is_chromebook", "()Z");
@@ -382,8 +382,8 @@ std::string List_Directory::next()
 #else
 List_Directory::List_Directory(std::string filespec)
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jstring S = env->NewStringUTF(filespec.c_str());
@@ -405,8 +405,8 @@ List_Directory::~List_Directory()
 
 std::string List_Directory::next()
 {
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 	jclass clazz(env->GetObjectClass(activity));
 
 	jmethodID method_id = env->GetMethodID(clazz, "list_dir_next", "()Ljava/lang/String;");
@@ -534,6 +534,13 @@ std::string remove_quotes(std::string s)
        }
 
        return s.substr(start, count);
+}
+
+std::string itos(int i)
+{
+	char buf[20];
+	snprintf(buf, 20, "%d", i);
+	return std::string(buf);
 }
 
 } // End namespace util

@@ -47,7 +47,7 @@ static void my_drawing()
 
 	// let's just draw a spinning triangle
 
-	SDL_Colour colours[3];
+	SDL_Color colours[3];
 	colours[0].r = 255;
 	colours[0].g = 0;
 	colours[0].b = 0;
@@ -128,7 +128,7 @@ static void loop()
 		SDL_Event sdl_event;
 
 		while (SDL_PollEvent(&sdl_event)) {
-			if (sdl_event.type == SDL_QUIT) {
+			if (sdl_event.type == SDL_EVENT_QUIT) {
 				quit = true;
 				break;
 			}

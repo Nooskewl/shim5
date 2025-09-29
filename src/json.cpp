@@ -632,7 +632,7 @@ JSON::JSON(std::string filename, bool load_from_filesystem) :
 	read(filename, load_from_filesystem);
 }
 
-JSON::JSON(SDL_RWops *file) :
+JSON::JSON(SDL_IOStream *file) :
 	root(NULL),
 	ungot(-1),
 	line(1)
@@ -677,18 +677,18 @@ void JSON::read(std::string filename, bool load_from_filesystem)
 		bytes = slurp_file(filename, &sz);
 	}
 
-	SDL_RWops *file = SDL_RWFromMem(bytes, sz);
+	SDL_IOStream *file = SDL_IOFromMem(bytes, sz);
 
 	read(file);
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 
 #ifndef TVOS
 	delete[] bytes;
 #endif
 }
 
-void JSON::read(SDL_RWops *file)
+void JSON::read(SDL_IOStream *file)
 {
 	skip_whitespace(file);
 
@@ -747,7 +747,7 @@ bool JSON::remove(std::string loc, bool del)
 	return true;
 }
 
-int JSON::read_char(SDL_RWops *file)
+int JSON::read_char(SDL_IOStream *file)
 {
 	if (ungot != -1) {
 		int ret = ungot;
@@ -767,7 +767,7 @@ void JSON::unget(int c)
 	ungot = c;
 }
 
-void JSON::skip_whitespace(SDL_RWops *file)
+void JSON::skip_whitespace(SDL_IOStream *file)
 {
 	while (true) {
 		int c = read_char(file);
@@ -783,7 +783,7 @@ void JSON::skip_whitespace(SDL_RWops *file)
 	assert(NULL && "Error skipping whitespace");
 }
 
-std::string JSON::read_token(SDL_RWops *file, bool is_string)
+std::string JSON::read_token(SDL_IOStream *file, bool is_string)
 {
 	std::string token;
 	int prev = -1;
@@ -827,17 +827,17 @@ std::string JSON::read_token(SDL_RWops *file, bool is_string)
 	return token;
 }
 
-std::string JSON::read_string(SDL_RWops *file)
+std::string JSON::read_string(SDL_IOStream *file)
 {
 	return "\"" + read_token(file, true) + "\"";
 }
 
-std::string JSON::read_value(SDL_RWops *file)
+std::string JSON::read_value(SDL_IOStream *file)
 {
 	return read_token(file, false);
 }
 
-void JSON::parse_node(Node *node, SDL_RWops *file)
+void JSON::parse_node(Node *node, SDL_IOStream *file)
 {
 	skip_whitespace(file);
 
@@ -868,7 +868,7 @@ void JSON::parse_node(Node *node, SDL_RWops *file)
 	}
 }
 
-void JSON::read_array(Node *node, SDL_RWops *file)
+void JSON::read_array(Node *node, SDL_IOStream *file)
 {
 	for (int count = 0;;) {
 		skip_whitespace(file);
@@ -911,7 +911,7 @@ void JSON::read_array(Node *node, SDL_RWops *file)
 	assert(NULL && "Unknown error reading array\n");
 }
 
-void JSON::read_hash(Node *node, SDL_RWops *file)
+void JSON::read_hash(Node *node, SDL_IOStream *file)
 {
 	while (true) {
 		skip_whitespace(file);

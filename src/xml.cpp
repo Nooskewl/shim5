@@ -58,7 +58,7 @@ void XML::destroy(Node *node)
 
 void XML::read(char *bytes, int sz)
 {
-	SDL_RWops *file = SDL_RWFromMem(bytes, sz);
+	SDL_IOStream *file = SDL_IOFromMem(bytes, sz);
 
 	skip_whitespace(file);
 
@@ -88,11 +88,11 @@ void XML::read(char *bytes, int sz)
 		read_tag(root, file);
 	}
 	catch (util::Error e) {
-		SDL_RWclose(file);
+		SDL_CloseIO(file);
 		throw e;
 	}
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 }
 
 void XML::read(std::string filename)
@@ -116,7 +116,7 @@ XML::Node *XML::get_root()
 	return root;
 }
 
-int XML::read_char(SDL_RWops *file)
+int XML::read_char(SDL_IOStream *file)
 {
 	if (ungot.size() > 0) {
 		int ret = ungot[ungot.size()-1];
@@ -131,7 +131,7 @@ int XML::read_char(SDL_RWops *file)
 	return c;
 }
 
-void XML::read_tag(Node *node, SDL_RWops *file)
+void XML::read_tag(Node *node, SDL_IOStream *file)
 {
 	int c = read_char(file);
 
@@ -306,7 +306,7 @@ void XML::unget(int c)
 	ungot.push_back(c);
 }
 
-void XML::skip_whitespace(SDL_RWops *file)
+void XML::skip_whitespace(SDL_IOStream *file)
 {
 	while (true) {
 		int c = read_char(file);

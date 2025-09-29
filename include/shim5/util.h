@@ -36,22 +36,20 @@ void SHIM5_EXPORT printGLerror(const char *fmt, ...);
 #endif
 
 // some functions SDL doesn't have that are handy
-int SHIM5_EXPORT SDL_fgetc(SDL_RWops *file);
-int SHIM5_EXPORT SDL_fputc(int c, SDL_RWops *file);
-char SHIM5_EXPORT *SDL_fgets(SDL_RWops *file, char * const buf, size_t max);
-int SHIM5_EXPORT SDL_fputs(const char *string, SDL_RWops *file);
-SHIM5_EXPORT void SDL_fprintf(SDL_RWops *file, const char *fmt, ...);
+int SHIM5_EXPORT SDL_fgetc(SDL_IOStream *file);
+int SHIM5_EXPORT SDL_fputc(int c, SDL_IOStream *file);
+char SHIM5_EXPORT *SDL_fgets(SDL_IOStream *file, char * const buf, size_t max);
+int SHIM5_EXPORT SDL_fputs(const char *string, SDL_IOStream *file);
+SHIM5_EXPORT void SDL_fprintf(SDL_IOStream *file, const char *fmt, ...);
 
-SDL_RWops *open_file(std::string filename, int *sz, bool data_only = false);
-void close_file(SDL_RWops *file);
-void free_data(SDL_RWops *file);
+SDL_IOStream *open_file(std::string filename, int *sz, bool data_only = false);
+void close_file(SDL_IOStream *file);
+void free_data(SDL_IOStream *file);
 
 int SHIM5_EXPORT check_args(int argc, char **argv, std::string arg);
 bool SHIM5_EXPORT bool_arg(bool default_value, int argc, char **argv, std::string arg);
 
 SHIM5_EXPORT std::string string_printf(const char *fmt, ...);
-
-SHIM5_EXPORT std::string itos(int i);
 
 std::string SHIM5_EXPORT escape_string(std::string s, char c); // add backslashes before c characters in s
 

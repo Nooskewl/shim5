@@ -31,16 +31,16 @@ public:
 	SHIM5_EXPORT virtual int get_height() = 0;
 
 	// If interpret_colour_codes is true, this returns the last colour used. Otherwise, it returns the colour passed in.
-	SHIM5_EXPORT SDL_Colour draw(SDL_Colour colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes = true, bool centre = false, bool interpret_extra_glyphs = true, bool rtl = false);
+	SHIM5_EXPORT SDL_Color draw(SDL_Color colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes = true, bool centre = false, bool interpret_extra_glyphs = true, bool rtl = false);
 
 	// Returns number of characters drawn, plus whether or not it filled the max in bool &full
-	SHIM5_EXPORT int draw_wrapped(SDL_Colour colour, std::string text, util::Point<float> dest_position, int w, int line_height, int max_lines, int elapsed, int delay, bool dry_run, bool &full, int &num_lines, int &width, bool interpret_colour_codes = true, bool centre = false, int first_line_indent = 0, bool interpret_extra_glyphs = true);
+	SHIM5_EXPORT int draw_wrapped(SDL_Color colour, std::string text, util::Point<float> dest_position, int w, int line_height, int max_lines, int elapsed, int delay, bool dry_run, bool &full, int &num_lines, int &width, bool interpret_colour_codes = true, bool centre = false, int first_line_indent = 0, bool interpret_extra_glyphs = true);
 
 	SHIM5_EXPORT void add_extra_glyph(int code, Image *image); // for @00 images
 	SHIM5_EXPORT void remove_extra_glyph(int code);
 	SHIM5_EXPORT void set_extra_glyph_offset(util::Point<float> offset);
 
-	SHIM5_EXPORT void enable_shadow(SDL_Colour shadow_colour, Shadow_Type shadow_type);
+	SHIM5_EXPORT void enable_shadow(SDL_Color shadow_colour, Shadow_Type shadow_type);
 	SHIM5_EXPORT void disable_shadow();
 
 	// For 16 byte alignment to make glm::mat4 able to use SIMD
@@ -68,7 +68,7 @@ protected:
 	std::map<int, Image *> extra_glyphs;
 	util::Point<float> extra_glyph_offset;
 
-	SDL_Colour shadow_colour;
+	SDL_Color shadow_colour;
 	Shadow_Type shadow_type;
 };
 

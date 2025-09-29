@@ -35,7 +35,7 @@ int SHIM5_EXPORT get_num_joysticks();
 int SHIM5_EXPORT get_controller_index(SDL_JoystickID id);
 SDL_JoystickID SHIM5_EXPORT get_controller_id(int index);
 SDL_Joystick SHIM5_EXPORT *get_sdl_joystick(SDL_JoystickID id);
-SDL_GameController SHIM5_EXPORT *get_sdl_gamecontroller(SDL_JoystickID id);
+SDL_Gamepad SHIM5_EXPORT *get_sdl_gamepad(SDL_JoystickID id);
 
 #ifdef STEAMWORKS
 ControllerHandle_t SHIM5_EXPORT get_controller_handle();

@@ -44,7 +44,7 @@ private:
 	gfx::Shader *old_shader;
 	gfx::Image *old_target;
 
-	SDL_RWops *file;
+	SDL_IOStream *file;
 
 	int curr_sheet;
 

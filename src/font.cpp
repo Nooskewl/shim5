@@ -187,7 +187,7 @@ int Font::get_text_width(std::string text, bool interpret_colour_codes, bool int
 	return width - 1; // glyph size includes advance, subtract 1 because no advance is needed on the final character
 }
 
-SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes, bool centre, bool interpret_extra_glyphs, bool rtl)
+SDL_Color Font::draw(SDL_Color colour, std::string text, util::Point<float> dest_position, bool interpret_colour_codes, bool centre, bool interpret_extra_glyphs, bool rtl)
 {
 	if (text == "") {
 		return colour;
@@ -416,7 +416,7 @@ SDL_Colour Font::draw(SDL_Colour colour, std::string text, util::Point<float> de
 	return colour;
 }
 
-int Font::draw_wrapped(SDL_Colour colour, std::string text, util::Point<float> dest_position, int w, int line_height, int max_lines, int elapsed, int delay, bool dry_run, bool &full, int &num_lines, int &width, bool interpret_colour_codes, bool centre, int first_line_indent, bool interpret_extra_glyphs)
+int Font::draw_wrapped(SDL_Color colour, std::string text, util::Point<float> dest_position, int w, int line_height, int max_lines, int elapsed, int delay, bool dry_run, bool &full, int &num_lines, int &width, bool interpret_colour_codes, bool centre, int first_line_indent, bool interpret_extra_glyphs)
 {
 	if (cache_glyphs(strip_codes(text, interpret_colour_codes, true, interpret_extra_glyphs)) == false) {
 		return 0;
@@ -656,7 +656,7 @@ void Font::set_extra_glyph_offset(util::Point<float> offset)
 	extra_glyph_offset = offset;
 }
 
-void Font::enable_shadow(SDL_Colour shadow_colour, Shadow_Type shadow_type) {
+void Font::enable_shadow(SDL_Color shadow_colour, Shadow_Type shadow_type) {
 	this->shadow_colour = shadow_colour;
 	this->shadow_type = shadow_type;
 }

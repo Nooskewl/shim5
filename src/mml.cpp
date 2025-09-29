@@ -1,7 +1,6 @@
 #include "shim5/audio.h"
 #include "shim5/error.h"
 #include "shim5/mml.h"
-#include "shim5/mt.h"
 #include "shim5/sample.h"
 #include "shim5/shim.h"
 #include "shim5/tokenizer.h"
@@ -12,7 +11,7 @@
 //#define DUMP
 
 #ifdef DUMP
-extern SDL_RWops *dumpfile;
+extern SDL_IOStream *dumpfile;
 static bool use_mml_loops = true;
 static int mml_loops = 3;
 #else
@@ -164,7 +163,7 @@ void MML::static_start()
 	noise_i = 0.0f;
 	noise2_i = 1.0f;
 
-	tmp = new float[internal::audio_context.device_spec.samples*internal::audio_context.device_spec.channels];
+	tmp = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
 
 	loaded_mml.clear();
 }
@@ -176,7 +175,7 @@ void MML::static_stop()
 
 void MML::pause_all()
 {
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	for (size_t i = 0; i < loaded_mml.size(); i++) {
 		for (size_t j = 0; j < loaded_mml[i]->tracks.size(); j++) {
@@ -187,7 +186,7 @@ void MML::pause_all()
 		}
 	}
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 MML::Track::Track(Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types) :
@@ -1389,13 +1388,13 @@ MML::MML(std::string filename, bool load_from_filesystem) :
 		filename = "audio/mml/" + filename;
 	}
 
-	SDL_RWops *f;
+	SDL_IOStream *f;
 
 	int sz = 0;
 	if (load_from_filesystem) {
-		f = SDL_RWFromFile(filename.c_str(), "r");
+		f = SDL_IOFromFile(filename.c_str(), "r");
 		if (f) {
-			sz = (int)SDL_RWsize(f);
+			sz = (int)SDL_GetIOSize(f);
 		}
 	}
 	else {
@@ -1409,13 +1408,13 @@ MML::MML(std::string filename, bool load_from_filesystem) :
 	load(f, load_from_filesystem);
 }
 
-MML::MML(SDL_RWops *f, bool load_from_filesystem) :
+MML::MML(SDL_IOStream *f, bool load_from_filesystem) :
 	_pause_with_sfx(true)
 {
 	load(f, load_from_filesystem);
 }
 
-void MML::load(SDL_RWops *f, bool load_from_filesystem)
+void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 {
 	std::vector<std::string> tracks_s;
 	std::vector< std::vector< std::pair<int, float> > > volumes;
@@ -1456,7 +1455,7 @@ void MML::load(SDL_RWops *f, bool load_from_filesystem)
 
 	int count = 0;
 		
-	int sz = (int)SDL_RWsize(f);
+	int sz = (int)SDL_GetIOSize(f);
 
 	while (count < sz && util::SDL_fgets(f, buf, 1000)) {
 		count += strlen(buf);
@@ -2043,21 +2042,21 @@ void MML::load(SDL_RWops *f, bool load_from_filesystem)
 	num_tracks = (int)tracks.size();
 
 	if (load_from_filesystem) {
-		SDL_RWclose(f);
+		SDL_CloseIO(f);
 	}
 	else {
 		util::close_file(f);
 	}
 
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	loaded_mml.push_back(this);
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 
 #ifdef DUMP
 	if (dumpfile == 0) {
-		dumpfile = SDL_RWFromFile("dump.raw", "wb");
+		dumpfile = SDL_IOFromFile("dump.raw", "wb");
 	}
 #endif
 	int arg;
@@ -2070,7 +2069,7 @@ void MML::load(SDL_RWops *f, bool load_from_filesystem)
 
 MML::~MML()
 {
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	for (size_t i = 0; i < loaded_mml.size(); i++) {
 		if (loaded_mml[i] == this) {
@@ -2079,7 +2078,7 @@ MML::~MML()
 		}
 	}
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 
 	for (size_t i =  0; i < tracks.size(); i++) {
 		delete tracks[i];
@@ -2094,7 +2093,7 @@ MML::~MML()
 	}
 
 #ifdef DUMP
-	SDL_RWclose(dumpfile);
+	SDL_CloseIO(dumpfile);
 #endif
 }
 
@@ -2110,7 +2109,7 @@ void MML::play(float volume, bool loop)
 		set_pause_with_sfx(false);
 	}
 
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	for (size_t i = 0; i < tracks.size(); i++) {
 		tracks[i]->play(loop);
@@ -2120,7 +2119,7 @@ void MML::play(float volume, bool loop)
 		reverb_tracks[i]->play(false); // never loop!
 	}
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 void MML::play(bool loop)
@@ -2130,7 +2129,7 @@ void MML::play(bool loop)
 
 void MML::pause()
 {
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	for (size_t i = 0; i < tracks.size(); i++) {
 		tracks[i]->pause();
@@ -2140,12 +2139,12 @@ void MML::pause()
 		reverb_tracks[i]->pause();
 	}
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 void MML::stop()
 {
-	SDL_LockMutex(internal::audio_context.mixer_mutex);
+	audio::lock_mutex();
 
 	for (size_t i = 0; i < tracks.size(); i++) {
 		tracks[i]->stop();
@@ -2156,7 +2155,7 @@ void MML::stop()
 	}
 	reverb_tracks.clear();
 
-	SDL_UnlockMutex(internal::audio_context.mixer_mutex);
+	audio::unlock_mutex();
 }
 
 std::string MML::get_name()

@@ -22,8 +22,8 @@ public:
 
 	struct Group
 	{
-		unsigned int type;
-		int x, y, w, h;
+		Uint32 type;
+		Uint16 x, y, w, h;
 	};
 
 	static float elapsed;

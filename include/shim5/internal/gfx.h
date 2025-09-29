@@ -23,7 +23,7 @@ struct GFX_Context {
 	Uint32 windowid;
 	bool restarting;
 	SDL_GLContext opengl_context;
-	SDL_mutex *draw_mutex;
+	SDL_Mutex *draw_mutex;
 	bool mouse_in_window;
 	Shader *textured_shader;
 	Shader *untextured_shader;

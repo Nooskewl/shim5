@@ -13,19 +13,19 @@ class SHIM5_EXPORT CPA
 {
 public:
 	// Only one file returned from this function can be used at a time,
-	// because it's really an SDL_RWops pointing to the data file. Don't
+	// because it's really an SDL_IOStream pointing to the data file. Don't
 	// close the file and use sz to determine the end, don't rely on
 	// SDL_fgetc etc returning EOF. If you need to get SDL_fgetc to return
-	// EOF, create a memory file with SDL_RWFromMem using the value this
+	// EOF, create a memory file with SDL_IOFromMem using the value this
 	// returns.
 	// Above does not apply if loading from the filesystem. In both cases,
 	// you should always use close (below) to close the file, and never
-	// use SDL_RWclose directly.
-	SDL_RWops *open(std::string filename, int *sz, bool data_only = false);
-	void close(SDL_RWops *file);
+	// use SDL_CloseIO directly.
+	SDL_IOStream *open(std::string filename, int *sz, bool data_only = false);
+	void close(SDL_IOStream *file);
 	bool exists(std::string filename);
 	std::vector<std::string> get_all_filenames();
-	void free_data(SDL_RWops *file); // special case where something already closed the file. same as close() except doesn't close the file
+	void free_data(SDL_IOStream *file); // special case where something already closed the file. same as close() except doesn't close the file
 
 	CPA(); // tries CPA archive then data/ directory
 	CPA(std::string argv0); // tries EXE
@@ -42,13 +42,13 @@ private:
 	};
 
 	void load_datafile();
-	void delete_bytes(SDL_RWops *file);
+	void delete_bytes(SDL_IOStream *file);
 
-	SDL_RWops *file;
+	SDL_IOStream *file;
 
 	std::map<std::string, Info> info;
-	std::map<SDL_RWops *, std::string> files;
-	std::map<SDL_RWops *, Uint8 *> bytes;
+	std::map<SDL_IOStream *, std::string> files;
+	std::map<SDL_IOStream *, Uint8 *> bytes;
 
 	bool load_from_filesystem;
 	bool load_from_exe;

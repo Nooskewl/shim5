@@ -710,7 +710,7 @@ void Shader::set_int(std::string name, int value)
 #endif
 }
 
-bool Shader::set_colour(std::string name, SDL_Colour colour)
+bool Shader::set_colour(std::string name, SDL_Color colour)
 {
 	float vector[4];
 	vector[0] = colour.r / 255.0f;
@@ -922,7 +922,7 @@ void Shader::unbind(Shader *s)
 void Shader::load_d3d_shader(std::string filename, D3D_Shader *shader, bool load_from_filesystem)
 {
 	int full_size;
-	SDL_RWops *f = util::open_file("gfx/shaders/hlsl/" + filename + ".shader", &full_size, load_from_filesystem);
+	SDL_IOStream *f = util::open_file("gfx/shaders/hlsl/" + filename + ".shader", &full_size, load_from_filesystem);
 	if (f == 0) {
 		throw util::FileNotFoundError("HLSL shader '" + filename + "' not found.");
 	}
@@ -941,7 +941,8 @@ void Shader::load_d3d_shader(std::string filename, D3D_Shader *shader, bool load
 		}
 		int type = util::SDL_fgetc(f);
 		int reg_num = util::SDL_fgetc(f);
-		int sz = SDL_ReadLE32(f);
+		Uint32 sz;
+	       	SDL_ReadU32LE(f, &sz);
 
 		D3D_Var_Info info;
 		info.num = reg_num;
@@ -951,12 +952,12 @@ void Shader::load_d3d_shader(std::string filename, D3D_Shader *shader, bool load
 		shader->sizes[name] = sz;
 	}
 
-	int offset = SDL_RWtell(f);
+	int offset = SDL_TellIO(f);
 	int data_size = full_size - offset;
 
 	shader->data = new Uint8[data_size];
 
-	SDL_RWread(f, shader->data, data_size, 1);
+	SDL_ReadIO(f, shader->data, data_size);
 
 	util::close_file(f);
 }

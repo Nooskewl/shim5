@@ -17,7 +17,6 @@
 #include "shim5/main.h"
 #include "shim5/md5.h"
 #include "shim5/mml.h"
-#include "shim5/mt.h"
 #include "shim5/model.h"
 #include "shim5/pixel_font.h"
 #include "shim5/primitives.h"

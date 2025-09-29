@@ -61,7 +61,7 @@ void SHIM5_EXPORT draw_guis();
 void SHIM5_EXPORT draw_notifications();
 void SHIM5_EXPORT flip();
 
-void SHIM5_EXPORT clear(SDL_Colour colour);
+void SHIM5_EXPORT clear(SDL_Color colour);
 void SHIM5_EXPORT clear_depth_buffer(float value);
 void SHIM5_EXPORT clear_stencil_buffer(int value);
 void SHIM5_EXPORT clear_buffers();
@@ -113,7 +113,7 @@ std::vector< util::Size<int> > SHIM5_EXPORT get_supported_video_modes();
 
 void SHIM5_EXPORT show_mouse_cursor(bool show);
 
-int SHIM5_EXPORT load_palette(std::string name, SDL_Colour *out, int out_size = 256);
+int SHIM5_EXPORT load_palette(std::string name, SDL_Color *out, int out_size = 256);
 int SHIM5_EXPORT load_default_palette();
 
 void SHIM5_EXPORT add_notification(std::string text);
@@ -121,11 +121,11 @@ std::string SHIM5_EXPORT get_current_notification();
 void SHIM5_EXPORT cancel_current_notification();
 void SHIM5_EXPORT cancel_all_notifications();
 
-void SHIM5_EXPORT draw_9patch_tinted(SDL_Colour tint, Image *image, util::Point<float> dest_position, util::Size<int> dest_size);
+void SHIM5_EXPORT draw_9patch_tinted(SDL_Color tint, Image *image, util::Point<float> dest_position, util::Size<int> dest_size);
 void SHIM5_EXPORT draw_9patch(Image *image, util::Point<int> dest_position, util::Size<int> dest_size);
 
 void SHIM5_EXPORT reset_fancy_draw();
-void SHIM5_EXPORT fancy_draw(SDL_Colour colour, std::string text, util::Point<int> position);
+void SHIM5_EXPORT fancy_draw(SDL_Color colour, std::string text, util::Point<int> position);
 
 void SHIM5_EXPORT set_custom_mouse_cursor(); // can be needed in some cases but rarely
 
@@ -146,7 +146,7 @@ bool SHIM5_EXPORT is_fullscreen_window();
 
 void SHIM5_EXPORT resize_window(int width, int height);
 
-gfx::Image SHIM5_EXPORT *gen_plasma(int seed, float alpha1, float alpha2, SDL_Colour tint);
+gfx::Image SHIM5_EXPORT *gen_plasma(int seed, float alpha1, float alpha2, SDL_Color tint);
 
 void SHIM5_EXPORT screen_shake(float amount, Uint32 length);
 void SHIM5_EXPORT apply_screen_shake();
@@ -161,7 +161,7 @@ enum Black_Bar_Type {
 typedef void (*_black_bars_callback)(Black_Bar_Type type, int x, int y, int w, int h);
 void SHIM5_EXPORT register_black_bars_callback(_black_bars_callback);
 
-#if ((defined __APPLE__ && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32 || defined __EMSCRIPTEN__)
+#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32 || defined __EMSCRIPTEN__)
 void SHIM5_EXPORT create_mouse_cursors();
 void SHIM5_EXPORT delete_mouse_cursors();
 #endif

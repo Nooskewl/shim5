@@ -22,7 +22,7 @@ public:
 
 	void draw();
 
-	SDL_Colour bg_colour;
+	SDL_Color bg_colour;
 
 protected:
 	void start();
@@ -45,8 +45,8 @@ public:
 
 private:
 	void set_nr();
-	void draw_text_clamped(SDL_Colour colour, std::string text, util::Point<int> pos, int max_width);
-	void draw_text_scroll(SDL_Colour colour, std::string text, util::Point<int> pos, int max_width);
+	void draw_text_clamped(SDL_Color colour, std::string text, util::Point<int> pos, int max_width);
+	void draw_text_scroll(SDL_Color colour, std::string text, util::Point<int> pos, int max_width);
 	void save_edit();
 	void draw_edit(std::string value, util::Point<int> pos, int max_width);
 	void insert_text(char *text);

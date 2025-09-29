@@ -22,14 +22,14 @@ public:
 
 	SHIM5_EXPORT bool is_started();
 
-	SHIM5_EXPORT void cache(SDL_Colour vertex_colours[3], util::Point<float> da, util::Point<float> db, util::Point<float> dc);
-	SHIM5_EXPORT void cache(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> da, util::Point<float> db, util::Point<float> dc, util::Point<float> dd, int flags);
-	SHIM5_EXPORT void cache_z_range(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z_top, float z_bottom, util::Size<float> dest_size, int flags);
-	SHIM5_EXPORT void cache_z(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z, util::Size<float> dest_size, int flags);
-	SHIM5_EXPORT void cache(SDL_Colour vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, util::Size<float> dest_size, int flags);
-	SHIM5_EXPORT void cache_z(SDL_Colour vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags);
-	SHIM5_EXPORT void cache(SDL_Colour vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale, int flags);
-	SHIM5_EXPORT void cache_3d(SDL_Colour tint, float *in_verts, int *in_faces, float *in_normals, float *in_texcoords, float *in_colours, int num_triangles);
+	SHIM5_EXPORT void cache(SDL_Color vertex_colours[3], util::Point<float> da, util::Point<float> db, util::Point<float> dc);
+	SHIM5_EXPORT void cache(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> da, util::Point<float> db, util::Point<float> dc, util::Point<float> dd, int flags);
+	SHIM5_EXPORT void cache_z_range(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z_top, float z_bottom, util::Size<float> dest_size, int flags);
+	SHIM5_EXPORT void cache_z(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, float z, util::Size<float> dest_size, int flags);
+	SHIM5_EXPORT void cache(SDL_Color vertex_colours[4], util::Point<float> source_position, util::Size<float> source_size, util::Point<float> dest_position, util::Size<float> dest_size, int flags);
+	SHIM5_EXPORT void cache_z(SDL_Color vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags);
+	SHIM5_EXPORT void cache(SDL_Color vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale, int flags);
+	SHIM5_EXPORT void cache_3d(SDL_Color tint, float *in_verts, int *in_faces, float *in_normals, float *in_texcoords, float *in_colours, int num_triangles);
 	SHIM5_EXPORT void cache_3d_immediate(float *buffer, int num_triangles);
 
 	SHIM5_EXPORT void maybe_resize_cache(int increase);

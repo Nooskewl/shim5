@@ -78,7 +78,7 @@ public:
 	SHIM5_EXPORT bool set_float_vector(std::string name, int num_components, const float *vector, int num_elements);
 	SHIM5_EXPORT void set_bool(std::string name, bool value);
 	SHIM5_EXPORT void set_int(std::string name, int value);
-	SHIM5_EXPORT bool set_colour(std::string name, SDL_Colour colour);
+	SHIM5_EXPORT bool set_colour(std::string name, SDL_Color colour);
 
 	SHIM5_EXPORT GLuint get_opengl_shader();
 	SHIM5_EXPORT void set_opengl_attributes(float *pos, float *normal, float *texcoord, float *colour);

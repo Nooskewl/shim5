@@ -235,10 +235,10 @@ void Model::destroy(Animation *animation)
 
 void Model::read(std::string filename, bool load_from_filesystem)
 {
-	SDL_RWops *file;
+	SDL_IOStream *file;
 
 	if (load_from_filesystem) {
-		file = SDL_RWFromFile(filename.c_str(), "rb");
+		file = SDL_IOFromFile(filename.c_str(), "rb");
 	}
 	else {
 		filename = "gfx/models/" + filename;
@@ -253,7 +253,7 @@ void Model::read(std::string filename, bool load_from_filesystem)
 	char buf[5];
 	buf[4] = 0;
 	
-	if (SDL_RWread(file, buf, 1, 4) != 4) {
+	if (SDL_ReadIO(file, buf, 4) != 4) {
 		throw util::LoadError("Error reading model header!");
 	}
 
@@ -262,7 +262,7 @@ void Model::read(std::string filename, bool load_from_filesystem)
 
 		memcpy(header, buf, 4);
 
-		if (SDL_RWread(file, header+4, 1, 12) != 12) {
+		if (SDL_ReadIO(file, header+4, 12) != 12) {
 			throw util::LoadError("Error reading model header!");
 		}
 
@@ -307,7 +307,7 @@ Model::Node *Model::find(std::string name)
 	return 0;
 }
 
-int Model::read_byte(SDL_RWops *file)
+int Model::read_byte(SDL_IOStream *file)
 {
 	if (ungot.size() > 0) {
 		int ret = ungot[ungot.size()-1];
@@ -327,7 +327,7 @@ void Model::unget(int c)
 	ungot.push_back(c);
 }
 
-void Model::skip_whitespace(SDL_RWops *file)
+void Model::skip_whitespace(SDL_IOStream *file)
 {
 	while (true) {
 		int c = read_byte(file);
@@ -364,7 +364,7 @@ void Model::skip_whitespace(SDL_RWops *file)
 	assert(0 && "Error skipping whitespace");
 }
 
-std::string Model::read_word(SDL_RWops *file)
+std::string Model::read_word(SDL_IOStream *file)
 {
 	std::string word;
 
@@ -400,7 +400,7 @@ std::string Model::read_word(SDL_RWops *file)
 	assert(0 && "Error reading word");
 }
 
-Model::Node *Model::read_text_frame(SDL_RWops *file)
+Model::Node *Model::read_text_frame(SDL_IOStream *file)
 {
 	Node *m = new Node;
 
@@ -840,7 +840,7 @@ Model::Node *Model::read_text_frame(SDL_RWops *file)
 				throw util::LoadError(util::string_printf("Unexpected EOF on line %d", line));
 			}
 			int nfaces = atoi(nfaces_s.c_str());
-			m->face_textures = new int[nfaces];
+			m->face_textures = new Uint32[nfaces];
 			for (int i = 0; i < nfaces; i++) {
 				skip_whitespace(file);
 				std::string v_s = read_word(file);
@@ -1096,7 +1096,7 @@ void Model::Node::create_arrays(float *v, int *f, float *n, int *nind, float *t,
 	}
 }
 
-Model::Animation *Model::read_animationset(SDL_RWops *file)
+Model::Animation *Model::read_animationset(SDL_IOStream *file)
 {
 	Animation *a = new Animation;
 	a->is_precalculated = false;
@@ -1152,7 +1152,7 @@ Model::Animation *Model::read_animationset(SDL_RWops *file)
 	return a;
 }
 
-Model::Bone *Model::read_animation(SDL_RWops *file)
+Model::Bone *Model::read_animation(SDL_IOStream *file)
 {
 	Bone *b = new Bone;
 
@@ -1369,7 +1369,7 @@ Model::Bone *Model::read_animation(SDL_RWops *file)
 	return b;
 }
 
-void Model::skip_section(SDL_RWops *file)
+void Model::skip_section(SDL_IOStream *file)
 {
 	int open_count = 1;
 	while (true) {
@@ -1386,7 +1386,7 @@ void Model::skip_section(SDL_RWops *file)
 	}
 }
 
-void Model::read_text_model(SDL_RWops *file)
+void Model::read_text_model(SDL_IOStream *file)
 {
 	while (true) {
 		skip_whitespace(file);
@@ -1428,9 +1428,10 @@ void Model::read_text_model(SDL_RWops *file)
 	}
 }
 
-std::string Model::read_string(SDL_RWops *file)
+std::string Model::read_string(SDL_IOStream *file)
 {
-	Uint32 len = SDL_ReadLE32(file);
+	Uint32 len;
+       	SDL_ReadU32LE(file, &len);
 	std::string str;
 	char s[2];
 	s[1] = 0;
@@ -1442,7 +1443,7 @@ std::string Model::read_string(SDL_RWops *file)
 	return str;
 }
 
-glm::mat4 Model::read_matrix(SDL_RWops *file)
+glm::mat4 Model::read_matrix(SDL_IOStream *file)
 {
 	union {
 		float f;
@@ -1453,14 +1454,14 @@ glm::mat4 Model::read_matrix(SDL_RWops *file)
 	float *f = (float *)glm::value_ptr(m);
 
 	for (int i = 0; i < 16; i++) {
-		u.u = SDL_ReadLE32(file);
+		SDL_ReadU32LE(file, &u.u);
 		f[i] = u.f;
 	}
 
 	return m;
 }
 
-Model::Node *Model::read_binary_frame(SDL_RWops *file)
+Model::Node *Model::read_binary_frame(SDL_IOStream *file)
 {
 	Node *n = new Node;
 	
@@ -1478,7 +1479,8 @@ Model::Node *Model::read_binary_frame(SDL_RWops *file)
 
 	n->name = read_string(file);
 
-	Uint32 num_children = SDL_ReadLE32(file);
+	Uint32 num_children;
+       	SDL_ReadU32LE(file, &num_children);
 
 	for (size_t i = 0; i < num_children; i++) {
 		Node *child = read_binary_frame(file);
@@ -1488,14 +1490,14 @@ Model::Node *Model::read_binary_frame(SDL_RWops *file)
 
 	n->transform = read_matrix(file);
 
-	n->num_vertices = SDL_ReadLE32(file);
+	SDL_ReadU32LE(file, &n->num_vertices);
 	
 	Uint32 num_floats = n->num_vertices * 12;
 
 	n->vertices = new float[num_floats];
 
 	for (Uint32 i = 0; i < num_floats; i++) {
-		u.u = SDL_ReadLE32(file);
+		SDL_ReadU32LE(file, &u.u);
 		n->vertices[i] = u.f;
 		if (i % 12 == 0) { // x
 			if (u.f < n->min_x) {
@@ -1526,34 +1528,36 @@ Model::Node *Model::read_binary_frame(SDL_RWops *file)
 	n->animated_vertices = new float[num_floats];
 	memcpy(n->animated_vertices, n->vertices, sizeof(float)*num_floats);
 
-	Uint32 num_textures = SDL_ReadLE32(file);
+	Uint32 num_textures;
+       	SDL_ReadU32LE(file, &num_textures);
 
 	for (Uint32 i = 0; i < num_textures; i++) {
 		std::string image_filename = read_string(file);
 		n->textures.push_back(new Image(image_filename, true));
 	}
 
-	n->num_triangles = SDL_ReadLE32(file);
+	SDL_ReadU32LE(file, &n->num_triangles);
 
 	if (num_textures == 0) {
 		n->face_textures = 0;
 	}
 	else {
-		n->face_textures = new int[n->num_triangles];
+		n->face_textures = new Uint32[n->num_triangles];
 
 		for (int i = 0; i < n->num_triangles; i++) {
-			n->face_textures[i] = SDL_ReadLE32(file);
+			SDL_ReadU32LE(file, &n->face_textures[i]);
 		}
 	}
 
-	Uint32 num_weights = SDL_ReadLE32(file);
+	Uint32 num_weights;
+	SDL_ReadU32LE(file, &num_weights);
 
 	for (Uint32 i = 0; i < num_weights; i++) {
 		Weights *w = new Weights;
 		w->name = read_string(file);
 		w->weights = new float[n->num_vertices];
 		for (int j = 0; j < n->num_vertices; j++) {
-			u.u = SDL_ReadLE32(file);
+			SDL_ReadU32LE(file, &u.u);
 			w->weights[j] = u.f;
 		}
 		w->transform = read_matrix(file);
@@ -1573,14 +1577,18 @@ Model::Node *Model::read_binary_frame(SDL_RWops *file)
 	n->influences = new Influence[n->num_vertices];
 
 	for (int i = 0; i < n->num_vertices; i++) {
-		Uint32 num_weights = SDL_ReadLE32(file);
+		Uint32 num_weights;
+		SDL_ReadU32LE(file, &num_weights);
 		for (size_t j = 0; j < num_weights; j++) {
-			Uint32 index = SDL_ReadLE32(file);
+			Uint32 index;
+			SDL_ReadU32LE(file, &index);
 			n->influences[i].weights.push_back(n->weights[index]);
 		}
-		Uint32 num_bones = SDL_ReadLE32(file);
+		Uint32 num_bones;
+		SDL_ReadU32LE(file, &num_bones);
 		for (size_t j = 0; j < num_bones; j++) {
-			Uint32 index = SDL_ReadLE32(file);
+			Uint32 index;
+			SDL_ReadU32LE(file, &index);
 			n->influences[i].bones.push_back(bones[index]);
 		}
 	}
@@ -1588,20 +1596,22 @@ Model::Node *Model::read_binary_frame(SDL_RWops *file)
 	return n;
 }
 
-Model::Animation *Model::read_binary_animation(SDL_RWops *file)
+Model::Animation *Model::read_binary_animation(SDL_IOStream *file)
 {
 	Animation *a = new Animation;
 	a->is_precalculated = false;
 
 	a->name = read_string(file);
 
-	Uint32 num_bones = SDL_ReadLE32(file);
+	Uint32 num_bones;
+	SDL_ReadU32LE(file, &num_bones);
 
 	for (Uint32 i = 0; i < num_bones; i++) {
 		Bone *b = new Bone;
 		b->name = read_string(file);
 
-		Uint32 num_frames = SDL_ReadLE32(file);
+		Uint32 num_frames;
+		SDL_ReadU32LE(file, &num_frames);
 
 		for (Uint32 i = 0; i < num_frames; i++) {
 			b->frames.push_back(read_matrix(file));
@@ -1613,34 +1623,36 @@ Model::Animation *Model::read_binary_animation(SDL_RWops *file)
 	return a;
 }
 
-void Model::read_binary_model(SDL_RWops *file)
+void Model::read_binary_model(SDL_IOStream *file)
 {
-	Uint32 num_animations = SDL_ReadLE32(file);
+	Uint32 num_animations;
+	SDL_ReadU32LE(file, &num_animations);
 	for (size_t i = 0; i < num_animations; i++) {
 		Animation *a = read_binary_animation(file);
 		instance->animations[a->name] = a;
 	}
 
-	Uint32 num_roots = SDL_ReadLE32(file);
+	Uint32 num_roots;
+	SDL_ReadU32LE(file, &num_roots);
 	for (size_t i = 0; i < num_roots; i++) {
 		Node *n = read_binary_frame(file);
 		n->parent = 0;
 		roots.push_back(n);
 	}
 
-	instance->frames_per_second = SDL_ReadLE32(file);
+	SDL_ReadU32LE(file, &instance->frames_per_second);
 }
 
-void Model::write_string(SDL_RWops *file, std::string s)
+void Model::write_string(SDL_IOStream *file, std::string s)
 {
 	Uint32 len = (Uint32)s.length();
-	SDL_WriteLE32(file, len);
+	SDL_WriteU32LE(file, len);
 	for (size_t i = 0; i < len; i++) {
 		util::SDL_fputc(s[i], file);
 	}
 }
 
-void Model::write_matrix(SDL_RWops *file, glm::mat4 &matrix)
+void Model::write_matrix(SDL_IOStream *file, glm::mat4 &matrix)
 {
 	union {
 		float f;
@@ -1651,11 +1663,11 @@ void Model::write_matrix(SDL_RWops *file, glm::mat4 &matrix)
 
 	for (int i = 0; i < 16; i++) {
 		u.f = f[i];
-		SDL_WriteLE32(file, u.u);
+		SDL_WriteU32LE(file, u.u);
 	}
 }
 
-void Model::save_binary_frame(SDL_RWops *file, Node *n)
+void Model::save_binary_frame(SDL_IOStream *file, Node *n)
 {
 	union {
 		float f;
@@ -1665,7 +1677,7 @@ void Model::save_binary_frame(SDL_RWops *file, Node *n)
 	write_string(file, n->name);
 
 	Uint32 num_children = (Uint32)n->children.size();
-	SDL_WriteLE32(file, num_children);
+	SDL_WriteU32LE(file, num_children);
 
 	for (size_t i = 0; i < num_children; i++) {
 		save_binary_frame(file, n->children[i]);
@@ -1674,40 +1686,40 @@ void Model::save_binary_frame(SDL_RWops *file, Node *n)
 	write_matrix(file, n->transform);
 
 	Uint32 num_vertices = n->num_vertices;
-	SDL_WriteLE32(file, num_vertices);
+	SDL_WriteU32LE(file, num_vertices);
 	
 	Uint32 num_floats = num_vertices * 12;
 
 	for (Uint32 i = 0; i < num_floats; i++) {
 		u.f = n->vertices[i];
-		SDL_WriteLE32(file, u.u);
+		SDL_WriteU32LE(file, u.u);
 	}
 
 	Uint32 num_textures = (Uint32)n->textures.size();
-	SDL_WriteLE32(file, num_textures);
+	SDL_WriteU32LE(file, num_textures);
 
 	for (Uint32 i = 0; i < num_textures; i++) {
 		write_string(file, n->textures[i]->filename);
 	}
 
 	Uint32 num_triangles = n->num_triangles;
-	SDL_WriteLE32(file, num_triangles);
+	SDL_WriteU32LE(file, num_triangles);
 
 	if (num_textures > 0) {
 		for (Uint32 i = 0; i < num_triangles; i++) {
 			Uint32 u = n->face_textures[i];
-			SDL_WriteLE32(file, u);
+			SDL_WriteU32LE(file, u);
 		}
 	}
 
 	Uint32 num_weights = (Uint32)n->weights.size();
-	SDL_WriteLE32(file, num_weights);
+	SDL_WriteU32LE(file, num_weights);
 
 	for (Uint32 i = 0; i < num_weights; i++) {
 		write_string(file, n->weights[i]->name);
 		for (Uint32 j = 0; j < num_vertices; j++) {
 			u.f = n->weights[i]->weights[j];
-			SDL_WriteLE32(file, u.u);
+			SDL_WriteU32LE(file, u.u);
 		}
 		write_matrix(file, n->weights[i]->transform);
 	}
@@ -1724,7 +1736,7 @@ void Model::save_binary_frame(SDL_RWops *file, Node *n)
 
 	for (Uint32 i = 0; i < num_vertices; i++) {
 		Uint32 num_weights = (Uint32)n->influences[i].weights.size();
-		SDL_WriteLE32(file, num_weights);
+		SDL_WriteU32LE(file, num_weights);
 		for (size_t j = 0; j < num_weights; j++) {
 			Weights *w = n->influences[i].weights[j];
 			Uint32 index = 0;
@@ -1734,10 +1746,10 @@ void Model::save_binary_frame(SDL_RWops *file, Node *n)
 					break;
 				}
 			}
-			SDL_WriteLE32(file, index);
+			SDL_WriteU32LE(file, index);
 		}
 		Uint32 num_bones = (Uint32)n->influences[i].bones.size();
-		SDL_WriteLE32(file, num_bones);
+		SDL_WriteU32LE(file, num_bones);
 		for (size_t j = 0; j < num_bones; j++) {
 			Bone *b = n->influences[i].bones[j];
 			Uint32 index = 0;
@@ -1747,17 +1759,17 @@ void Model::save_binary_frame(SDL_RWops *file, Node *n)
 					break;
 				}
 			}
-			SDL_WriteLE32(file, index);
+			SDL_WriteU32LE(file, index);
 		}
 	}
 }
 
-void Model::save_binary_animation(SDL_RWops *file, Animation *a)
+void Model::save_binary_animation(SDL_IOStream *file, Animation *a)
 {
 	write_string(file, a->name);
 
 	Uint32 num_bones = (Uint32)a->bones.size();
-	SDL_WriteLE32(file, num_bones);
+	SDL_WriteU32LE(file, num_bones);
 
 	for (std::map<std::string, Bone *>::iterator it = a->bones.begin(); it != a->bones.end(); it++) {
 		std::pair<std::string, Bone *> p = *it;
@@ -1765,7 +1777,7 @@ void Model::save_binary_animation(SDL_RWops *file, Animation *a)
 		write_string(file, b->name);
 
 		Uint32 num_frames = (Uint32)b->frames.size();
-		SDL_WriteLE32(file, num_frames);
+		SDL_WriteU32LE(file, num_frames);
 
 		for (Uint32 i = 0; i < num_frames; i++) {
 			write_matrix(file, b->frames[i]);
@@ -1775,7 +1787,7 @@ void Model::save_binary_animation(SDL_RWops *file, Animation *a)
 
 bool Model::save_binary_model(std::string filename)
 {
-	SDL_RWops *file = SDL_RWFromFile(filename.c_str(), "wb");
+	SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "wb");
 
 	if (file == 0) {
 		return false;
@@ -1788,7 +1800,7 @@ bool Model::save_binary_model(std::string filename)
 	util::SDL_fputc(' ', file);
 
 	Uint32 num_animations = (Uint32)instance->animations.size();
-	SDL_WriteLE32(file, num_animations);
+	SDL_WriteU32LE(file, num_animations);
 	for (std::map<std::string, Animation *>::iterator it = instance->animations.begin(); it != instance->animations.end(); it++) {
 		std::pair<std::string, Animation *> p = *it;
 		Animation *a = p.second;
@@ -1796,15 +1808,15 @@ bool Model::save_binary_model(std::string filename)
 	}
 
 	Uint32 num_roots = (Uint32)roots.size();
-	SDL_WriteLE32(file, num_roots);
+	SDL_WriteU32LE(file, num_roots);
 	for (size_t i = 0; i < roots.size(); i++) {
 		save_binary_frame(file, roots[i]);
 	}
 
 	Uint32 fps = instance->frames_per_second;
-	SDL_WriteLE32(file, fps);
+	SDL_WriteU32LE(file, fps);
 
-	SDL_RWclose(file);
+	SDL_CloseIO(file);
 
 	return true;
 }
@@ -2036,7 +2048,7 @@ void Model::precalculate_animations(int fps)
 	}
 }
 
-void Model::draw(SDL_Colour tint, bool textured)
+void Model::draw(SDL_Color tint, bool textured)
 {
 	Model::Node *node = find("Model");
 	if (node == nullptr) {
@@ -2097,7 +2109,7 @@ void Model::draw()
 	draw(shim::white, false);
 }
 
-void Model::draw_tinted(SDL_Colour tint)
+void Model::draw_tinted(SDL_Color tint)
 {
 	draw(tint, false);
 }
@@ -2107,7 +2119,7 @@ void Model::draw_textured()
 	draw(shim::white, true);
 }
 
-void Model::draw_tinted_textured(SDL_Colour tint)
+void Model::draw_tinted_textured(SDL_Color tint)
 {
 	draw(tint, true);
 }

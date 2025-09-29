@@ -8,6 +8,7 @@
 using namespace noo;
 
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 
 struct Button {
@@ -17,6 +18,13 @@ struct Button {
 	int w;
 	int h;
 };
+
+static SDL_DisplayID to_display_id(int adapter)
+{
+	int count;
+	SDL_DisplayID *disp = SDL_GetDisplays(&count);
+	return adapter >= count ? disp[0] : disp[adapter];
+}
 
 namespace noo {
 
@@ -108,11 +116,9 @@ int x_popup(std::string caption, std::string text, Popup_Type type)
 	int x = 10;
 	int y = 10;
 
-	SDL_DisplayMode mode;
-	if (SDL_GetCurrentDisplayMode(0, &mode) == 0) {
-		x = (mode.w - width) / 2;
-		y = (mode.h - height) / 2 * 0.75f;
-	}
+	const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(to_display_id(shim::adapter));
+	x = (mode->w - width) / 2;
+	y = (mode->h - height) / 2 * 0.75f;
 
 	w = XCreateSimpleWindow(d, RootWindow(d, s), x, y, width, height, 1, BlackPixel(d, s), WhitePixel(d, s));
 	gc = XCreateGC(d, w, 0, 0);	
