@@ -103,6 +103,8 @@ public:
 	SHIM5_EXPORT bool is_sub_image();
 	SHIM5_EXPORT util::Point<int> get_offset();
 
+	SHIM5_EXPORT void update(unsigned char *pixels);
+
 protected:
 	struct TGA_Header {
 		char idlength;

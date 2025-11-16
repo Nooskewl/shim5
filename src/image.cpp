@@ -665,50 +665,72 @@ unsigned char *Image::read_texture(gfx::Image *image)
 
 		glGetTexImage_ptr(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
+		/*
 		for (int y = 0; y < image->size.h; y++) {
 			unsigned char *p = buf+y*image->size.w*4;
 			for (int x = 0; x < image->size.w; x++) {
-				/*
 				int r = p[0];
 				int g = p[1];
 				int b = p[2];
 				int a = p[3];
-				*/
 				p += 4;
 			}
 		}
+		*/
 	}
 #ifdef _WIN32
 	else {
-		IDirect3DSurface9 *sys_surf;
-		IDirect3DSurface9 *vid_surf;
-		if (image->internal->system_texture->GetSurfaceLevel(0, &sys_surf) == D3D_OK) {
-			if (image->internal->video_texture->GetSurfaceLevel(0, &vid_surf) == D3D_OK) {
-				if (shim::d3d_device->GetRenderTargetData(vid_surf, sys_surf) == D3D_OK) {
-					D3DLOCKED_RECT locked_rect;
-					if (sys_surf->LockRect(&locked_rect, 0, D3DLOCK_READONLY) == D3D_OK) {
-						for (int y = 0; y < image->size.h; y++) {
-							for (int x = 0; x < image->size.w; x++) {
-								unsigned char *p = (unsigned char *)locked_rect.pBits+y*locked_rect.Pitch+x*4;
-								int b, g, r, a;
-								b = *p++;
-								g = *p++;
-								r = *p++;
-								a = *p++;
-								buf[(image->size.h-y-1)*image->size.w*4+x*4+0] = r;
-								buf[(image->size.h-y-1)*image->size.w*4+x*4+1] = g;
-								buf[(image->size.h-y-1)*image->size.w*4+x*4+2] = b;
-								buf[(image->size.h-y-1)*image->size.w*4+x*4+3] = a;
+		if (image->internal->has_render_to_texture) {
+			IDirect3DSurface9 *sys_surf;
+			IDirect3DSurface9 *vid_surf;
+			if (image->internal->system_texture->GetSurfaceLevel(0, &sys_surf) == D3D_OK) {
+				if (image->internal->video_texture->GetSurfaceLevel(0, &vid_surf) == D3D_OK) {
+					if (shim::d3d_device->GetRenderTargetData(vid_surf, sys_surf) == D3D_OK) {
+						D3DLOCKED_RECT locked_rect;
+						if (sys_surf->LockRect(&locked_rect, 0, D3DLOCK_READONLY) == D3D_OK) {
+							for (int y = 0; y < image->size.h; y++) {
+								for (int x = 0; x < image->size.w; x++) {
+									unsigned char *p = (unsigned char *)locked_rect.pBits+y*locked_rect.Pitch+x*4;
+									int b, g, r, a;
+									b = *p++;
+									g = *p++;
+									r = *p++;
+									a = *p++;
+									buf[(image->size.h-y-1)*image->size.w*4+x*4+0] = r;
+									buf[(image->size.h-y-1)*image->size.w*4+x*4+1] = g;
+									buf[(image->size.h-y-1)*image->size.w*4+x*4+2] = b;
+									buf[(image->size.h-y-1)*image->size.w*4+x*4+3] = a;
+								}
 							}
+							sys_surf->UnlockRect();
 						}
-						sys_surf->UnlockRect();
+					}
+					sys_surf->Release();
+					vid_surf->Release();
+				}
+				else {
+					sys_surf->Release();
+				}
+			}
+		}
+		else {
+			D3DLOCKED_RECT locked_rect;
+			if (image->internal->video_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
+				for (int y = 0; y < image->size.h; y++) {
+					for (int x = 0; x < image->size.w; x++) {
+						unsigned char *p = (unsigned char *)locked_rect.pBits+y*locked_rect.Pitch+x*4;
+						int b, g, r, a;
+						b = *p++;
+						g = *p++;
+						r = *p++;
+						a = *p++;
+						buf[(image->size.h-y-1)*image->size.w*4+x*4+0] = r;
+						buf[(image->size.h-y-1)*image->size.w*4+x*4+1] = g;
+						buf[(image->size.h-y-1)*image->size.w*4+x*4+2] = b;
+						buf[(image->size.h-y-1)*image->size.w*4+x*4+3] = a;
 					}
 				}
-				sys_surf->Release();
-				vid_surf->Release();
-			}
-			else {
-				sys_surf->Release();
+				image->internal->video_texture->UnlockRect(0);
 			}
 		}
 	}
@@ -1559,6 +1581,74 @@ bool Image::is_sub_image()
 util::Point<int> Image::get_offset()
 {
 	return internal->offset;
+}
+
+void Image::update(unsigned char *pixels)
+{
+	if (shim::opengl) {
+		glActiveTexture_ptr(GL_TEXTURE0);
+		PRINT_GL_ERROR("glActiveTexture\n");
+
+		glBindTexture_ptr(GL_TEXTURE_2D, internal->texture);
+		PRINT_GL_ERROR("glBindTexture\n");
+
+		glTexImage2D_ptr(GL_TEXTURE_2D, 0, GL_RGBA, size.w, size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		PRINT_GL_ERROR("glTexImage2D\n");
+
+		Shader::rebind_opengl_texture0();
+	}
+#ifdef _WIN32
+	else {
+		if (internal->has_render_to_texture) {
+			D3DLOCKED_RECT locked_rect;
+			if (internal->system_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
+				for (int y = 0; y < size.h; y++) {
+					unsigned char *dest = ((unsigned char *)locked_rect.pBits) + y * locked_rect.Pitch;
+					for (int x = 0; x < size.w; x++) {
+						unsigned char r = *pixels++;
+						unsigned char g = *pixels++;
+						unsigned char b = *pixels++;
+						unsigned char a = *pixels++;
+						*dest++ = b;
+						*dest++ = g;
+						*dest++ = r;
+						*dest++ = a;
+					}
+				}
+				internal->system_texture->UnlockRect(0);
+			}
+			else {
+				util::errormsg("Unable to lock system texture.\n");
+			}
+			
+			if (shim::d3d_device->UpdateTexture((IDirect3DBaseTexture9 *)internal->system_texture, (IDirect3DBaseTexture9 *)internal->video_texture) != D3D_OK) {
+				util::errormsg("UpdateTexture failed.\n");
+			}
+		}
+		else {
+			D3DLOCKED_RECT locked_rect;
+			if (internal->video_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
+				for (int y = 0; y < size.h; y++) {
+					unsigned char *dest = ((unsigned char *)locked_rect.pBits) + y * locked_rect.Pitch;
+					for (int x = 0; x < size.w; x++) {
+						unsigned char r = *pixels++;
+						unsigned char g = *pixels++;
+						unsigned char b = *pixels++;
+						unsigned char a = *pixels++;
+						*dest++ = b;
+						*dest++ = g;
+						*dest++ = r;
+						*dest++ = a;
+					}
+				}
+				internal->video_texture->UnlockRect(0);
+			}
+			else {
+				util::errormsg("Unable to lock video texture.\n");
+			}
+		}
+	}
+#endif
 }
 
 //--
