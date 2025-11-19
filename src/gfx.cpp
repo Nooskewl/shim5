@@ -2436,11 +2436,7 @@ void resize_window(int width, int height)
 	shim::real_screen_size = {width, height};
 
 	internal::handle_lost_device(false);
-	/* This can't be right... twice? FIXME
-	{
-		internal::handle_found_device(false);
-	}
-	*/
+	internal::handle_found_device(false);
 }
 
 gfx::Image *gen_plasma(int seed, float alpha1, float alpha2, SDL_Color tint)
