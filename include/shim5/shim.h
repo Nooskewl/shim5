@@ -63,7 +63,6 @@ TGUI_Event SHIM5_EXPORT *pop_pushed_event();
 
 // These are all global to the shim namespace
 // graphics
-extern SHIM5_EXPORT bool opengl;
 extern SHIM5_EXPORT SDL_Color palette[256];
 extern SHIM5_EXPORT int palette_size;
 extern SHIM5_EXPORT SDL_Color black;
