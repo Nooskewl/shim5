@@ -148,12 +148,6 @@ protected:
 
 		bool has_render_to_texture;
 
-#ifdef _WIN32
-		LPDIRECT3DTEXTURE9 video_texture;
-		LPDIRECT3DTEXTURE9 system_texture;
-		LPDIRECT3DSURFACE9 render_target;
-		LPDIRECT3DSURFACE9 depth_stencil_buffer;
-#endif
 		GLuint texture;
 		GLuint fbo;
 		GLuint depth_buffer;
@@ -174,10 +168,6 @@ protected:
 	};
 
 	static std::vector<Internal *> loaded_images;
-	static int d3d_depth_buffer_count;
-	static int d3d_video_texture_count;
-	static int d3d_system_texture_count;
-	static int d3d_surface_level_count;
 
 	bool batching;
 

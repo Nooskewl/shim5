@@ -62,20 +62,12 @@ namespace gfx {
 std::vector<Image::Internal *> Image::loaded_images;
 
 static GLuint bound_fbo;
-#ifdef _WIN32
-static LPDIRECT3DSURFACE9 bound_depth_buffer;
-static bool depth_buffer_bound;
-#endif
 bool Image::dumping_colours;
 bool Image::keep_data;
 bool Image::save_rle;
 bool Image::ignore_palette;
 bool Image::create_depth_buffer;
 bool Image::create_stencil_buffer;
-int Image::d3d_depth_buffer_count;
-int Image::d3d_video_texture_count;
-int Image::d3d_system_texture_count;
-int Image::d3d_surface_level_count;
 bool Image::premultiply_alpha;
 bool Image::save_rgba;
 bool Image::save_palettes;
@@ -83,14 +75,6 @@ bool Image::save_palettes;
 void Image::static_start()
 {
 	bound_fbo = 0;
-#ifdef _WIN32
-	bound_depth_buffer = 0;
-	depth_buffer_bound = false;
-#endif
-	d3d_depth_buffer_count = 0;
-	d3d_video_texture_count = 0;
-	d3d_system_texture_count = 0;
-	d3d_surface_level_count = 0;
 	
 	util::JSON::Node *root = shim::shim_json->get_root();
 
@@ -109,29 +93,14 @@ void Image::release_all(bool include_managed)
 {
 	util::infomsg("Releasing %d textures...\n", loaded_images.size());
 	for (size_t i = 0; i < loaded_images.size(); i++) {
-#ifdef _WIN32
-		if (shim::opengl == true || (include_managed && loaded_images[i]->has_render_to_texture == false)) {
-#endif
-			loaded_images[i]->release();
-#ifdef _WIN32
-		}
-		else {
-			loaded_images[i]->unbind();
-		}
-#endif
+		loaded_images[i]->release();
 	}
 }
 
 void Image::reload_all(bool include_managed)
 {
 	for (size_t i = 0; i < loaded_images.size(); i++) {
-#ifdef _WIN32
-		if (shim::opengl == true || (include_managed && loaded_images[i]->has_render_to_texture == false)) {
-#endif
-			loaded_images[i]->reload(false);
-#ifdef _WIN32
-		}
-#endif
+		loaded_images[i]->reload(false);
 	}
 }
 
@@ -145,12 +114,6 @@ int Image::get_unfreed_count()
 
 void Image::audit()
 {
-	if (shim::opengl == false) {
-		util::debugmsg("d3d_depth_buffer_count=%d\n", d3d_depth_buffer_count);
-		util::debugmsg("d3d_video_texture_count=%d\n", d3d_video_texture_count);
-		util::debugmsg("d3d_system_texture_count=%d\n", d3d_system_texture_count);
-		util::debugmsg("d3d_surface_level_count=%d\n", d3d_surface_level_count);
-	}
 }
 
 #ifdef USE_PNG
@@ -619,33 +582,17 @@ unsigned char *Image::read_backbuffer(bool include_black_bars, int *out_w, int *
 
 	unsigned char *buf = new unsigned char[w * h * 4];
 
-	if (shim::opengl) {
-		glReadPixels_ptr(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-		PRINT_GL_ERROR("glReadPixels\n");
-		// The image is flipped, so flip it
-		unsigned char *line = new unsigned char[w * 4];
-		for (int i = 0; i < h / 2; i++) {
-			memcpy(line, buf+i*(w*4), w*4);
-			memcpy(buf+i*(w*4), buf+(h-1-i)*w*4, w*4);
-			memcpy(buf+(h-1-i)*(w*4), line, w*4);
-		}
-		delete[] line;
+	glReadPixels_ptr(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+	PRINT_GL_ERROR("glReadPixels\n");
+	// The image is flipped, so flip it
+	unsigned char *line = new unsigned char[w * 4];
+	for (int i = 0; i < h / 2; i++) {
+		memcpy(line, buf+i*(w*4), w*4);
+		memcpy(buf+i*(w*4), buf+(h-1-i)*w*4, w*4);
+		memcpy(buf+(h-1-i)*(w*4), line, w*4);
 	}
-#ifdef _WIN32
-	else {
-		D3DLOCKED_RECT lr;
-		if (internal::gfx_context.render_target->LockRect(&lr, 0, D3DLOCK_READONLY) == D3D_OK) {
-			for (int i = 0; i < h; i++) {
-				memcpy(buf+i*(w*h), (unsigned char *)lr.pBits+(i+y)*lr.Pitch+x*4, w*4);
-			}
-			internal::gfx_context.render_target->UnlockRect();
-		}
-		else {
-			return nullptr;
-		}
-	}
-#endif
-
+	delete[] line;
+	
 	return buf;
 }
 
@@ -656,88 +603,16 @@ unsigned char *Image::read_texture(gfx::Image *image)
 #if defined ANDROID || defined __EMSCRIPTEN__
 	return buf;
 #else
-	if (shim::opengl) {
-		glActiveTexture_ptr(GL_TEXTURE0);
-		PRINT_GL_ERROR("glActiveTexture\n");
+	glActiveTexture_ptr(GL_TEXTURE0);
+	PRINT_GL_ERROR("glActiveTexture\n");
 
-		glBindTexture_ptr(GL_TEXTURE_2D, image->internal->texture);
-		PRINT_GL_ERROR("glBindTexture\n");
+	glBindTexture_ptr(GL_TEXTURE_2D, image->internal->texture);
+	PRINT_GL_ERROR("glBindTexture\n");
 
-		glGetTexImage_ptr(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-
-		/*
-		for (int y = 0; y < image->size.h; y++) {
-			unsigned char *p = buf+y*image->size.w*4;
-			for (int x = 0; x < image->size.w; x++) {
-				int r = p[0];
-				int g = p[1];
-				int b = p[2];
-				int a = p[3];
-				p += 4;
-			}
-		}
-		*/
-	}
-#ifdef _WIN32
-	else {
-		if (image->internal->has_render_to_texture) {
-			IDirect3DSurface9 *sys_surf;
-			IDirect3DSurface9 *vid_surf;
-			if (image->internal->system_texture->GetSurfaceLevel(0, &sys_surf) == D3D_OK) {
-				if (image->internal->video_texture->GetSurfaceLevel(0, &vid_surf) == D3D_OK) {
-					if (shim::d3d_device->GetRenderTargetData(vid_surf, sys_surf) == D3D_OK) {
-						D3DLOCKED_RECT locked_rect;
-						if (sys_surf->LockRect(&locked_rect, 0, D3DLOCK_READONLY) == D3D_OK) {
-							for (int y = 0; y < image->size.h; y++) {
-								for (int x = 0; x < image->size.w; x++) {
-									unsigned char *p = (unsigned char *)locked_rect.pBits+y*locked_rect.Pitch+x*4;
-									int b, g, r, a;
-									b = *p++;
-									g = *p++;
-									r = *p++;
-									a = *p++;
-									buf[(image->size.h-y-1)*image->size.w*4+x*4+0] = r;
-									buf[(image->size.h-y-1)*image->size.w*4+x*4+1] = g;
-									buf[(image->size.h-y-1)*image->size.w*4+x*4+2] = b;
-									buf[(image->size.h-y-1)*image->size.w*4+x*4+3] = a;
-								}
-							}
-							sys_surf->UnlockRect();
-						}
-					}
-					sys_surf->Release();
-					vid_surf->Release();
-				}
-				else {
-					sys_surf->Release();
-				}
-			}
-		}
-		else {
-			D3DLOCKED_RECT locked_rect;
-			if (image->internal->video_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
-				for (int y = 0; y < image->size.h; y++) {
-					for (int x = 0; x < image->size.w; x++) {
-						unsigned char *p = (unsigned char *)locked_rect.pBits+y*locked_rect.Pitch+x*4;
-						int b, g, r, a;
-						b = *p++;
-						g = *p++;
-						r = *p++;
-						a = *p++;
-						buf[(image->size.h-y-1)*image->size.w*4+x*4+0] = r;
-						buf[(image->size.h-y-1)*image->size.w*4+x*4+1] = g;
-						buf[(image->size.h-y-1)*image->size.w*4+x*4+2] = b;
-						buf[(image->size.h-y-1)*image->size.w*4+x*4+3] = a;
-					}
-				}
-				image->internal->video_texture->UnlockRect(0);
-			}
-		}
-	}
-#endif
-#endif
+	glGetTexImage_ptr(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
 	return buf;
+#endif
 }
 
 bool Image::merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha)
@@ -1263,50 +1138,10 @@ bool Image::save(std::string filename)
 
 void Image::set_target()
 {
-	if (shim::opengl) {
-		bound_fbo = internal->fbo;
-		glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal->fbo);
-		glViewport_ptr(0, 0, size.w, size.h);
-		glDisable_ptr(GL_SCISSOR_TEST);
-	}
-#ifdef _WIN32
-	else {
-		util::verbosemsg("device render_target->Release=%d\n", internal::gfx_context.render_target->Release());
-
-		if (internal->video_texture->GetSurfaceLevel(0, &internal->render_target) != D3D_OK) {
-			util::infomsg("Image::set_target: Unable to get texture surface level\n");
-			return;
-		}
-		d3d_surface_level_count++;
-
-		if (shim::d3d_device->SetRenderTarget(0, internal->render_target) != D3D_OK) {
-			util::infomsg("Image::set_target: Unable to set render target to texture surface\n");
-			util::verbosemsg("Image::set_target (failure), render_target->Release=%d\n", internal->render_target->Release());
-			return;
-		}
-
-		if (internal->depth_stencil_buffer) {
-			shim::d3d_device->SetDepthStencilSurface(internal->depth_stencil_buffer);
-			bound_depth_buffer = internal->depth_stencil_buffer;
-		}
-		else {
-			shim::d3d_device->SetDepthStencilSurface(0);
-			bound_depth_buffer = 0;
-		}
-		depth_buffer_bound = true;
-
-		D3DVIEWPORT9 viewport;
-		viewport.MinZ = 0;
-		viewport.MaxZ = 1;
-		viewport.X = 0;
-		viewport.Y = 0;
-		viewport.Width = size.w;
-		viewport.Height = size.h;
-		shim::d3d_device->SetViewport(&viewport);
-
-		shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-	}
-#endif
+	bound_fbo = internal->fbo;
+	glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal->fbo);
+	glViewport_ptr(0, 0, size.w, size.h);
+	glDisable_ptr(GL_SCISSOR_TEST);
 
 	glm::mat4 modelview = glm::mat4();
 	glm::mat4 proj = glm::ortho(0.0f, (float)size.w, (float)size.h, 0.0f);
@@ -1316,39 +1151,13 @@ void Image::set_target()
 
 void Image::release_target()
 {
-	if (shim::opengl) {
-		bound_fbo = 0;
+	bound_fbo = 0;
 #ifdef IOS
-		//glBindRenderbuffer_ptr(GL_RENDERBUFFER, internal::gfx_context.colorbuffer); // don't know if this is needed
-		glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal::gfx_context.framebuffer);
+	//glBindRenderbuffer_ptr(GL_RENDERBUFFER, internal::gfx_context.colorbuffer); // don't know if this is needed
+	glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal::gfx_context.framebuffer);
 #else
-		glBindFramebuffer_ptr(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer_ptr(GL_FRAMEBUFFER, 0);
 #endif
-	}
-#ifdef _WIN32
-	else {
-		if (internal->render_target != 0) {
-			util::verbosemsg("release_target (%p), render_target->Release=%d\n", this, internal->render_target->Release());
-			internal->render_target = 0;
-			d3d_surface_level_count--;
-		}
-
-		if (shim::d3d_device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &internal::gfx_context.render_target) != D3D_OK) {
-			util::infomsg("GetBackBuffer failed.\n");
-		}
-
-		if (shim::d3d_device->SetRenderTarget(0, internal::gfx_context.render_target) != D3D_OK) {
-			util::infomsg("Image::release_target: Unable to set render target to backbuffer.\n");
-		}
-
-		if (internal::gfx_context.depth_stencil_buffer) {
-			shim::d3d_device->SetDepthStencilSurface(internal::gfx_context.depth_stencil_buffer);
-			bound_depth_buffer = internal::gfx_context.depth_stencil_buffer;
-			depth_buffer_bound = true;
-		}
-	}
-#endif
-
 	set_screen_size(shim::real_screen_size); // this sets the viewport and scissor, updates projection
 }
 
@@ -1585,70 +1394,16 @@ util::Point<int> Image::get_offset()
 
 void Image::update(unsigned char *pixels)
 {
-	if (shim::opengl) {
-		glActiveTexture_ptr(GL_TEXTURE0);
-		PRINT_GL_ERROR("glActiveTexture\n");
+	glActiveTexture_ptr(GL_TEXTURE0);
+	PRINT_GL_ERROR("glActiveTexture\n");
 
-		glBindTexture_ptr(GL_TEXTURE_2D, internal->texture);
-		PRINT_GL_ERROR("glBindTexture\n");
+	glBindTexture_ptr(GL_TEXTURE_2D, internal->texture);
+	PRINT_GL_ERROR("glBindTexture\n");
 
-		glTexImage2D_ptr(GL_TEXTURE_2D, 0, GL_RGBA, size.w, size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-		PRINT_GL_ERROR("glTexImage2D\n");
+	glTexImage2D_ptr(GL_TEXTURE_2D, 0, GL_RGBA, size.w, size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	PRINT_GL_ERROR("glTexImage2D\n");
 
-		Shader::rebind_opengl_texture0();
-	}
-#ifdef _WIN32
-	else {
-		if (internal->has_render_to_texture) {
-			D3DLOCKED_RECT locked_rect;
-			if (internal->system_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
-				for (int y = 0; y < size.h; y++) {
-					unsigned char *dest = ((unsigned char *)locked_rect.pBits) + y * locked_rect.Pitch;
-					for (int x = 0; x < size.w; x++) {
-						unsigned char r = *pixels++;
-						unsigned char g = *pixels++;
-						unsigned char b = *pixels++;
-						unsigned char a = *pixels++;
-						*dest++ = b;
-						*dest++ = g;
-						*dest++ = r;
-						*dest++ = a;
-					}
-				}
-				internal->system_texture->UnlockRect(0);
-			}
-			else {
-				util::errormsg("Unable to lock system texture.\n");
-			}
-			
-			if (shim::d3d_device->UpdateTexture((IDirect3DBaseTexture9 *)internal->system_texture, (IDirect3DBaseTexture9 *)internal->video_texture) != D3D_OK) {
-				util::errormsg("UpdateTexture failed.\n");
-			}
-		}
-		else {
-			D3DLOCKED_RECT locked_rect;
-			if (internal->video_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
-				for (int y = 0; y < size.h; y++) {
-					unsigned char *dest = ((unsigned char *)locked_rect.pBits) + y * locked_rect.Pitch;
-					for (int x = 0; x < size.w; x++) {
-						unsigned char r = *pixels++;
-						unsigned char g = *pixels++;
-						unsigned char b = *pixels++;
-						unsigned char a = *pixels++;
-						*dest++ = b;
-						*dest++ = g;
-						*dest++ = r;
-						*dest++ = a;
-					}
-				}
-				internal->video_texture->UnlockRect(0);
-			}
-			else {
-				util::errormsg("Unable to lock video texture.\n");
-			}
-		}
-	}
-#endif
+	Shader::rebind_opengl_texture0();
 }
 
 //--
@@ -1658,10 +1413,6 @@ Image::Internal::Internal(std::string filename, bool keep_data, bool support_ren
 	filename(filename),
 	refcount(1),
 	has_render_to_texture(support_render_to_texture),
-#ifdef _WIN32
-	video_texture(0),
-	render_target(0),
-#endif
 	texture(0),
 	depth_buffer(0),
 	stencil_buffer(0),
@@ -1679,10 +1430,6 @@ Image::Internal::Internal(unsigned char *pixels, util::Size<int> size, bool supp
 	loaded_data(0),
 	size(size),
 	has_render_to_texture(support_render_to_texture),
-#ifdef _WIN32
-	video_texture(0),
-	render_target(0),
-#endif
 	texture(0),
 	depth_buffer(0),
 	stencil_buffer(0),
@@ -1700,10 +1447,6 @@ Image::Internal::Internal(unsigned char *pixels, util::Size<int> size, bool supp
 Image::Internal::Internal() :
 	loaded_data(0),
 	has_render_to_texture(false),
-#ifdef _WIN32
-	video_texture(0),
-	render_target(0),
-#endif
 	texture(0),
 	depth_buffer(0),
 	stencil_buffer(0),
@@ -1732,69 +1475,29 @@ void Image::Internal::release()
 
 	unbind();
 
-	if (shim::opengl) {
-		if (bound_fbo == fbo) {
-			bound_fbo = 0;
+	if (bound_fbo == fbo) {
+		bound_fbo = 0;
+	}
+	if (has_render_to_texture) {
+		if (depth_buffer != 0) {
+			glDeleteRenderbuffers_ptr(1, &depth_buffer);
+			depth_buffer = 0;
 		}
-		if (has_render_to_texture) {
-			if (depth_buffer != 0) {
-				glDeleteRenderbuffers_ptr(1, &depth_buffer);
-				depth_buffer = 0;
-			}
-			if (stencil_buffer != 0) {
-				glDeleteRenderbuffers_ptr(1, &stencil_buffer);
-				stencil_buffer = 0;
-			}
-			if (fbo != 0) {
-				glDeleteFramebuffers_ptr(1, &fbo);
-				fbo = 0;
-			}
+		if (stencil_buffer != 0) {
+			glDeleteRenderbuffers_ptr(1, &stencil_buffer);
+			stencil_buffer = 0;
 		}
-
-		if (texture != 0) {
-			glDeleteTextures_ptr(1, &texture);
-			PRINT_GL_ERROR("glDeleteTextures\n");
-			texture = 0;
+		if (fbo != 0) {
+			glDeleteFramebuffers_ptr(1, &fbo);
+			fbo = 0;
 		}
 	}
-#ifdef _WIN32
-	else {
-		if (video_texture) {
-			util::verbosemsg("Internal::release (%p), video_texture->Release=%d\n", this, video_texture->Release());
-			video_texture = 0;
-			d3d_video_texture_count--;
-		}
 
-		if (has_render_to_texture) {
-			if (system_texture) {
-				util::verbosemsg("Internal::release (%p), system_texture->Release=%d\n", this, system_texture->Release());
-				system_texture = 0;
-				d3d_system_texture_count--;
-			}
-
-			if (depth_stencil_buffer != 0) {
-				if (bound_depth_buffer == depth_stencil_buffer) {
-					shim::d3d_device->SetDepthStencilSurface(0);
-				}
-
-				bound_depth_buffer = 0;
-				depth_buffer_bound = true;
-
-				util::verbosemsg("Internal::release(%p), depth_stencil_buffer->Release=%d\n", this, depth_stencil_buffer->Release());
-				depth_stencil_buffer = 0;
-				
-				d3d_depth_buffer_count--;
-			}
-		}
-		
-		if (render_target) {
-			util::verbosemsg("Image::Internal::release (%p), render_target->release=%d\n", this, render_target->Release());
-			//while (render_target->Release());
-			render_target = 0;
-			d3d_surface_level_count--;
-		}
+	if (texture != 0) {
+		glDeleteTextures_ptr(1, &texture);
+		PRINT_GL_ERROR("glDeleteTextures\n");
+		texture = 0;
 	}
-#endif
 }
 
 unsigned char *Image::Internal::reload(bool keep_data, bool load_from_filesystem)
@@ -1855,7 +1558,7 @@ void Image::Internal::upload(unsigned char *pixels)
 		}
 	}
 
-	if (shim::opengl && texture == 0) {
+	if (texture == 0) {
 		glGenTextures_ptr(1, &texture);
 		PRINT_GL_ERROR("glGenTextures\n");
 		if (texture == 0) {
@@ -1968,119 +1671,6 @@ void Image::Internal::upload(unsigned char *pixels)
 
 		Shader::rebind_opengl_texture0();
 	}
-#ifdef _WIN32
-	else if (video_texture == 0) {
-		int err;
-
-		if (has_render_to_texture) {
-			err = shim::d3d_device->CreateTexture(size.w, size.h, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &video_texture, 0);
-			if (err != D3D_OK) {
-				util::errormsg("CreateTexture failed for video texture (%dx%d, %d).\n", size.w, size.h, err);
-			}
-			d3d_video_texture_count++;
-
-			err = shim::d3d_device->CreateTexture(size.w, size.h, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &system_texture, 0);
-			if (err != D3D_OK) {
-				util::errormsg("CreateTexture failed for system texture (%dx%d, %d).\n", size.w, size.h, err);
-			}
-			d3d_system_texture_count++;
-
-			D3DLOCKED_RECT locked_rect;
-			if (system_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
-				for (int y = 0; y < size.h; y++) {
-					unsigned char *dest = ((unsigned char *)locked_rect.pBits) + y * locked_rect.Pitch;
-					for (int x = 0; x < size.w; x++) {
-						unsigned char r = *pixels++;
-						unsigned char g = *pixels++;
-						unsigned char b = *pixels++;
-						unsigned char a = *pixels++;
-						*dest++ = b;
-						*dest++ = g;
-						*dest++ = r;
-						*dest++ = a;
-					}
-				}
-				system_texture->UnlockRect(0);
-			}
-			else {
-				util::errormsg("Unable to lock system texture.\n");
-			}
-
-			if (shim::d3d_device->UpdateTexture((IDirect3DBaseTexture9 *)system_texture, (IDirect3DBaseTexture9 *)video_texture) != D3D_OK) {
-				util::errormsg("UpdateTexture failed.\n");
-			}
-
-			if (this->create_depth_buffer) {
-				D3DFORMAT format;
-				if (this->create_stencil_buffer) {
-					format = D3DFMT_D24S8;
-				}
-				else {
-					format = D3DFMT_D16;
-				}
-
-				// Direct3D9 can't render if the depth buffer is smaller than the largest texture or screen: so adjust the size of the depth buffer if needed
-				util::Size<int> depth_buffer_size;
-				if (size.w < shim::real_screen_size.w || size.h < shim::real_screen_size.h) {
-					depth_buffer_size = shim::real_screen_size;
-				}
-				else {
-					depth_buffer_size = size;
-				}
-				if (shim::d3d_device->CreateDepthStencilSurface(depth_buffer_size.w, depth_buffer_size.h, format, D3DMULTISAMPLE_NONE, 0, true, &depth_stencil_buffer, 0) != D3D_OK) {
-					throw util::Error("CreateDepthStencilSurface failed");
-				}
-
-				d3d_depth_buffer_count++;
-
-				shim::d3d_device->SetDepthStencilSurface(depth_stencil_buffer);
-
-				shim::d3d_device->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
-
-				if (depth_buffer_bound) {
-					shim::d3d_device->SetDepthStencilSurface(bound_depth_buffer);
-				}
-				else {
-					shim::d3d_device->SetDepthStencilSurface(internal::gfx_context.depth_stencil_buffer);
-				}
-				depth_buffer_bound = true;
-			}
-			else {
-				depth_stencil_buffer = 0;
-			}
-		}
-		else {
-			err = shim::d3d_device->CreateTexture(size.w, size.h, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &video_texture, 0);
-			if (err != D3D_OK) {
-				util::errormsg("CreateTexture failed for video texture (%dx%d, %d).\n", size.w, size.h, err);
-			}
-			d3d_video_texture_count++;
-
-			D3DLOCKED_RECT locked_rect;
-			if (video_texture->LockRect(0, &locked_rect, 0, 0) == D3D_OK) {
-				for (int y = 0; y < size.h; y++) {
-					unsigned char *dest = ((unsigned char *)locked_rect.pBits) + y * locked_rect.Pitch;
-					for (int x = 0; x < size.w; x++) {
-						unsigned char r = *pixels++;
-						unsigned char g = *pixels++;
-						unsigned char b = *pixels++;
-						unsigned char a = *pixels++;
-						*dest++ = b;
-						*dest++ = g;
-						*dest++ = r;
-						*dest++ = a;
-					}
-				}
-				video_texture->UnlockRect(0);
-			}
-			else {
-				util::errormsg("Unable to lock video texture.\n");
-			}
-
-			depth_stencil_buffer = 0;
-		}
-	}
-#endif
 }
 
 void Image::Internal::unbind()
@@ -2102,6 +1692,7 @@ void Image::Internal::destroy_data()
 	loaded_data = 0;
 }
 
+// FIXME: needs to support D3D/OpenGL upsidedown/rightsideup textures
 bool Image::Internal::is_transparent(util::Point<int> position)
 {
 	if (loaded_data == 0) {

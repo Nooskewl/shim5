@@ -330,10 +330,6 @@ extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
 
 #if defined _WIN32
 #include <direct.h>
-#include <d3d9.h>
-#ifdef USE_D3DX
-#include <d3dx9.h>
-#endif
 #else
 #ifndef ANDROID
 #include <glob.h>

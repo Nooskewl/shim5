@@ -195,12 +195,6 @@ gfx::Image *TTF::load_glyph_image(Uint32 ch)
 
 bool TTF::cache_glyphs(std::string text)
 {
-#ifdef _WIN32
-	if (internal::gfx_context.d3d_lost) {
-		return false;
-	}
-#endif
-
 	gfx::Image *old_target = gfx::get_target_image();
 	glm::mat4 mv, p;
 	gfx::get_matrices(mv, p);

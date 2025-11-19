@@ -136,10 +136,6 @@ int SHIM5_EXPORT get_max_comfortable_scale(util::Size<int> scaled_size);
 
 bool SHIM5_EXPORT enable_press_and_hold(bool enable);
 
-#ifdef _WIN32
-bool SHIM5_EXPORT is_d3d_lost();
-#endif
-
 bool SHIM5_EXPORT is_fullscreen();
 bool SHIM5_EXPORT is_real_fullscreen();
 bool SHIM5_EXPORT is_fullscreen_window();

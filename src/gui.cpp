@@ -406,16 +406,14 @@ int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_e
 {
 #ifdef _WIN32
 	delete_shim_args();
-	shim::argc = 2 + (shim::opengl ? 1 : 0);
+	shim::argc = 3;
 	shim::argv = new char *[shim::argc];
 	shim::argv[0] = new char[2];
 	strcpy(shim::argv[0], "x");
 	shim::argv[1] = new char[10];
 	strcpy(shim::argv[1], "+windowed");
-	if (shim::opengl) {
-		shim::argv[2] = new char[8];
-		strcpy(shim::argv[2], "+opengl");
-	}
+	shim::argv[2] = new char[8];
+	strcpy(shim::argv[2], "+opengl");
 
 	try {
 		gfx::restart(1280, 720, false, 1280, 720);
@@ -425,22 +423,6 @@ int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_e
 	}
 	
 	SDL_Delay(250);
-
-	if (shim::opengl == false) {
-		while (gfx::internal::gfx_context.d3d_lost) {
-			SDL_PumpEvents();
-			SDL_Event sdl_event;
-			while (SDL_PollEvent(&sdl_event)) {
-				try {
-					shim::handle_event(&sdl_event);
-				}
-				catch (util::Error &) {
-					// do nothing
-				}
-			}
-			gfx::flip();
-		}
-	}
 #endif
 
 	int ret = popup(caption, text, type);

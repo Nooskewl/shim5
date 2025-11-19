@@ -118,38 +118,10 @@ void Vertex_Cache::end()
 		shim::current_shader->set_bool("use_tex", false); // some shaders user this
 	}
 
-	if (shim::opengl) {
-		shim::current_shader->set_opengl_attributes(*_vertices, &(*_vertices)[3], &(*_vertices)[6], &(*_vertices)[8]);
-		glDrawArrays_ptr(GL_TRIANGLES, 0, *_count);
-		PRINT_GL_ERROR("glDrawArrays\n");
-	}
-#ifdef _WIN32
-	else if (internal::gfx_context.d3d_lost == false) {
-#ifdef USE_D3DX
-		if (shim::current_shader->is_d3dx()) {
-			LPD3DXEFFECT d3d_effect = shim::current_shader->get_d3d_effect();
-			unsigned int required_passes;
-			d3d_effect->Begin(&required_passes, 0);
-			for (unsigned int i = 0; i < required_passes; i++) {
-				d3d_effect->BeginPass(i);
-				if (shim::d3d_device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, *_count / 3, (void *)*_vertices, 12*sizeof(float)) != D3D_OK) {
-					util::infomsg("DrawPrimitiveUP failed.\n");
-					break;
-				}
-				d3d_effect->EndPass();
-			}
-			d3d_effect->End();
-		}
-		else
-#endif
-		{
-			if (shim::d3d_device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, *_count / 3, (void *)*_vertices, 12*sizeof(float)) != D3D_OK) {
-				util::infomsg("DrawPrimitiveUP failed.\n");
-			}
-		}
-	}
-#endif
-
+	shim::current_shader->set_opengl_attributes(*_vertices, &(*_vertices)[3], &(*_vertices)[6], &(*_vertices)[8]);
+	glDrawArrays_ptr(GL_TRIANGLES, 0, *_count);
+	PRINT_GL_ERROR("glDrawArrays\n");
+	
 	if (*_image) {
 		if (shim::current_shader == internal::gfx_context.textured_shader) {
 			shim::current_shader = shim::default_shader;
@@ -302,10 +274,8 @@ void Vertex_Cache::cache(SDL_Color vertex_colours[4], util::Point<float> source_
 		CLAMP(tu2)
 		CLAMP(tv2)
 
-		if (shim::opengl || (*_image)->flipped) {
-			tv = 1.0f - tv;
-			tv2 = 1.0f - tv2;
-		}
+		tv = 1.0f - tv;
+		tv2 = 1.0f - tv2;
 
 		if (flags & Image::FLIP_H) {
 			float tmp = tu;
@@ -426,10 +396,8 @@ void Vertex_Cache::cache_z_range(SDL_Color vertex_colours[4], util::Point<float>
 			CLAMP(tu2)
 			CLAMP(tv2)
 
-			if (shim::opengl || (*_image)->flipped) {
-				tv = 1.0f - tv;
-				tv2 = 1.0f - tv2;
-			}
+			tv = 1.0f - tv;
+			tv2 = 1.0f - tv2;
 
 			if (flags & Image::FLIP_H) {
 				float tmp = tu;
@@ -553,10 +521,8 @@ void Vertex_Cache::cache_z(SDL_Color vertex_colours[4], util::Point<float> pivot
 	float tu2 = float(source_position.x + source_size.w) / (*_image)->size.w - SMALL_TEXTURE_OFFSET;
 	float tv2 = float(source_position.y + source_size.h) / (*_image)->size.h - SMALL_TEXTURE_OFFSET;
 
-	if (shim::opengl || (*_image)->flipped) {
-		tv = 1.0f - tv;
-		tv2 = 1.0f - tv2;
-	}
+	tv = 1.0f - tv;
+	tv2 = 1.0f - tv2;
 
 	if (flags & Image::FLIP_H) {
 		float tmp = tu;

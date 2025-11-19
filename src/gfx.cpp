@@ -125,13 +125,6 @@ glReadPixels_func glReadPixels_ptr;
 #include "shim5/shaders/glsl/model_vertex.h"
 #include "shim5/shaders/glsl/model_fragment.h"
 
-#ifdef _WIN32
-#include "shim5/shaders/hlsl/default_vertex.h"
-#include "shim5/shaders/hlsl/default_fragment.h"
-#include "shim5/shaders/hlsl/default_textured_fragment.h"
-#include "shim5/shaders/hlsl/model_fragment.h"
-#endif
-
 static int scaled_w;
 static int scaled_h;
 static int total_frames;
@@ -164,9 +157,6 @@ static util::Size<int> minimum_window_size;
 static util::Size<int> maximum_window_size;
 static int press_and_hold_state;
 static util::Size<int> last_gui_size;
-static int d3d_device_count;
-static int d3d_count;
-static int d3d_device_depth_count;
 static util::Size<int> last_screen_mode;
 static bool handled_lost;
 static float screen_shake_amount;
@@ -178,8 +168,6 @@ static glm::mat4 default_proj;
 static gfx::_black_bars_callback black_bars_callback;
 
 #if defined _WIN32
-static D3DPRESENT_PARAMETERS d3d_pp;
-static IDirect3D9 *d3d;
 static HICON icon_small, icon_big;
 #endif
 
@@ -197,16 +185,8 @@ static void next_notification()
 
 static void set_viewport()
 {
-	if (shim::opengl) {
-		glViewport_ptr(scissor_x, shim::real_screen_size.h-(scissor_y+scissor_h), scissor_w, scissor_h);
-		PRINT_GL_ERROR("glViewport\n");
-	}
-#ifdef _WIN32
-	else {
-		D3DVIEWPORT9 viewport = { scissor_x, scissor_y, (DWORD)scissor_w, (DWORD)scissor_h, 0.0f, 1.0f };
-		shim::d3d_device->SetViewport(&viewport);
-	}
-#endif
+	glViewport_ptr(scissor_x, shim::real_screen_size.h-(scissor_y+scissor_h), scissor_w, scissor_h);
+	PRINT_GL_ERROR("glViewport\n");
 }
 
 static SDL_DisplayID to_display_id(int adapter)
@@ -222,280 +202,7 @@ namespace gfx {
 
 static void audit()
 {
-	if (shim::opengl == false) {
-		util::debugmsg("d3d_count=%d\n", d3d_count);
-		util::debugmsg("d3d_device_count=%d\n", d3d_device_count);
-		util::debugmsg("d3d_device_depth_count=%d\n", d3d_device_depth_count);
-	}
 }
-
-static void set_opengl()
-{
-#ifdef _WIN32
-	shim::opengl = util::bool_arg(true, shim::argc, shim::argv, "opengl");
-#else
-	shim::opengl = true;
-#endif
-}
-
-#ifdef _WIN32
-static D3DMULTISAMPLE_TYPE samples_to_d3d(int samples)
-{
-	if (shim::multisampling == false) {
-		return D3DMULTISAMPLE_NONE;
-	}
-	switch (samples) {
-		case 16:
-			return D3DMULTISAMPLE_16_SAMPLES;
-		case 15:
-			return D3DMULTISAMPLE_15_SAMPLES;
-		case 14:
-			return D3DMULTISAMPLE_14_SAMPLES;
-		case 13:
-			return D3DMULTISAMPLE_13_SAMPLES;
-		case 12:
-			return D3DMULTISAMPLE_12_SAMPLES;
-		case 11:
-			return D3DMULTISAMPLE_11_SAMPLES;
-		case 10:
-			return D3DMULTISAMPLE_10_SAMPLES;
-		case 9:
-			return D3DMULTISAMPLE_9_SAMPLES;
-		case 8:
-			return D3DMULTISAMPLE_8_SAMPLES;
-		case 7:
-			return D3DMULTISAMPLE_7_SAMPLES;
-		case 6:
-			return D3DMULTISAMPLE_6_SAMPLES;
-		case 5:
-			return D3DMULTISAMPLE_5_SAMPLES;
-		case 4:
-			return D3DMULTISAMPLE_4_SAMPLES;
-		case 3:
-			return D3DMULTISAMPLE_3_SAMPLES;
-		case 2:
-			return D3DMULTISAMPLE_2_SAMPLES;
-		default:
-			return D3DMULTISAMPLE_NONE;
-	}
-}
-
-static int shim_compare_to_d3d(Compare_Func func)
-{
-	switch (func) {
-		case COMPARE_NEVER:
-			return D3DCMP_NEVER;
-		case COMPARE_LESS:
-			return D3DCMP_LESS;
-		case COMPARE_EQUAL:
-			return D3DCMP_EQUAL;
-		case COMPARE_LESSEQUAL:
-			return D3DCMP_LESSEQUAL;
-		case COMPARE_GREATER:
-			return D3DCMP_GREATER;
-		case COMPARE_NOTEQUAL:
-			return D3DCMP_NOTEQUAL;
-		case COMPARE_GREATEREQUAL:
-			return D3DCMP_GREATEREQUAL;
-		case COMPARE_ALWAYS:
-			return D3DCMP_ALWAYS;
-	}
-
-	return -1;
-}
-
-static int shim_stencilop_to_d3d(Stencil_Op op)
-{
-	switch (op) {
-		case STENCILOP_KEEP:
-			return D3DSTENCILOP_KEEP;
-		case STENCILOP_ZERO:
-			return D3DSTENCILOP_ZERO;
-		case STENCILOP_REPLACE:
-			return D3DSTENCILOP_REPLACE;
-		case STENCILOP_INCRSAT:
-			return D3DSTENCILOP_INCRSAT;
-		case STENCILOP_DECRSAT:
-			return D3DSTENCILOP_DECRSAT;
-		case STENCILOP_INVERT:
-			return D3DSTENCILOP_INVERT;
-		case STENCILOP_INCR:
-			return D3DSTENCILOP_INCR;
-		case STENCILOP_DECR:
-			return D3DSTENCILOP_DECR;
-	}
-
-	return -1;
-}
-
-static int shim_blend_to_d3d(Blend_Mode m)
-{
-	if (m == BLEND_ZERO) {
-		return D3DBLEND_ZERO;
-	}
-	else if (m == BLEND_ONE) {
-		return D3DBLEND_ONE;
-	}
-	else if (m == BLEND_SRCCOLOR) {
-		return D3DBLEND_SRCCOLOR;
-	}
-	else if (m == BLEND_INVSRCCOLOR) {
-		return D3DBLEND_INVSRCCOLOR;
-	}
-	else if (m == BLEND_SRCALPHA) {
-		return D3DBLEND_SRCALPHA;
-	}
-	else if (m == BLEND_INVSRCALPHA) {
-		return D3DBLEND_INVSRCALPHA;
-	}
-
-	return -1;
-}
-
-static void d3d_create_depth_buffer()
-{
-	if (::create_depth_buffer) {
-		if (internal::gfx_context.depth_stencil_buffer == 0) {
-			util::Size<int> size;
-			if (shim::depth_buffer_size.w < 0 || shim::depth_buffer_size.h < 0) {
-				size = shim::real_screen_size;
-			}
-			else {
-				size = shim::depth_buffer_size;
-			}
-
-			D3DFORMAT format;
-			if (::create_stencil_buffer) {
-				format = D3DFMT_D24S8;
-			}
-			else {
-				format = D3DFMT_D16;
-			}
-			if (shim::d3d_device->CreateDepthStencilSurface(size.w, size.h, format, samples_to_d3d(shim::aa_samples), 0, true, &internal::gfx_context.depth_stencil_buffer, 0) != D3D_OK) {
-				throw util::Error("CreateDepthStencilSurface failed");
-			}
-			else {
-				d3d_device_depth_count++;
-			}
-
-			shim::d3d_device->SetDepthStencilSurface(internal::gfx_context.depth_stencil_buffer);
-		}
-	}
-	else {
-		internal::gfx_context.depth_stencil_buffer = 0;
-	}
-}
-
-static void set_initial_d3d_state()
-{
-	shim::d3d_device->BeginScene();
-
-	shim::d3d_device->SetRenderState(D3DRS_LIGHTING, FALSE);
-	shim::d3d_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	shim::d3d_device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-	shim::d3d_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	shim::d3d_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-	shim::d3d_device->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE);
-	shim::d3d_device->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
-	shim::d3d_device->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-	shim::d3d_device->SetRenderState(D3DRS_STENCILENABLE, FALSE);
-
-	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP) != D3D_OK) {
-		util::infomsg("SetSamplerState failed.\n");
-	}
-	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP) != D3D_OK) {
-		util::infomsg("SetSamplerState failed.\n");
-	}
-	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_MINFILTER, shim::linear_filtering ? D3DTEXF_LINEAR : D3DTEXF_POINT) != D3D_OK) {
-		util::infomsg("SetSamplerState failed.\n");
-	}
-	if (shim::d3d_device->SetSamplerState(0, D3DSAMP_MAGFILTER, shim::linear_filtering ? D3DTEXF_LINEAR : D3DTEXF_POINT) != D3D_OK) {
-		util::infomsg("SetSamplerState failed.\n");
-	}
-
-	shim::d3d_device->SetFVF(NOOSKEWL_SHIM_DEFAULT_FVF);
-}
-
-static void fill_d3d_pp(int w, int h)
-{
-	ZeroMemory(&d3d_pp, sizeof(d3d_pp));
-
-	d3d_pp.BackBufferWidth = w;
-	d3d_pp.BackBufferHeight = h;
-	d3d_pp.BackBufferCount = 1;
-	d3d_pp.MultiSampleType = samples_to_d3d(shim::aa_samples);
-	d3d_pp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3d_pp.hDeviceWindow = internal::gfx_context.hwnd;
-	d3d_pp.Windowed = internal::gfx_context.fullscreen ? 0 : 1;
-	d3d_pp.EnableAutoDepthStencil = FALSE;
-	d3d_pp.Flags = 0;
-
-	D3DFORMAT format = D3DFMT_X8R8G8B8;
-
-	if (internal::gfx_context.fullscreen) {
-		int num_modes = d3d->GetAdapterModeCount(shim::adapter, D3DFMT_X8R8G8B8);
-		shim::refresh_rate = 0;
-		for (int i = 0; i < num_modes; i++) {
-			D3DDISPLAYMODE mode;
-			d3d->EnumAdapterModes(shim::adapter, D3DFMT_X8R8G8B8, i, &mode);
-			if (mode.Width == w && mode.Height == h && (int)mode.RefreshRate > shim::refresh_rate) {
-				shim::refresh_rate = mode.RefreshRate;
-				format = mode.Format;
-			}
-		}
-	}
-	else {
-		format = D3DFMT_UNKNOWN;
-	}
-	d3d_pp.BackBufferFormat = format;
-	d3d_pp.FullScreen_RefreshRateInHz = internal::gfx_context.fullscreen ? shim::refresh_rate : 0;
-
-	if (vsync) {
-		d3d_pp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-	}
-	else {
-		d3d_pp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-	}
-}
-
-static void create_d3d_device()
-{
-	internal::gfx_context.d3d_lost = false;
-
-	HRESULT hr;
-	// NOTE: My desktop PC with NVIDIA graphics fails at screen rotation unless I use software vertex processing
-	if ((hr = d3d->CreateDevice(shim::adapter, D3DDEVTYPE_HAL, internal::gfx_context.hwnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3d_pp, (LPDIRECT3DDEVICE9 *)&shim::d3d_device)) != D3D_OK) {
-		if ((hr = d3d->CreateDevice(shim::adapter, D3DDEVTYPE_HAL, internal::gfx_context.hwnd, D3DCREATE_MIXED_VERTEXPROCESSING, &d3d_pp, (LPDIRECT3DDEVICE9 *)&shim::d3d_device)) != D3D_OK) {
-			if ((hr = d3d->CreateDevice(shim::adapter, D3DDEVTYPE_HAL, internal::gfx_context.hwnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3d_pp, (LPDIRECT3DDEVICE9 *)&shim::d3d_device)) != D3D_OK) {
-				throw util::Error("Unable to create D3D device");
-			}
-			else {
-				d3d_device_count++;
-			}
-		}
-		else {
-			d3d_device_count++;
-		}
-	}
-	else {
-		d3d_device_count++;
-	}
-}
-
-static void paint_window_black(int w, int h)
-{
-	// This clears the screen to black right away to avoid a white flash on Windows
-	PAINTSTRUCT ps;
-	HDC hdc;
-
-	hdc = BeginPaint(internal::gfx_context.hwnd, &ps);
-
-	SelectObject(hdc, GetStockObject(DC_BRUSH));
-	SetDCBrushColor(hdc, RGB(shim::black.r, shim::black.g, shim::black.b));
-
-	Rectangle(hdc, 0, 0, w, h);
-}
-#endif
 
 static int shim_compare_to_gl(Compare_Func func)
 {
@@ -584,8 +291,6 @@ static void set_default_shader()
 // window_w/h are passed back out (restart needs them)
 static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling, int &window_w, int &window_h)
 {
-	set_opengl();
-
 #if defined __linux__ && !defined ANDROID
 	std::string env = std::string("SDL_VIDEO_FULLSCREEN_HEAD=") + util::itos(shim::adapter);
 	putenv((char *)env.c_str());
@@ -655,10 +360,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	int flags = 0;
 
 	flags |= internal::gfx_context.fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE;
-
-	if (shim::opengl) {
-		flags |= SDL_WINDOW_OPENGL;
-	}
+	flags |= SDL_WINDOW_OPENGL;
 
 	int centre_y;
 #if defined IOS || defined ANDROID
@@ -722,13 +424,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		win_y = r.y + centre_y;
 	}
 
-#if defined _WIN32
-	if (shim::opengl && internal::gfx_context.restarting) {
-		//SDL_Delay(2500); // need this when "restart"ing, need to let old fullscreen mode die fully, especially on screen rotations
-	}
-#endif
-	
-	//internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), win_x, win_y, window_w, window_h, flags);
 	internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), window_w, window_h, flags);
 	
 	// I guess on Android the window IS 0
@@ -740,13 +435,9 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 #if defined _WIN32
 	internal::gfx_context.hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-	paint_window_black(window_w, window_h);
 #endif
 
 #if defined _WIN32
-	if (internal::gfx_context.fullscreen) {
-		paint_window_black(window_w, window_h);
-	}
 #elif defined __linux__ && !defined ANDROID
 	internal::gfx_context.x_display = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
 	internal::gfx_context.x_window = (Window)SDL_GetNumberProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL);
@@ -763,244 +454,224 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	int w = 0;
 	int h = 0;
     
-	if (shim::opengl) {
-		internal::gfx_context.opengl_context = SDL_GL_CreateContext(internal::gfx_context.window);
+	internal::gfx_context.opengl_context = SDL_GL_CreateContext(internal::gfx_context.window);
 
-		if (internal::gfx_context.opengl_context == 0) {
-			util::errormsg("Failed to create OpenGL context! (%s)\n", SDL_GetError());
-		}
+	if (internal::gfx_context.opengl_context == 0) {
+		util::errormsg("Failed to create OpenGL context! (%s)\n", SDL_GetError());
+	}
 
 #if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
-		glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
-		glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
-		glBindFramebuffer_ptr = (glBindFramebuffer_func)SDL_GL_GetProcAddress("glBindFramebuffer");
-		glDeleteRenderbuffers_ptr = (glDeleteRenderbuffers_func)SDL_GL_GetProcAddress("glDeleteRenderbuffers");
-		glGenFramebuffers_ptr = (glGenFramebuffers_func)SDL_GL_GetProcAddress("glGenFramebuffers");
-		glGenRenderbuffers_ptr = (glGenRenderbuffers_func)SDL_GL_GetProcAddress("glGenRenderbuffers");
-		glBindRenderbuffer_ptr = (glBindRenderbuffer_func)SDL_GL_GetProcAddress("glBindRenderbuffer");
-		glFramebufferTexture2D_ptr = (glFramebufferTexture2D_func)SDL_GL_GetProcAddress("glFramebufferTexture2D");
-		glRenderbufferStorage_ptr = (glRenderbufferStorage_func)SDL_GL_GetProcAddress("glRenderbufferStorage");
-		glCheckFramebufferStatus_ptr = (glCheckFramebufferStatus_func)SDL_GL_GetProcAddress("glCheckFramebufferStatus");
-		glDeleteFramebuffers_ptr = (glDeleteFramebuffers_func)SDL_GL_GetProcAddress("glDeleteFramebuffers");
-		glFramebufferRenderbuffer_ptr = (glFramebufferRenderbuffer_func)SDL_GL_GetProcAddress("glFramebufferRenderbuffer");
-		glUseProgram_ptr = (glUseProgram_func)SDL_GL_GetProcAddress("glUseProgram");
-		glUniform1f_ptr = (glUniform1f_func)SDL_GL_GetProcAddress("glUniform1f");
-		glUniform2f_ptr = (glUniform2f_func)SDL_GL_GetProcAddress("glUniform2f");
-		glUniform3f_ptr = (glUniform3f_func)SDL_GL_GetProcAddress("glUniform3f");
-		glUniform4f_ptr = (glUniform4f_func)SDL_GL_GetProcAddress("glUniform4f");
-		glUniform1i_ptr = (glUniform1i_func)SDL_GL_GetProcAddress("glUniform1i");
-		glUniform2i_ptr = (glUniform2i_func)SDL_GL_GetProcAddress("glUniform2i");
-		glUniform3i_ptr = (glUniform3i_func)SDL_GL_GetProcAddress("glUniform3i");
-		glUniform4i_ptr = (glUniform4i_func)SDL_GL_GetProcAddress("glUniform4i");
-		glUniform1fv_ptr = (glUniform1fv_func)SDL_GL_GetProcAddress("glUniform1fv");
-		glUniform2fv_ptr = (glUniform2fv_func)SDL_GL_GetProcAddress("glUniform2fv");
-		glUniform3fv_ptr = (glUniform3fv_func)SDL_GL_GetProcAddress("glUniform3fv");
-		glUniform4fv_ptr = (glUniform4fv_func)SDL_GL_GetProcAddress("glUniform4fv");
-		glUniform1iv_ptr = (glUniform1iv_func)SDL_GL_GetProcAddress("glUniform1iv");
-		glUniform2iv_ptr = (glUniform2iv_func)SDL_GL_GetProcAddress("glUniform2iv");
-		glUniform3iv_ptr = (glUniform3iv_func)SDL_GL_GetProcAddress("glUniform3iv");
-		glUniform4iv_ptr = (glUniform4iv_func)SDL_GL_GetProcAddress("glUniform4iv");
-		glUniformMatrix2fv_ptr = (glUniformMatrix2fv_func)SDL_GL_GetProcAddress("glUniformMatrix2fv");
-		glUniformMatrix3fv_ptr = (glUniformMatrix3fv_func)SDL_GL_GetProcAddress("glUniformMatrix3fv");
-		glUniformMatrix4fv_ptr = (glUniformMatrix4fv_func)SDL_GL_GetProcAddress("glUniformMatrix4fv");
-		glDeleteShader_ptr = (glDeleteShader_func)SDL_GL_GetProcAddress("glDeleteShader");
-		glCreateProgram_ptr = (glCreateProgram_func)SDL_GL_GetProcAddress("glCreateProgram");
-		glDeleteProgram_ptr = (glDeleteProgram_func)SDL_GL_GetProcAddress("glDeleteProgram");
-		glAttachShader_ptr = (glAttachShader_func)SDL_GL_GetProcAddress("glAttachShader");
-		glLinkProgram_ptr = (glLinkProgram_func)SDL_GL_GetProcAddress("glLinkProgram");
-		glGetAttribLocation_ptr = (glGetAttribLocation_func)SDL_GL_GetProcAddress("glGetAttribLocation");
-		glGetTexImage_ptr = (glGetTexImage_func)SDL_GL_GetProcAddress("glGetTexImage");
-		glEnableVertexAttribArray_ptr = (glEnableVertexAttribArray_func)SDL_GL_GetProcAddress("glEnableVertexAttribArray");
-		glVertexAttribPointer_ptr = (glVertexAttribPointer_func)SDL_GL_GetProcAddress("glVertexAttribPointer");
-		glGetUniformLocation_ptr = (glGetUniformLocation_func)SDL_GL_GetProcAddress("glGetUniformLocation");
-		glShaderSource_ptr = (glShaderSource_func)SDL_GL_GetProcAddress("glShaderSource");
-		glCompileShader_ptr = (glCompileShader_func)SDL_GL_GetProcAddress("glCompileShader");
-		glGetShaderiv_ptr = (glGetShaderiv_func)SDL_GL_GetProcAddress("glGetShaderiv");
-		glGetShaderInfoLog_ptr = (glGetShaderInfoLog_func)SDL_GL_GetProcAddress("glGetShaderInfoLog");
-		glCreateShader_ptr = (glCreateShader_func)SDL_GL_GetProcAddress("glCreateShader");
-		glBlendFunc_ptr = (glBlendFunc_func)SDL_GL_GetProcAddress("glBlendFunc");
-		glEnable_ptr = (glEnable_func)SDL_GL_GetProcAddress("glEnable");
-		glDisable_ptr = (glDisable_func)SDL_GL_GetProcAddress("glDisable");
-		glFrontFace_ptr = (glFrontFace_func)SDL_GL_GetProcAddress("glFrontFace");
-		glCullFace_ptr = (glCullFace_func)SDL_GL_GetProcAddress("glCullFace");
-		glScissor_ptr = (glScissor_func)SDL_GL_GetProcAddress("glScissor");
-		glViewport_ptr = (glViewport_func)SDL_GL_GetProcAddress("glViewport");
-		glClearColor_ptr = (glClearColor_func)SDL_GL_GetProcAddress("glClearColor");
-		glClear_ptr = (glClear_func)SDL_GL_GetProcAddress("glClear");
+	glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
+	glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
+	glBindFramebuffer_ptr = (glBindFramebuffer_func)SDL_GL_GetProcAddress("glBindFramebuffer");
+	glDeleteRenderbuffers_ptr = (glDeleteRenderbuffers_func)SDL_GL_GetProcAddress("glDeleteRenderbuffers");
+	glGenFramebuffers_ptr = (glGenFramebuffers_func)SDL_GL_GetProcAddress("glGenFramebuffers");
+	glGenRenderbuffers_ptr = (glGenRenderbuffers_func)SDL_GL_GetProcAddress("glGenRenderbuffers");
+	glBindRenderbuffer_ptr = (glBindRenderbuffer_func)SDL_GL_GetProcAddress("glBindRenderbuffer");
+	glFramebufferTexture2D_ptr = (glFramebufferTexture2D_func)SDL_GL_GetProcAddress("glFramebufferTexture2D");
+	glRenderbufferStorage_ptr = (glRenderbufferStorage_func)SDL_GL_GetProcAddress("glRenderbufferStorage");
+	glCheckFramebufferStatus_ptr = (glCheckFramebufferStatus_func)SDL_GL_GetProcAddress("glCheckFramebufferStatus");
+	glDeleteFramebuffers_ptr = (glDeleteFramebuffers_func)SDL_GL_GetProcAddress("glDeleteFramebuffers");
+	glFramebufferRenderbuffer_ptr = (glFramebufferRenderbuffer_func)SDL_GL_GetProcAddress("glFramebufferRenderbuffer");
+	glUseProgram_ptr = (glUseProgram_func)SDL_GL_GetProcAddress("glUseProgram");
+	glUniform1f_ptr = (glUniform1f_func)SDL_GL_GetProcAddress("glUniform1f");
+	glUniform2f_ptr = (glUniform2f_func)SDL_GL_GetProcAddress("glUniform2f");
+	glUniform3f_ptr = (glUniform3f_func)SDL_GL_GetProcAddress("glUniform3f");
+	glUniform4f_ptr = (glUniform4f_func)SDL_GL_GetProcAddress("glUniform4f");
+	glUniform1i_ptr = (glUniform1i_func)SDL_GL_GetProcAddress("glUniform1i");
+	glUniform2i_ptr = (glUniform2i_func)SDL_GL_GetProcAddress("glUniform2i");
+	glUniform3i_ptr = (glUniform3i_func)SDL_GL_GetProcAddress("glUniform3i");
+	glUniform4i_ptr = (glUniform4i_func)SDL_GL_GetProcAddress("glUniform4i");
+	glUniform1fv_ptr = (glUniform1fv_func)SDL_GL_GetProcAddress("glUniform1fv");
+	glUniform2fv_ptr = (glUniform2fv_func)SDL_GL_GetProcAddress("glUniform2fv");
+	glUniform3fv_ptr = (glUniform3fv_func)SDL_GL_GetProcAddress("glUniform3fv");
+	glUniform4fv_ptr = (glUniform4fv_func)SDL_GL_GetProcAddress("glUniform4fv");
+	glUniform1iv_ptr = (glUniform1iv_func)SDL_GL_GetProcAddress("glUniform1iv");
+	glUniform2iv_ptr = (glUniform2iv_func)SDL_GL_GetProcAddress("glUniform2iv");
+	glUniform3iv_ptr = (glUniform3iv_func)SDL_GL_GetProcAddress("glUniform3iv");
+	glUniform4iv_ptr = (glUniform4iv_func)SDL_GL_GetProcAddress("glUniform4iv");
+	glUniformMatrix2fv_ptr = (glUniformMatrix2fv_func)SDL_GL_GetProcAddress("glUniformMatrix2fv");
+	glUniformMatrix3fv_ptr = (glUniformMatrix3fv_func)SDL_GL_GetProcAddress("glUniformMatrix3fv");
+	glUniformMatrix4fv_ptr = (glUniformMatrix4fv_func)SDL_GL_GetProcAddress("glUniformMatrix4fv");
+	glDeleteShader_ptr = (glDeleteShader_func)SDL_GL_GetProcAddress("glDeleteShader");
+	glCreateProgram_ptr = (glCreateProgram_func)SDL_GL_GetProcAddress("glCreateProgram");
+	glDeleteProgram_ptr = (glDeleteProgram_func)SDL_GL_GetProcAddress("glDeleteProgram");
+	glAttachShader_ptr = (glAttachShader_func)SDL_GL_GetProcAddress("glAttachShader");
+	glLinkProgram_ptr = (glLinkProgram_func)SDL_GL_GetProcAddress("glLinkProgram");
+	glGetAttribLocation_ptr = (glGetAttribLocation_func)SDL_GL_GetProcAddress("glGetAttribLocation");
+	glGetTexImage_ptr = (glGetTexImage_func)SDL_GL_GetProcAddress("glGetTexImage");
+	glEnableVertexAttribArray_ptr = (glEnableVertexAttribArray_func)SDL_GL_GetProcAddress("glEnableVertexAttribArray");
+	glVertexAttribPointer_ptr = (glVertexAttribPointer_func)SDL_GL_GetProcAddress("glVertexAttribPointer");
+	glGetUniformLocation_ptr = (glGetUniformLocation_func)SDL_GL_GetProcAddress("glGetUniformLocation");
+	glShaderSource_ptr = (glShaderSource_func)SDL_GL_GetProcAddress("glShaderSource");
+	glCompileShader_ptr = (glCompileShader_func)SDL_GL_GetProcAddress("glCompileShader");
+	glGetShaderiv_ptr = (glGetShaderiv_func)SDL_GL_GetProcAddress("glGetShaderiv");
+	glGetShaderInfoLog_ptr = (glGetShaderInfoLog_func)SDL_GL_GetProcAddress("glGetShaderInfoLog");
+	glCreateShader_ptr = (glCreateShader_func)SDL_GL_GetProcAddress("glCreateShader");
+	glBlendFunc_ptr = (glBlendFunc_func)SDL_GL_GetProcAddress("glBlendFunc");
+	glEnable_ptr = (glEnable_func)SDL_GL_GetProcAddress("glEnable");
+	glDisable_ptr = (glDisable_func)SDL_GL_GetProcAddress("glDisable");
+	glFrontFace_ptr = (glFrontFace_func)SDL_GL_GetProcAddress("glFrontFace");
+	glCullFace_ptr = (glCullFace_func)SDL_GL_GetProcAddress("glCullFace");
+	glScissor_ptr = (glScissor_func)SDL_GL_GetProcAddress("glScissor");
+	glViewport_ptr = (glViewport_func)SDL_GL_GetProcAddress("glViewport");
+	glClearColor_ptr = (glClearColor_func)SDL_GL_GetProcAddress("glClearColor");
+	glClear_ptr = (glClear_func)SDL_GL_GetProcAddress("glClear");
 #if defined SDL_PLATFORM_APPLE && !defined IOS
-		glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepth");
+	glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepth");
 #else
-		glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepthf");
+	glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepthf");
 #endif
 #if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
-		if (glClearDepthf_ptr == 0) {
-			glClearDepth_ptr = (glClearDepth_func)SDL_GL_GetProcAddress("glClearDepth");
-		}
-		else {
-			glClearDepth_ptr = 0;
-		}
+	if (glClearDepthf_ptr == 0) {
+		glClearDepth_ptr = (glClearDepth_func)SDL_GL_GetProcAddress("glClearDepth");
+	}
+	else {
+		glClearDepth_ptr = 0;
+	}
 #endif
-		glClearStencil_ptr = (glClearStencil_func)SDL_GL_GetProcAddress("glClearStencil");
-		glDepthMask_ptr = (glDepthMask_func)SDL_GL_GetProcAddress("glDepthMask");
-		glDepthFunc_ptr = (glDepthFunc_func)SDL_GL_GetProcAddress("glDepthFunc");
-		glStencilFunc_ptr = (glStencilFunc_func)SDL_GL_GetProcAddress("glStencilFunc");
-		glStencilOp_ptr = (glStencilOp_func)SDL_GL_GetProcAddress("glStencilOp");
-		glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
-		glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
-		glBlendFunc_ptr = (glBlendFunc_func)SDL_GL_GetProcAddress("glBlendFunc");
-		glActiveTexture_ptr = (glActiveTexture_func)SDL_GL_GetProcAddress("glActiveTexture");
-		glColorMask_ptr = (glColorMask_func)SDL_GL_GetProcAddress("glColorMask");
-		glDeleteTextures_ptr = (glDeleteTextures_func)SDL_GL_GetProcAddress("glDeleteTextures");
-		glGenTextures_ptr = (glGenTextures_func)SDL_GL_GetProcAddress("glGenTextures");
-		glBindTexture_ptr = (glBindTexture_func)SDL_GL_GetProcAddress("glBindTexture");
-		glTexImage2D_ptr = (glTexImage2D_func)SDL_GL_GetProcAddress("glTexImage2D");
-		glTexParameteri_ptr = (glTexParameteri_func)SDL_GL_GetProcAddress("glTexParameteri");
-		glGetError_ptr = (glGetError_func)SDL_GL_GetProcAddress("glGetError");
-		glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
-		glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
+	glClearStencil_ptr = (glClearStencil_func)SDL_GL_GetProcAddress("glClearStencil");
+	glDepthMask_ptr = (glDepthMask_func)SDL_GL_GetProcAddress("glDepthMask");
+	glDepthFunc_ptr = (glDepthFunc_func)SDL_GL_GetProcAddress("glDepthFunc");
+	glStencilFunc_ptr = (glStencilFunc_func)SDL_GL_GetProcAddress("glStencilFunc");
+	glStencilOp_ptr = (glStencilOp_func)SDL_GL_GetProcAddress("glStencilOp");
+	glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
+	glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
+	glBlendFunc_ptr = (glBlendFunc_func)SDL_GL_GetProcAddress("glBlendFunc");
+	glActiveTexture_ptr = (glActiveTexture_func)SDL_GL_GetProcAddress("glActiveTexture");
+	glColorMask_ptr = (glColorMask_func)SDL_GL_GetProcAddress("glColorMask");
+	glDeleteTextures_ptr = (glDeleteTextures_func)SDL_GL_GetProcAddress("glDeleteTextures");
+	glGenTextures_ptr = (glGenTextures_func)SDL_GL_GetProcAddress("glGenTextures");
+	glBindTexture_ptr = (glBindTexture_func)SDL_GL_GetProcAddress("glBindTexture");
+	glTexImage2D_ptr = (glTexImage2D_func)SDL_GL_GetProcAddress("glTexImage2D");
+	glTexParameteri_ptr = (glTexParameteri_func)SDL_GL_GetProcAddress("glTexParameteri");
+	glGetError_ptr = (glGetError_func)SDL_GL_GetProcAddress("glGetError");
+	glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
+	glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
 
-		if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
-		if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
-		if (glBindFramebuffer_ptr == 0) { util::debugmsg("glBindFramebuffer_ptr=%p\n", glBindFramebuffer_ptr); }
-		if (glDeleteRenderbuffers_ptr == 0) { util::debugmsg("glDeleteRenderbuffers_ptr=%p\n", glDeleteRenderbuffers_ptr); }
-		if (glGenFramebuffers_ptr == 0) { util::debugmsg("glGenFramebuffers_ptr=%p\n", glGenFramebuffers_ptr); }
-		if (glGenRenderbuffers_ptr == 0) { util::debugmsg("glGenRenderbuffers_ptr=%p\n", glGenRenderbuffers_ptr); }
-		if (glBindRenderbuffer_ptr == 0) { util::debugmsg("glBindRenderbuffer_ptr=%p\n", glBindRenderbuffer_ptr); }
-		if (glFramebufferTexture2D_ptr == 0) { util::debugmsg("glFramebufferTexture2D_ptr=%p\n", glFramebufferTexture2D_ptr); }
-		if (glRenderbufferStorage_ptr == 0) { util::debugmsg("glRenderbufferStorage_ptr=%p\n", glRenderbufferStorage_ptr); }
-		if (glCheckFramebufferStatus_ptr == 0) { util::debugmsg("glCheckFramebufferStatus_ptr=%p\n", glCheckFramebufferStatus_ptr); }
-		if (glDeleteFramebuffers_ptr == 0) { util::debugmsg("glDeleteFramebuffers_ptr=%p\n", glDeleteFramebuffers_ptr); }
-		if (glFramebufferRenderbuffer_ptr == 0) { util::debugmsg("glFramebufferRenderbuffer_ptr=%p\n", glFramebufferRenderbuffer_ptr); }
-		if (glUseProgram_ptr == 0) { util::debugmsg("glUseProgram_ptr=%p\n", glUseProgram_ptr); }
-		if (glUniform1f_ptr == 0) { util::debugmsg("glUniform1f_ptr=%p\n", glUniform1f_ptr); }
-		if (glUniform2f_ptr == 0) { util::debugmsg("glUniform2f_ptr=%p\n", glUniform2f_ptr); }
-		if (glUniform3f_ptr == 0) { util::debugmsg("glUniform3f_ptr=%p\n", glUniform3f_ptr); }
-		if (glUniform4f_ptr == 0) { util::debugmsg("glUniform4f_ptr=%p\n", glUniform4f_ptr); }
-		if (glUniform1i_ptr == 0) { util::debugmsg("glUniform1i_ptr=%p\n", glUniform1i_ptr); }
-		if (glUniform2i_ptr == 0) { util::debugmsg("glUniform2i_ptr=%p\n", glUniform2i_ptr); }
-		if (glUniform3i_ptr == 0) { util::debugmsg("glUniform3i_ptr=%p\n", glUniform3i_ptr); }
-		if (glUniform4i_ptr == 0) { util::debugmsg("glUniform4i_ptr=%p\n", glUniform4i_ptr); }
-		if (glUniform1fv_ptr == 0) { util::debugmsg("glUniform1fv_ptr=%p\n", glUniform1fv_ptr); }
-		if (glUniform2fv_ptr == 0) { util::debugmsg("glUniform2fv_ptr=%p\n", glUniform2fv_ptr); }
-		if (glUniform3fv_ptr == 0) { util::debugmsg("glUniform3fv_ptr=%p\n", glUniform3fv_ptr); }
-		if (glUniform4fv_ptr == 0) { util::debugmsg("glUniform4fv_ptr=%p\n", glUniform4fv_ptr); }
-		if (glUniform1iv_ptr == 0) { util::debugmsg("glUniform1iv_ptr=%p\n", glUniform1iv_ptr); }
-		if (glUniform2iv_ptr == 0) { util::debugmsg("glUniform2iv_ptr=%p\n", glUniform2iv_ptr); }
-		if (glUniform3iv_ptr == 0) { util::debugmsg("glUniform3iv_ptr=%p\n", glUniform3iv_ptr); }
-		if (glUniform4iv_ptr == 0) { util::debugmsg("glUniform4iv_ptr=%p\n", glUniform4iv_ptr); }
-		if (glUniformMatrix2fv_ptr == 0) { util::debugmsg("glUniformMatrix2fv_ptr=%p\n", glUniformMatrix2fv_ptr); }
-		if (glUniformMatrix3fv_ptr == 0) { util::debugmsg("glUniformMatrix3fv_ptr=%p\n", glUniformMatrix3fv_ptr); }
-		if (glUniformMatrix4fv_ptr == 0) { util::debugmsg("glUniformMatrix4fv_ptr=%p\n", glUniformMatrix4fv_ptr); }
-		if (glDeleteShader_ptr == 0) { util::debugmsg("glDeleteShader_ptr=%p\n", glDeleteShader_ptr); }
-		if (glCreateProgram_ptr == 0) { util::debugmsg("glCreateProgram_ptr=%p\n", glCreateProgram_ptr); }
-		if (glDeleteProgram_ptr == 0) { util::debugmsg("glDeleteProgram_ptr=%p\n", glDeleteProgram_ptr); }
-		if (glAttachShader_ptr == 0) { util::debugmsg("glAttachShader_ptr=%p\n", glAttachShader_ptr); }
-		if (glLinkProgram_ptr == 0) { util::debugmsg("glLinkProgram_ptr=%p\n", glLinkProgram_ptr); }
-		if (glGetAttribLocation_ptr == 0) { util::debugmsg("glGetAttribLocation_ptr=%p\n", glGetAttribLocation_ptr); }
-		if (glGetTexImage_ptr == 0) { util::debugmsg("glGetTexImage_ptr=%p\n", glGetTexImage_ptr); }
-		if (glEnableVertexAttribArray_ptr == 0) { util::debugmsg("glEnableVertexAttribArray_ptr=%p\n", glEnableVertexAttribArray_ptr); }
-		if (glVertexAttribPointer_ptr == 0) { util::debugmsg("glVertexAttribPointer_ptr=%p\n", glVertexAttribPointer_ptr); }
-		if (glGetUniformLocation_ptr == 0) { util::debugmsg("glGetUniformLocation_ptr=%p\n", glGetUniformLocation_ptr); }
-		if (glShaderSource_ptr == 0) { util::debugmsg("glShaderSource_ptr=%p\n", glShaderSource_ptr); }
-		if (glCompileShader_ptr == 0) { util::debugmsg("glCompileShader_ptr=%p\n", glCompileShader_ptr); }
-		if (glGetShaderiv_ptr == 0) { util::debugmsg("glGetShaderiv_ptr=%p\n", glGetShaderiv_ptr); }
-		if (glGetShaderInfoLog_ptr == 0) { util::debugmsg("glGetShaderInfoLog_ptr=%p\n", glGetShaderInfoLog_ptr); }
-		if (glCreateShader_ptr == 0) { util::debugmsg("glCreateShader_ptr=%p\n", glCreateShader_ptr); }
-		if (glBlendFunc_ptr == 0) { util::debugmsg("glBlendFunc_ptr=%p\n", glBlendFunc_ptr); }
-		if (glEnable_ptr == 0) { util::debugmsg("glEnable_ptr=%p\n", glEnable_ptr); }
-		if (glDisable_ptr == 0) { util::debugmsg("glDisable_ptr=%p\n", glDisable_ptr); }
-		if (glFrontFace_ptr == 0) { util::debugmsg("glFrontFace_ptr=%p\n", glFrontFace_ptr); }
-		if (glCullFace_ptr == 0) { util::debugmsg("glCullFace_ptr=%p\n", glCullFace_ptr); }
-		if (glScissor_ptr == 0) { util::debugmsg("glScissor_ptr=%p\n", glScissor_ptr); }
-		if (glViewport_ptr == 0) { util::debugmsg("glViewport_ptr=%p\n", glViewport_ptr); }
-		if (glClearColor_ptr == 0) { util::debugmsg("glClearColor_ptr=%p\n", glClearColor_ptr); }
-		if (glClear_ptr == 0) { util::debugmsg("glClear_ptr=%p\n", glClear_ptr); }
-		if (glClearDepthf_ptr == 0) { util::debugmsg("glClearDepthf_ptr=%p\n", glClearDepthf_ptr); }
-		if (glClearStencil_ptr == 0) { util::debugmsg("glClearStencil_ptr=%p\n", glClearStencil_ptr); }
-		if (glDepthMask_ptr == 0) { util::debugmsg("glDepthMask_ptr=%p\n", glDepthMask_ptr); }
-		if (glDepthFunc_ptr == 0) { util::debugmsg("glDepthFunc_ptr=%p\n", glDepthFunc_ptr); }
-		if (glStencilFunc_ptr == 0) { util::debugmsg("glStencilFunc_ptr=%p\n", glStencilFunc_ptr); }
-		if (glStencilOp_ptr == 0) { util::debugmsg("glStencilOp_ptr=%p\n", glStencilOp_ptr); }
-		if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
-		if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
-		if (glBlendFunc_ptr == 0) { util::debugmsg("glBlendFunc_ptr=%p\n", glBlendFunc_ptr); }
-		if (glActiveTexture_ptr == 0) { util::debugmsg("glActiveTexture_ptr=%p\n", glActiveTexture_ptr); }
-		if (glColorMask_ptr == 0) { util::debugmsg("glColorMask_ptr=%p\n", glColorMask_ptr); }
-		if (glDeleteTextures_ptr == 0) { util::debugmsg("glDeleteTextures_ptr=%p\n", glDeleteTextures_ptr); }
-		if (glGenTextures_ptr == 0) { util::debugmsg("glGenTextures_ptr=%p\n", glGenTextures_ptr); }
-		if (glBindTexture_ptr == 0) { util::debugmsg("glBindTexture_ptr=%p\n", glBindTexture_ptr); }
-		if (glTexImage2D_ptr == 0) { util::debugmsg("glTexImage2D_ptr=%p\n", glTexImage2D_ptr); }
-		if (glTexParameteri_ptr == 0) { util::debugmsg("glTexParameteri_ptr=%p\n", glTexParameteri_ptr); }
-		if (glGetError_ptr == 0) { util::debugmsg("glGetError_ptr=%p\n", glGetError_ptr); }
-		if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
-		if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
+	if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
+	if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
+	if (glBindFramebuffer_ptr == 0) { util::debugmsg("glBindFramebuffer_ptr=%p\n", glBindFramebuffer_ptr); }
+	if (glDeleteRenderbuffers_ptr == 0) { util::debugmsg("glDeleteRenderbuffers_ptr=%p\n", glDeleteRenderbuffers_ptr); }
+	if (glGenFramebuffers_ptr == 0) { util::debugmsg("glGenFramebuffers_ptr=%p\n", glGenFramebuffers_ptr); }
+	if (glGenRenderbuffers_ptr == 0) { util::debugmsg("glGenRenderbuffers_ptr=%p\n", glGenRenderbuffers_ptr); }
+	if (glBindRenderbuffer_ptr == 0) { util::debugmsg("glBindRenderbuffer_ptr=%p\n", glBindRenderbuffer_ptr); }
+	if (glFramebufferTexture2D_ptr == 0) { util::debugmsg("glFramebufferTexture2D_ptr=%p\n", glFramebufferTexture2D_ptr); }
+	if (glRenderbufferStorage_ptr == 0) { util::debugmsg("glRenderbufferStorage_ptr=%p\n", glRenderbufferStorage_ptr); }
+	if (glCheckFramebufferStatus_ptr == 0) { util::debugmsg("glCheckFramebufferStatus_ptr=%p\n", glCheckFramebufferStatus_ptr); }
+	if (glDeleteFramebuffers_ptr == 0) { util::debugmsg("glDeleteFramebuffers_ptr=%p\n", glDeleteFramebuffers_ptr); }
+	if (glFramebufferRenderbuffer_ptr == 0) { util::debugmsg("glFramebufferRenderbuffer_ptr=%p\n", glFramebufferRenderbuffer_ptr); }
+	if (glUseProgram_ptr == 0) { util::debugmsg("glUseProgram_ptr=%p\n", glUseProgram_ptr); }
+	if (glUniform1f_ptr == 0) { util::debugmsg("glUniform1f_ptr=%p\n", glUniform1f_ptr); }
+	if (glUniform2f_ptr == 0) { util::debugmsg("glUniform2f_ptr=%p\n", glUniform2f_ptr); }
+	if (glUniform3f_ptr == 0) { util::debugmsg("glUniform3f_ptr=%p\n", glUniform3f_ptr); }
+	if (glUniform4f_ptr == 0) { util::debugmsg("glUniform4f_ptr=%p\n", glUniform4f_ptr); }
+	if (glUniform1i_ptr == 0) { util::debugmsg("glUniform1i_ptr=%p\n", glUniform1i_ptr); }
+	if (glUniform2i_ptr == 0) { util::debugmsg("glUniform2i_ptr=%p\n", glUniform2i_ptr); }
+	if (glUniform3i_ptr == 0) { util::debugmsg("glUniform3i_ptr=%p\n", glUniform3i_ptr); }
+	if (glUniform4i_ptr == 0) { util::debugmsg("glUniform4i_ptr=%p\n", glUniform4i_ptr); }
+	if (glUniform1fv_ptr == 0) { util::debugmsg("glUniform1fv_ptr=%p\n", glUniform1fv_ptr); }
+	if (glUniform2fv_ptr == 0) { util::debugmsg("glUniform2fv_ptr=%p\n", glUniform2fv_ptr); }
+	if (glUniform3fv_ptr == 0) { util::debugmsg("glUniform3fv_ptr=%p\n", glUniform3fv_ptr); }
+	if (glUniform4fv_ptr == 0) { util::debugmsg("glUniform4fv_ptr=%p\n", glUniform4fv_ptr); }
+	if (glUniform1iv_ptr == 0) { util::debugmsg("glUniform1iv_ptr=%p\n", glUniform1iv_ptr); }
+	if (glUniform2iv_ptr == 0) { util::debugmsg("glUniform2iv_ptr=%p\n", glUniform2iv_ptr); }
+	if (glUniform3iv_ptr == 0) { util::debugmsg("glUniform3iv_ptr=%p\n", glUniform3iv_ptr); }
+	if (glUniform4iv_ptr == 0) { util::debugmsg("glUniform4iv_ptr=%p\n", glUniform4iv_ptr); }
+	if (glUniformMatrix2fv_ptr == 0) { util::debugmsg("glUniformMatrix2fv_ptr=%p\n", glUniformMatrix2fv_ptr); }
+	if (glUniformMatrix3fv_ptr == 0) { util::debugmsg("glUniformMatrix3fv_ptr=%p\n", glUniformMatrix3fv_ptr); }
+	if (glUniformMatrix4fv_ptr == 0) { util::debugmsg("glUniformMatrix4fv_ptr=%p\n", glUniformMatrix4fv_ptr); }
+	if (glDeleteShader_ptr == 0) { util::debugmsg("glDeleteShader_ptr=%p\n", glDeleteShader_ptr); }
+	if (glCreateProgram_ptr == 0) { util::debugmsg("glCreateProgram_ptr=%p\n", glCreateProgram_ptr); }
+	if (glDeleteProgram_ptr == 0) { util::debugmsg("glDeleteProgram_ptr=%p\n", glDeleteProgram_ptr); }
+	if (glAttachShader_ptr == 0) { util::debugmsg("glAttachShader_ptr=%p\n", glAttachShader_ptr); }
+	if (glLinkProgram_ptr == 0) { util::debugmsg("glLinkProgram_ptr=%p\n", glLinkProgram_ptr); }
+	if (glGetAttribLocation_ptr == 0) { util::debugmsg("glGetAttribLocation_ptr=%p\n", glGetAttribLocation_ptr); }
+	if (glGetTexImage_ptr == 0) { util::debugmsg("glGetTexImage_ptr=%p\n", glGetTexImage_ptr); }
+	if (glEnableVertexAttribArray_ptr == 0) { util::debugmsg("glEnableVertexAttribArray_ptr=%p\n", glEnableVertexAttribArray_ptr); }
+	if (glVertexAttribPointer_ptr == 0) { util::debugmsg("glVertexAttribPointer_ptr=%p\n", glVertexAttribPointer_ptr); }
+	if (glGetUniformLocation_ptr == 0) { util::debugmsg("glGetUniformLocation_ptr=%p\n", glGetUniformLocation_ptr); }
+	if (glShaderSource_ptr == 0) { util::debugmsg("glShaderSource_ptr=%p\n", glShaderSource_ptr); }
+	if (glCompileShader_ptr == 0) { util::debugmsg("glCompileShader_ptr=%p\n", glCompileShader_ptr); }
+	if (glGetShaderiv_ptr == 0) { util::debugmsg("glGetShaderiv_ptr=%p\n", glGetShaderiv_ptr); }
+	if (glGetShaderInfoLog_ptr == 0) { util::debugmsg("glGetShaderInfoLog_ptr=%p\n", glGetShaderInfoLog_ptr); }
+	if (glCreateShader_ptr == 0) { util::debugmsg("glCreateShader_ptr=%p\n", glCreateShader_ptr); }
+	if (glBlendFunc_ptr == 0) { util::debugmsg("glBlendFunc_ptr=%p\n", glBlendFunc_ptr); }
+	if (glEnable_ptr == 0) { util::debugmsg("glEnable_ptr=%p\n", glEnable_ptr); }
+	if (glDisable_ptr == 0) { util::debugmsg("glDisable_ptr=%p\n", glDisable_ptr); }
+	if (glFrontFace_ptr == 0) { util::debugmsg("glFrontFace_ptr=%p\n", glFrontFace_ptr); }
+	if (glCullFace_ptr == 0) { util::debugmsg("glCullFace_ptr=%p\n", glCullFace_ptr); }
+	if (glScissor_ptr == 0) { util::debugmsg("glScissor_ptr=%p\n", glScissor_ptr); }
+	if (glViewport_ptr == 0) { util::debugmsg("glViewport_ptr=%p\n", glViewport_ptr); }
+	if (glClearColor_ptr == 0) { util::debugmsg("glClearColor_ptr=%p\n", glClearColor_ptr); }
+	if (glClear_ptr == 0) { util::debugmsg("glClear_ptr=%p\n", glClear_ptr); }
+	if (glClearDepthf_ptr == 0) { util::debugmsg("glClearDepthf_ptr=%p\n", glClearDepthf_ptr); }
+	if (glClearStencil_ptr == 0) { util::debugmsg("glClearStencil_ptr=%p\n", glClearStencil_ptr); }
+	if (glDepthMask_ptr == 0) { util::debugmsg("glDepthMask_ptr=%p\n", glDepthMask_ptr); }
+	if (glDepthFunc_ptr == 0) { util::debugmsg("glDepthFunc_ptr=%p\n", glDepthFunc_ptr); }
+	if (glStencilFunc_ptr == 0) { util::debugmsg("glStencilFunc_ptr=%p\n", glStencilFunc_ptr); }
+	if (glStencilOp_ptr == 0) { util::debugmsg("glStencilOp_ptr=%p\n", glStencilOp_ptr); }
+	if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
+	if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
+	if (glBlendFunc_ptr == 0) { util::debugmsg("glBlendFunc_ptr=%p\n", glBlendFunc_ptr); }
+	if (glActiveTexture_ptr == 0) { util::debugmsg("glActiveTexture_ptr=%p\n", glActiveTexture_ptr); }
+	if (glColorMask_ptr == 0) { util::debugmsg("glColorMask_ptr=%p\n", glColorMask_ptr); }
+	if (glDeleteTextures_ptr == 0) { util::debugmsg("glDeleteTextures_ptr=%p\n", glDeleteTextures_ptr); }
+	if (glGenTextures_ptr == 0) { util::debugmsg("glGenTextures_ptr=%p\n", glGenTextures_ptr); }
+	if (glBindTexture_ptr == 0) { util::debugmsg("glBindTexture_ptr=%p\n", glBindTexture_ptr); }
+	if (glTexImage2D_ptr == 0) { util::debugmsg("glTexImage2D_ptr=%p\n", glTexImage2D_ptr); }
+	if (glTexParameteri_ptr == 0) { util::debugmsg("glTexParameteri_ptr=%p\n", glTexParameteri_ptr); }
+	if (glGetError_ptr == 0) { util::debugmsg("glGetError_ptr=%p\n", glGetError_ptr); }
+	if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
+	if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
 #endif
 
-		gfx::clear(shim::black);
-		flip();
+	gfx::clear(shim::black);
+	flip();
 
 #ifdef IOS
-		bool v = 1;
+	bool v = 1;
 #else
-		bool v = vsync;
+	bool v = vsync;
 #endif
 
-		SDL_GL_SetSwapInterval(v ? 1 : 0); // vsync, 1 = on
+	SDL_GL_SetSwapInterval(v ? 1 : 0); // vsync, 1 = on
 
 #if defined IOS || defined __EMSCRIPTEN__
-	       SDL_GL_GetDrawableSize(internal::gfx_context.window, &w, &h);
+       SDL_GL_GetDrawableSize(internal::gfx_context.window, &w, &h);
 #else
-	       if (internal::gfx_context.fullscreen) {
-		       w = window_w;
-		       h = window_h;
-	       }
-	       else {
-		       SDL_GetWindowSize(internal::gfx_context.window, &w, &h);
-	       }
+       if (internal::gfx_context.fullscreen) {
+	       w = window_w;
+	       h = window_h;
+       }
+       else {
+	       SDL_GetWindowSize(internal::gfx_context.window, &w, &h);
+       }
 #endif
 
 #if defined IOS
-		SDL_SysWMinfo wm_info;
-		SDL_VERSION(&wm_info.version);
-		SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
-		internal::gfx_context.framebuffer = wm_info.info.uikit.framebuffer;
-		internal::gfx_context.colorbuffer = wm_info.info.uikit.colorbuffer;
+	SDL_SysWMinfo wm_info;
+	SDL_VERSION(&wm_info.version);
+	SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
+	internal::gfx_context.framebuffer = wm_info.info.uikit.framebuffer;
+	internal::gfx_context.colorbuffer = wm_info.info.uikit.colorbuffer;
 #endif
 
-		glEnable_ptr(GL_BLEND);
-		PRINT_GL_ERROR("glEnable\n");
-		glBlendFunc_ptr(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		PRINT_GL_ERROR("glBlendFunc\n");
-		glEnable_ptr(GL_CULL_FACE);
-		PRINT_GL_ERROR("glEnable_ptr(GL_CULL_FACE)\n");
-		glFrontFace_ptr(GL_CW);
-		PRINT_GL_ERROR("glFrontFace\n");
-		glCullFace_ptr(GL_BACK);
-		PRINT_GL_ERROR("glFrontFace\n");
-	}
-#ifdef _WIN32
-	else {
-		if (internal::gfx_context.fullscreen) {
-			w = window_w;
-			h = window_h;
-		}
-		else {
-			SDL_GetWindowSize(internal::gfx_context.window, &w, &h);
-		}
-
-		fill_d3d_pp(w, h);
-
-		create_d3d_device();
-		
-		clear(shim::black);
-		flip();
-	}
-#endif
+	glEnable_ptr(GL_BLEND);
+	PRINT_GL_ERROR("glEnable\n");
+	glBlendFunc_ptr(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	PRINT_GL_ERROR("glBlendFunc\n");
+	glEnable_ptr(GL_CULL_FACE);
+	PRINT_GL_ERROR("glEnable_ptr(GL_CULL_FACE)\n");
+	glFrontFace_ptr(GL_CW);
+	PRINT_GL_ERROR("glFrontFace\n");
+	glCullFace_ptr(GL_BACK);
+	PRINT_GL_ERROR("glFrontFace\n");
 
 	shim::real_screen_size = {w, h};
 }
 
-static void destroy_window(bool destroy_d3d = false)
+static void destroy_window()
 {
 #ifdef _WIN32
 	if (icon_small != 0) {
@@ -1013,23 +684,8 @@ static void destroy_window(bool destroy_d3d = false)
 	}
 #endif
 
-	if (shim::opengl) {
-		SDL_GL_DestroyContext(internal::gfx_context.opengl_context);
-		SDL_DestroyWindow(internal::gfx_context.window);
-	}
-#ifdef _WIN32
-	else {
-		util::verbosemsg("d3d_device->Release=%d\n", shim::d3d_device->Release());
-		d3d_device_count--;
-		SDL_DestroyWindow(internal::gfx_context.window);
-		if (destroy_d3d) {
-			if (shim::opengl == false) {
-				util::verbosemsg("d3d->Release=%d\n", d3d->Release());
-				d3d_count--;
-			}
-		}
-	}
-#endif
+	SDL_GL_DestroyContext(internal::gfx_context.opengl_context);
+	SDL_DestroyWindow(internal::gfx_context.window);
 }
 
 static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w, int window_h)
@@ -1044,105 +700,56 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 		}
 	}
 
-#ifdef _WIN32
-	if (util::bool_arg(true, shim::argc, shim::argv, "opengl") == false) {
-		if ((d3d = Direct3DCreate9(D3D_SDK_VERSION)) == 0) {
-			throw util::Error("Direct3D9Create failed");
-		}
-		else {
-			d3d_count++;
-		}
-	}
-#endif
-
 	create_window(scaled_w, scaled_h, force_integer_scaling, window_w, window_h);
 
-#ifdef _WIN32
-	if (shim::opengl == false) {
-		d3d_create_depth_buffer();
-
-		set_initial_d3d_state();
-
-		if (internal::gfx_context.render_target == 0) {
-			if (shim::d3d_device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &internal::gfx_context.render_target) != D3D_OK) {
-				util::infomsg("GetBackBuffer failed after CreateDevice.\n");
-			}
-		}
+	std::string default_vertex_source;
+	try {
+		default_vertex_source = util::load_text("gfx/shaders/glsl/default_vertex.txt");
 	}
-#endif
-
-	if (shim::opengl) {
-		std::string default_vertex_source;
-		try {
-			default_vertex_source = util::load_text("gfx/shaders/glsl/default_vertex.txt");
-		}
-		catch (util::Error &e) {
-			default_vertex_source = DEFAULT_GLSL_VERTEX_SHADER;
-		}
-
-		std::string default_fragment_source;
-		try {
-			default_fragment_source = util::load_text("gfx/shaders/glsl/default_fragment.txt");
-		}
-		catch (util::Error &e) {
-			default_fragment_source = DEFAULT_GLSL_FRAGMENT_SHADER;
-		}
-
-		std::string default_textured_fragment_source;
-		try {
-			default_textured_fragment_source = util::load_text("gfx/shaders/glsl/default_textured_fragment.txt");
-		}
-		catch (util::Error &e) {
-			default_textured_fragment_source = DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER;
-		}
-
-		std::string model_vertex_source;
-		try {
-			model_vertex_source = util::load_text("gfx/shaders/glsl/model_vertex.txt");
-		}
-		catch (util::Error &e) {
-			model_vertex_source = MODEL_GLSL_VERTEX_SHADER;
-		}
-
-		std::string model_fragment_source;
-		try {
-			model_fragment_source = util::load_text("gfx/shaders/glsl/model_fragment.txt");
-		}
-		catch (util::Error &e) {
-			model_fragment_source = MODEL_GLSL_FRAGMENT_SHADER;
-		}
-
-		Shader::OpenGL_Shader *default_vertex = Shader::load_opengl_vertex_shader(DEFAULT_GLSL_VERTEX_SHADER, Shader::HIGH);
-		Shader::OpenGL_Shader *default_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_FRAGMENT_SHADER);
-		Shader::OpenGL_Shader *default_textured_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER, Shader::HIGH);
-		Shader::OpenGL_Shader *model_vertex = Shader::load_opengl_vertex_shader(MODEL_GLSL_VERTEX_SHADER);
-		Shader::OpenGL_Shader *model_fragment = Shader::load_opengl_fragment_shader(MODEL_GLSL_FRAGMENT_SHADER);
-		shim::default_shader = internal::gfx_context.untextured_shader = new Shader(default_vertex, default_fragment, true, true);
-		internal::gfx_context.textured_shader = new Shader(default_vertex, default_textured_fragment, false, true);
-		shim::model_shader = new Shader(model_vertex, model_fragment, true, true);
+	catch (util::Error &e) {
+		default_vertex_source = DEFAULT_GLSL_VERTEX_SHADER;
 	}
-#ifdef _WIN32
-	else {
-#ifdef USE_D3DX
-		default_vertex_source = DEFAULT_HLSL_VERTEX_SHADER;
-		default_fragment_source = DEFAULT_HLSL_FRAGMENT_SHADER;
-		default_textured_fragment_source = DEFAULT_HLSL_TEXTURED_FRAGMENT_SHADER;
-		model_fragment_source = MODEL_HLSL_FRAGMENT_SHADER;
-	
-		shim::default_shader = internal::gfx_context.untextured_shader = new Shader(shim::opengl, default_vertex_source, default_fragment_source);
-		internal::gfx_context.textured_shader = new Shader(shim::opengl, default_vertex_source, default_textured_fragment_source);
-		shim::model_shader = new Shader(shim::opengl, default_vertex_source, model_fragment_source);
-#else
-		Shader::D3D_Vertex_Shader *default_vertex_shader = Shader::load_d3d_vertex_shader("noo_default_vertex");
-		Shader::D3D_Fragment_Shader *default_fragment_shader = Shader::load_d3d_fragment_shader("noo_default_fragment");
-		Shader::D3D_Fragment_Shader *default_textured_fragment_shader = Shader::load_d3d_fragment_shader("noo_default_textured_fragment");
-		Shader::D3D_Fragment_Shader *model_fragment_shader = Shader::load_d3d_fragment_shader("noo_model_fragment");
-		shim::default_shader = internal::gfx_context.untextured_shader = new Shader(default_vertex_shader, default_fragment_shader, true, true);
-		internal::gfx_context.textured_shader = new Shader(default_vertex_shader, default_textured_fragment_shader, false, true);
-		shim::model_shader = new Shader(default_vertex_shader, model_fragment_shader, false, true);
-#endif
+
+	std::string default_fragment_source;
+	try {
+		default_fragment_source = util::load_text("gfx/shaders/glsl/default_fragment.txt");
 	}
-#endif
+	catch (util::Error &e) {
+		default_fragment_source = DEFAULT_GLSL_FRAGMENT_SHADER;
+	}
+
+	std::string default_textured_fragment_source;
+	try {
+		default_textured_fragment_source = util::load_text("gfx/shaders/glsl/default_textured_fragment.txt");
+	}
+	catch (util::Error &e) {
+		default_textured_fragment_source = DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER;
+	}
+
+	std::string model_vertex_source;
+	try {
+		model_vertex_source = util::load_text("gfx/shaders/glsl/model_vertex.txt");
+	}
+	catch (util::Error &e) {
+		model_vertex_source = MODEL_GLSL_VERTEX_SHADER;
+	}
+
+	std::string model_fragment_source;
+	try {
+		model_fragment_source = util::load_text("gfx/shaders/glsl/model_fragment.txt");
+	}
+	catch (util::Error &e) {
+		model_fragment_source = MODEL_GLSL_FRAGMENT_SHADER;
+	}
+
+	Shader::OpenGL_Shader *default_vertex = Shader::load_opengl_vertex_shader(DEFAULT_GLSL_VERTEX_SHADER, Shader::HIGH);
+	Shader::OpenGL_Shader *default_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_FRAGMENT_SHADER);
+	Shader::OpenGL_Shader *default_textured_fragment = Shader::load_opengl_fragment_shader(DEFAULT_GLSL_TEXTURED_FRAGMENT_SHADER, Shader::HIGH);
+	Shader::OpenGL_Shader *model_vertex = Shader::load_opengl_vertex_shader(MODEL_GLSL_VERTEX_SHADER);
+	Shader::OpenGL_Shader *model_fragment = Shader::load_opengl_fragment_shader(MODEL_GLSL_FRAGMENT_SHADER);
+	shim::default_shader = internal::gfx_context.untextured_shader = new Shader(default_vertex, default_fragment, true, true);
+	internal::gfx_context.textured_shader = new Shader(default_vertex, default_textured_fragment, false, true);
+	shim::model_shader = new Shader(model_vertex, model_fragment, true, true);
 
 	set_default_shader();
 
@@ -1173,7 +780,7 @@ static void end_video()
 	internal::gfx_context.textured_shader = 0;
 	shim::model_shader = 0;
 
-	destroy_window(true);
+	destroy_window();
 }
 
 #if (defined __linux__ && !defined ANDROID) || defined _WIN32
@@ -1206,6 +813,7 @@ static void set_window_icon()
 	SDL_DestroySurface(surface);
 	delete[] flip_buf;
 #else
+	unsigned char *flip_buf;
 	icon_small = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8 *)pixels, size, 0, 0, false);
 	SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICONSM, (LONG_PTR)icon_small);
 	delete[] pixels;
@@ -1308,7 +916,8 @@ void create_mouse_cursors()
 	}
 
 	if (use_custom_cursor) {
-		unsigned char *flip_buf = new unsigned char[size.w*size.h*4];
+		unsigned char *flip_buf;
+		flip_buf = new unsigned char[size.w*size.h*4];
 		for (int y = 0; y < size.h; y++) {
 			memcpy(flip_buf+y*size.w*4, pixels+((size.h-1)-y)*size.w*4, size.w*4);
 		}
@@ -1378,26 +987,17 @@ void reload_fonts()
 
 void real_set_scissor(int x, int y, int w, int h)
 {
-	if (shim::opengl) {
-		int szy;
-		if (internal::gfx_context.target_image == 0) {
-			szy = shim::real_screen_size.h;
-		}
-		else {
-			szy = internal::gfx_context.target_image->size.h;
-		}
-		glEnable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glEnable_ptr(GL_SCISSOR_TEST) (%d, %d, %d, %d)\n", x, y, w, h);
-		glScissor_ptr(x, szy-h-y, w, h);
-		PRINT_GL_ERROR("glScissor");
+	int szy;
+	if (internal::gfx_context.target_image == 0) {
+		szy = shim::real_screen_size.h;
 	}
-#ifdef _WIN32
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
-		RECT scissor = { x, y, x+w, y+h };
-		shim::d3d_device->SetScissorRect(&scissor);
+		szy = internal::gfx_context.target_image->size.h;
 	}
-#endif
+	glEnable_ptr(GL_SCISSOR_TEST);
+	PRINT_GL_ERROR("glEnable_ptr(GL_SCISSOR_TEST) (%d, %d, %d, %d)\n", x, y, w, h);
+	glScissor_ptr(x, szy-h-y, w, h);
+	PRINT_GL_ERROR("glScissor");
 }
 
 void get_scissor(int **x, int **y, int **w, int **h)
@@ -1449,18 +1049,9 @@ bool static_start()
 
 	internal::gfx_context.work_image = 0;
 
-	d3d_device_count = 0;
-	d3d_count = 0;
-	d3d_device_depth_count = 0;
-
 	last_screen_mode = {-1, -1};
 	
 	handled_lost = false;
-
-#ifdef _WIN32
-	internal::gfx_context.depth_stencil_buffer = 0;
-	internal::gfx_context.render_target = 0;
-#endif
 
 	Shader::static_start();
 	Vertex_Cache::static_start();
@@ -1497,46 +1088,42 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 	::create_depth_buffer = shim::create_depth_buffer;
 	::create_stencil_buffer = shim::create_stencil_buffer;
 
-	set_opengl();
-
-	if (shim::opengl) {
-		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 #if defined IOS || defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #else
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
-		if (::create_depth_buffer) {
+	if (::create_depth_buffer) {
 #if defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
-			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 #else
-			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 #endif
-		}
-		else {
-			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-		}
-		if (::create_stencil_buffer) {
-			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-		}
-		else {
-			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-		}
-		if (shim::multisampling) {
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, shim::aa_samples);
-		}
-		else {
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
-			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-		}
+	}
+	else {
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+	}
+	if (::create_stencil_buffer) {
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	}
+	else {
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+	}
+	if (shim::multisampling) {
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, shim::aa_samples);
+	}
+	else {
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
 	}
 	
 	::scaled_w = -1;
@@ -1561,17 +1148,6 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		start_video(scaled_w, scaled_h, force_integer_scaling, -1, -1);
 	}
 
-	/*
-	// FIXME:
-	D3DADAPTER_IDENTIFIER9 ident;
-	if (d3d->GetAdapterIdentifier(shim::adapter, 0, &ident) != D3D_OK) {
-		util::debugmsg("GetAdapterIdentifier failed\n");
-	}
-	else {
-		util::debugmsg("gfx card=%s %s\n", ident.Driver, ident.Description);
-	}
-	*/
-
 	// palette must be loaded before ALL images (cursor etc)
 	try {
 		shim::palette_size = load_default_palette();
@@ -1593,9 +1169,6 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 	SDL_PumpEvents(); // without this the icon doesn't appear until the event loop starts
 #endif
 
-#if defined _WIN32
-	internal::gfx_context.d3d_lost = false;
-#endif
 	internal::gfx_context.target_image = 0;
 
 #ifdef USE_TTF
@@ -1638,7 +1211,7 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 		end_video();
 	}
 	else {
-		destroy_window(false);
+		destroy_window();
 	}
 	
 	internal::gfx_context.fullscreen = false;
@@ -1802,13 +1375,7 @@ void update_projection()
 		target_size = target->size;
 	}
 
-	// d3d and opengl pixel coordinates differ
-	glm::mat4 d3d_fix = glm::mat4();
-	d3d_fix = glm::scale(d3d_fix, glm::vec3(1.0f, 1.0f, 0.5f));
-	d3d_fix = glm::translate(d3d_fix, glm::vec3(0.0f, 0.0f, 0.5f));
-	d3d_fix = glm::translate(d3d_fix, glm::vec3(-0.5f / (float)target_size.w, 0.5f / (float)target_size.h, 0.0f));
-	glm::mat4 p = shim::opengl ? proj : d3d_fix * proj;
-	shim::current_shader->set_matrix("proj", p);
+	shim::current_shader->set_matrix("proj", proj);
 }
 
 void set_scaled_size(util::Size<int> size)
@@ -2177,11 +1744,7 @@ void flip()
 	}
 #endif
 
-#ifdef _WIN32
-	if ((shim::opengl || internal::gfx_context.d3d_lost == false) && internal::gfx_context.restarting == false)
-#else
 	if (internal::gfx_context.restarting == false)
-#endif
 	{
 		if (show_fps && shim::font != 0) {
 			glm::mat4 _mv, _proj;
@@ -2203,70 +1766,8 @@ void flip()
 		}
 	}
 
-	if (shim::opengl) {
-		SDL_GL_SwapWindow(internal::gfx_context.window);
-	}
-#ifdef _WIN32
-	else {
-		bool begin_scene = true;
-
-		if (internal::gfx_context.d3d_lost) {
-			util::infomsg("D3D device is lost.\n");
-
-			bool go = true;
-			// Not totally sure why this is here. I _think_ it's for mode changes to make it faster, but it causes some lost devices to be missed.
-			/*
-			SDL_DisplayMode m;
-			if (internal::gfx_context.fullscreen) {
-				if (internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &m) == 0) {
-					if (m.w != shim::real_screen_size.w || m.h != shim::real_screen_size.h) {
-						go = false;
-
-						begin_scene = false;
-					}
-				}
-			}
-			*/
-
-			if (go) {
-				HRESULT hr = shim::d3d_device->TestCooperativeLevel();
-				if (hr == D3DERR_DEVICENOTRESET) {
-					internal::handle_lost_device(true, true);
-
-					fill_d3d_pp(shim::real_screen_size.w, shim::real_screen_size.h);
-
-					hr = shim::d3d_device->Reset(&d3d_pp);
-					if (hr != D3D_OK) {
-						util::infomsg("Device couldn't be reset!\n");
-					}
-					else {
-						internal::gfx_context.d3d_lost = false;
-
-						internal::handle_found_device(true, true);
-					}
-
-					begin_scene = false;
-				}
-			}
-		}
-		else {
-			shim::d3d_device->EndScene();
-
-			HRESULT hr = shim::d3d_device->Present(0, 0, internal::gfx_context.hwnd, 0);
-
-			if (hr == D3DERR_DEVICELOST) {
-				util::infomsg("D3D device lost.\n");
-				internal::gfx_context.d3d_lost = true;
-				begin_scene = false;
-			}
-		}
-
-		if (begin_scene) {
-			shim::d3d_device->BeginScene();
-		}
-	}
-#endif
-
+	SDL_GL_SwapWindow(internal::gfx_context.window);
+	
 	apply_screen_shake();
 
 	if (total_frames == 0) {
@@ -2280,46 +1781,24 @@ void flip()
 	}
 
 	set_custom_mouse_cursor();
-
-#ifdef _WIN32
-	if (shim::opengl == false && internal::gfx_context.depth_stencil_buffer != nullptr) {
-		shim::d3d_device->SetDepthStencilSurface(internal::gfx_context.depth_stencil_buffer);
-	}
-#endif
 }
 
 void clear(SDL_Color colour)
 {
 	if (internal::gfx_context.target_image == 0) {
-		if (shim::opengl) {
-			glDisable_ptr(GL_SCISSOR_TEST);
-			glClearColor_ptr(shim::black.r/255.0f, shim::black.g/255.0f, shim::black.b/255.0f, shim::black.a/255.0f);
-			PRINT_GL_ERROR("glClearColor\n");
-			glClear_ptr(GL_COLOR_BUFFER_BIT);
-			PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
-		}
-#ifdef _WIN32
-		else {
-			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-			shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(shim::black.r, shim::black.g, shim::black.b, shim::black.a), 0.0f, 0);
-		}
-#endif
+		glDisable_ptr(GL_SCISSOR_TEST);
+		glClearColor_ptr(shim::black.r/255.0f, shim::black.g/255.0f, shim::black.b/255.0f, shim::black.a/255.0f);
+		PRINT_GL_ERROR("glClearColor\n");
+		glClear_ptr(GL_COLOR_BUFFER_BIT);
+		PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
 		if (black_bars_callback != nullptr && internal::gfx_context.inited == true) {
 			glm::mat4 mv_bak, proj_bak;
 			gfx::get_matrices(mv_bak, proj_bak);
 			gfx::set_default_projection(shim::real_screen_size, util::Point<int>(0, 0), 1.0f);
 			gfx::update_projection();
 
-			if (shim::opengl) {
-				glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
-				PRINT_GL_ERROR("glViewport\n");
-			}
-#ifdef _WIN32
-			else {
-				D3DVIEWPORT9 viewport = { 0, 0, (DWORD)shim::real_screen_size.w, (DWORD)shim::real_screen_size.h, 0.0f, 1.0f };
-				shim::d3d_device->SetViewport(&viewport);
-			}
-#endif
+			glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
+			PRINT_GL_ERROR("glViewport\n");
 
 			if (shim::screen_offset.x > 0) {
 				int w = shim::screen_offset.x;
@@ -2344,51 +1823,30 @@ void clear(SDL_Color colour)
 		}
 	}
 
-	if (shim::opengl) {
-		glClearColor_ptr(colour.r/255.0f, colour.g/255.0f, colour.b/255.0f, colour.a/255.0f);
-		PRINT_GL_ERROR("glClearColor\n");
-		glClear_ptr(GL_COLOR_BUFFER_BIT);
-		PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
-	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->Clear(0, 0, D3DCLEAR_TARGET, D3DCOLOR_RGBA(colour.r, colour.g, colour.b, colour.a), 0.0f, 0);
-	}
-#endif
+	glClearColor_ptr(colour.r/255.0f, colour.g/255.0f, colour.b/255.0f, colour.a/255.0f);
+	PRINT_GL_ERROR("glClearColor\n");
+	glClear_ptr(GL_COLOR_BUFFER_BIT);
+	PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
 }
 
 void clear_depth_buffer(float value)
 {
 	if (internal::gfx_context.target_image == 0) {
-		if (shim::opengl) {
-			glDisable_ptr(GL_SCISSOR_TEST);
-		}
-#ifdef _WIN32
-		else {
-			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-		}
-#endif
+		glDisable_ptr(GL_SCISSOR_TEST);
 	}
 
-	if (shim::opengl) {
 #if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
-		if (glClearDepthf_ptr == 0) {
-			glClearDepth_ptr(value);
-		}
-		else
-#endif
-		{
-			glClearDepthf_ptr(value);
-		}
-		PRINT_GL_ERROR("glClearDepthf\n");
-		glClear_ptr(GL_DEPTH_BUFFER_BIT);
-		PRINT_GL_ERROR("glClear_ptr(GL_DEPTH_BUFFER_BIT)\n");
+	if (glClearDepthf_ptr == 0) {
+		glClearDepth_ptr(value);
 	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->Clear(0, 0, D3DCLEAR_ZBUFFER, 0, value, 0);
-	}
+	else
 #endif
+	{
+		glClearDepthf_ptr(value);
+	}
+	PRINT_GL_ERROR("glClearDepthf\n");
+	glClear_ptr(GL_DEPTH_BUFFER_BIT);
+	PRINT_GL_ERROR("glClear_ptr(GL_DEPTH_BUFFER_BIT)\n");
 
 	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
 		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
@@ -2401,17 +1859,10 @@ void clear_stencil_buffer(int value)
 		return;
 	}
 
-	if (shim::opengl) {
-		glClearStencil_ptr(value);
-		PRINT_GL_ERROR("glClearStencil\n");
-		glClear_ptr(GL_STENCIL_BUFFER_BIT);
-		PRINT_GL_ERROR("glClear_ptr(GL_STENCIL_BUFFER_BIT)\n");
-	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->Clear(0, 0, D3DCLEAR_STENCIL, 0, 0, value);
-	}
-#endif
+	glClearStencil_ptr(value);
+	PRINT_GL_ERROR("glClearStencil\n");
+	glClear_ptr(GL_STENCIL_BUFFER_BIT);
+	PRINT_GL_ERROR("glClear_ptr(GL_STENCIL_BUFFER_BIT)\n");
 }
 
 void clear_buffers()
@@ -2618,259 +2069,163 @@ void unset_scissor()
 		sw = internal::gfx_context.target_image->size.w;
 		sh = internal::gfx_context.target_image->size.h;
 		*/
-		if (shim::opengl) {
-			glDisable_ptr(GL_SCISSOR_TEST);
-		}
-#ifdef _WIN32
-		else {
-			shim::d3d_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
-		}
-#endif
+		glDisable_ptr(GL_SCISSOR_TEST);
 	}
 }
 
 void enable_depth_test(bool onoff)
 {
-	if (shim::opengl) {
-		if (onoff) {
-			glEnable_ptr(GL_DEPTH_TEST);
-			PRINT_GL_ERROR("glEnable_ptr(GL_DEPTH_TEST)\n");
-		}
-		else {
-			glDisable_ptr(GL_DEPTH_TEST);
-			PRINT_GL_ERROR("glDisable_ptr(GL_DEPTH_TEST)\n");
-		}
+	if (onoff) {
+		glEnable_ptr(GL_DEPTH_TEST);
+		PRINT_GL_ERROR("glEnable_ptr(GL_DEPTH_TEST)\n");
 	}
-#ifdef _WIN32
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_ZENABLE, onoff ? D3DZB_TRUE : D3DZB_FALSE);
+		glDisable_ptr(GL_DEPTH_TEST);
+		PRINT_GL_ERROR("glDisable_ptr(GL_DEPTH_TEST)\n");
 	}
-#endif
 }
 
 void enable_depth_write(bool onoff)
 {
-	if (shim::opengl) {
-		if (onoff) {
-			glDepthMask_ptr(GL_TRUE);
-			PRINT_GL_ERROR("glDepthMask\n");
-		}
-		else {
-			glDepthMask_ptr(GL_FALSE);
-			PRINT_GL_ERROR("glDepthMask\n");
-		}
+	if (onoff) {
+		glDepthMask_ptr(GL_TRUE);
+		PRINT_GL_ERROR("glDepthMask\n");
 	}
-#ifdef _WIN32
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_ZWRITEENABLE, onoff);
+		glDepthMask_ptr(GL_FALSE);
+		PRINT_GL_ERROR("glDepthMask\n");
 	}
-#endif
 
 	depth_write_enabled = onoff;
 }
 
 void set_depth_mode(Compare_Func func)
 {
-	if (shim::opengl) {
-		glDepthFunc_ptr(shim_compare_to_gl(func));
-		PRINT_GL_ERROR("glDepthFunc\n");
-	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->SetRenderState(D3DRS_ZFUNC, shim_compare_to_d3d(func));
-	}
-#endif
+	glDepthFunc_ptr(shim_compare_to_gl(func));
+	PRINT_GL_ERROR("glDepthFunc\n");
 }
 
 void enable_stencil(bool onoff)
 {
-	if (shim::opengl) {
-		if (onoff) {
-			glEnable_ptr(GL_STENCIL_TEST);
-			PRINT_GL_ERROR("glEnable_ptr(GL_STENCIL_TEST)\n");
-		}
-		else {
-			glDisable_ptr(GL_STENCIL_TEST);
-			PRINT_GL_ERROR("glEDisble_ptr(GL_STENCIL_TEST)\n");
-		}
+	if (onoff) {
+		glEnable_ptr(GL_STENCIL_TEST);
+		PRINT_GL_ERROR("glEnable_ptr(GL_STENCIL_TEST)\n");
 	}
-#ifdef _WIN32
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_STENCILENABLE, onoff);
+		glDisable_ptr(GL_STENCIL_TEST);
+		PRINT_GL_ERROR("glEDisble_ptr(GL_STENCIL_TEST)\n");
 	}
-#endif
 }
 
 void enable_two_sided_stencil(bool onoff)
 {
 	two_sided_stencil = onoff;
 
-	if (shim::opengl) {
-		// nothing?
-	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->SetRenderState(D3DRS_TWOSIDEDSTENCILMODE, onoff);
-	}
-#endif
+	// nothing?
 }
 
 void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
 {
-	if (shim::opengl) {
 #if defined ANDROID || defined __EMSCRIPTEN__
-		two_sided_stencil = false;
+	two_sided_stencil = false;
 #endif
-		if (two_sided_stencil == false) {
-			glStencilFunc_ptr(shim_compare_to_gl(func), reference, mask);
-			PRINT_GL_ERROR("glStencilFunc\n");
-			glStencilOp_ptr(
-				shim_stencilop_to_gl(fail),
-				shim_stencilop_to_gl(zfail),
-				shim_stencilop_to_gl(pass)
-			);
-			PRINT_GL_ERROR("glStencilOp\n");
-		}
-#if !defined ANDROID && !defined __EMSCRIPTEN__
-		else {
-			glStencilFuncSeparate_ptr(GL_FRONT, shim_compare_to_gl(func), reference, mask);
-			PRINT_GL_ERROR("glStencilFuncSeparate\n");
-			glStencilOpSeparate_ptr(
-				GL_FRONT,
-				shim_stencilop_to_gl(fail),
-				shim_stencilop_to_gl(zfail),
-				shim_stencilop_to_gl(pass)
-			);
-			PRINT_GL_ERROR("glStencilOpSeparate\n");
-		}
-#endif
+	if (two_sided_stencil == false) {
+		glStencilFunc_ptr(shim_compare_to_gl(func), reference, mask);
+		PRINT_GL_ERROR("glStencilFunc\n");
+		glStencilOp_ptr(
+			shim_stencilop_to_gl(fail),
+			shim_stencilop_to_gl(zfail),
+			shim_stencilop_to_gl(pass)
+		);
+		PRINT_GL_ERROR("glStencilOp\n");
 	}
-#ifdef _WIN32
+#if !defined ANDROID && !defined __EMSCRIPTEN__
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_STENCILFUNC, shim_compare_to_d3d(func));
-		shim::d3d_device->SetRenderState(D3DRS_STENCILFAIL, shim_stencilop_to_d3d(fail));
-		shim::d3d_device->SetRenderState(D3DRS_STENCILZFAIL, shim_stencilop_to_d3d(zfail));
-		shim::d3d_device->SetRenderState(D3DRS_STENCILPASS, shim_stencilop_to_d3d(pass));
-		shim::d3d_device->SetRenderState(D3DRS_STENCILREF, reference);
-		shim::d3d_device->SetRenderState(D3DRS_STENCILMASK, mask);
+		glStencilFuncSeparate_ptr(GL_FRONT, shim_compare_to_gl(func), reference, mask);
+		PRINT_GL_ERROR("glStencilFuncSeparate\n");
+		glStencilOpSeparate_ptr(
+			GL_FRONT,
+			shim_stencilop_to_gl(fail),
+			shim_stencilop_to_gl(zfail),
+			shim_stencilop_to_gl(pass)
+		);
+		PRINT_GL_ERROR("glStencilOpSeparate\n");
 	}
 #endif
 }
 
 void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
 {
-	if (shim::opengl) {
 #if defined ANDROID || defined __EMSCRIPTEN__
-		two_sided_stencil = false;
+	two_sided_stencil = false;
 #endif
-		if (two_sided_stencil == false) {
-			glStencilFunc_ptr(shim_compare_to_gl(func), reference, mask);
-			PRINT_GL_ERROR("glStencilFunc\n");
-			glStencilOp_ptr(
-				shim_stencilop_to_gl(fail),
-				shim_stencilop_to_gl(zfail),
-				shim_stencilop_to_gl(pass)
-			);
-			PRINT_GL_ERROR("glStencilOp\n");
-		}
-#if !defined ANDROID && !defined __EMSCRIPTEN__
-		else {
-			glStencilFuncSeparate_ptr(GL_BACK, shim_compare_to_gl(func), reference, mask);
-			PRINT_GL_ERROR("glStencilFuncSeparate\n");
-			glStencilOpSeparate_ptr(
-				GL_BACK,
-				shim_stencilop_to_gl(fail),
-				shim_stencilop_to_gl(zfail),
-				shim_stencilop_to_gl(pass)
-			);
-			PRINT_GL_ERROR("glStencilOpSeparate\n");
-		}
-#endif
+	if (two_sided_stencil == false) {
+		glStencilFunc_ptr(shim_compare_to_gl(func), reference, mask);
+		PRINT_GL_ERROR("glStencilFunc\n");
+		glStencilOp_ptr(
+			shim_stencilop_to_gl(fail),
+			shim_stencilop_to_gl(zfail),
+			shim_stencilop_to_gl(pass)
+		);
+		PRINT_GL_ERROR("glStencilOp\n");
 	}
-#ifdef _WIN32
+#if !defined ANDROID && !defined __EMSCRIPTEN__
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_CCW_STENCILFUNC, shim_compare_to_d3d(func));
-		shim::d3d_device->SetRenderState(D3DRS_CCW_STENCILFAIL, shim_stencilop_to_d3d(fail));
-		shim::d3d_device->SetRenderState(D3DRS_CCW_STENCILZFAIL, shim_stencilop_to_d3d(zfail));
-		shim::d3d_device->SetRenderState(D3DRS_CCW_STENCILPASS, shim_stencilop_to_d3d(pass));
-		shim::d3d_device->SetRenderState(D3DRS_STENCILREF, reference);
-		shim::d3d_device->SetRenderState(D3DRS_STENCILMASK, mask);
+		glStencilFuncSeparate_ptr(GL_BACK, shim_compare_to_gl(func), reference, mask);
+		PRINT_GL_ERROR("glStencilFuncSeparate\n");
+		glStencilOpSeparate_ptr(
+			GL_BACK,
+			shim_stencilop_to_gl(fail),
+			shim_stencilop_to_gl(zfail),
+			shim_stencilop_to_gl(pass)
+		);
+		PRINT_GL_ERROR("glStencilOpSeparate\n");
 	}
 #endif
 }
 
 void set_cull_mode(Faces cull)
 {
-	if (shim::opengl) {
-		if (cull == NO_FACE) {
-			glDisable_ptr(GL_CULL_FACE);
-			PRINT_GL_ERROR("glDisable_ptr(GL_CULL_FACE)\n");
-		}
-		else {
-			glEnable_ptr(GL_CULL_FACE);
-			PRINT_GL_ERROR("glEnable_ptr(GL_CULL_FACE)\n");
-
-			if (cull == FRONT_FACE) {
-				glCullFace_ptr(GL_FRONT);
-				PRINT_GL_ERROR("glCullFace\n");
-			}
-			else if (cull == BACK_FACE) {
-				glCullFace_ptr(GL_BACK);
-				PRINT_GL_ERROR("glCullFace\n");
-			}
-		}
+	if (cull == NO_FACE) {
+		glDisable_ptr(GL_CULL_FACE);
+		PRINT_GL_ERROR("glDisable_ptr(GL_CULL_FACE)\n");
 	}
-#ifdef _WIN32
 	else {
+		glEnable_ptr(GL_CULL_FACE);
+		PRINT_GL_ERROR("glEnable_ptr(GL_CULL_FACE)\n");
+
 		if (cull == FRONT_FACE) {
-			shim::d3d_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+			glCullFace_ptr(GL_FRONT);
+			PRINT_GL_ERROR("glCullFace\n");
 		}
 		else if (cull == BACK_FACE) {
-			shim::d3d_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-		}
-		else {
-			shim::d3d_device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+			glCullFace_ptr(GL_BACK);
+			PRINT_GL_ERROR("glCullFace\n");
 		}
 	}
-#endif
 }
 
 void enable_blending(bool onoff)
 {
 	blending_enabled = onoff;
 
-	if (shim::opengl) {
-		if (onoff) {
-			glEnable_ptr(GL_BLEND);
-			PRINT_GL_ERROR("glEnable_ptr(GL_BLEND)\n");
-		}
-		else {
-			glDisable_ptr(GL_BLEND);
-			PRINT_GL_ERROR("glDisable_ptr(GL_BLEND)\n");
-		}
+	if (onoff) {
+		glEnable_ptr(GL_BLEND);
+		PRINT_GL_ERROR("glEnable_ptr(GL_BLEND)\n");
 	}
-#ifdef _WIN32
 	else {
-		shim::d3d_device->SetRenderState(D3DRS_ALPHABLENDENABLE, onoff);
+		glDisable_ptr(GL_BLEND);
+		PRINT_GL_ERROR("glDisable_ptr(GL_BLEND)\n");
 	}
-#endif
 }
 
 void set_blend_mode(Blend_Mode source, Blend_Mode dest)
 {
-	if (shim::opengl) {
-		glBlendFunc_ptr(
-			shim_blend_to_gl(source),
-			shim_blend_to_gl(dest)
-		);
-		PRINT_GL_ERROR("glBlendFunc\n");
-	}
-#ifdef _WIN32
-	else {
-		shim::d3d_device->SetRenderState(D3DRS_SRCBLEND, shim_blend_to_d3d(source));
-		shim::d3d_device->SetRenderState(D3DRS_DESTBLEND, shim_blend_to_d3d(dest));
-	}
-#endif
+	glBlendFunc_ptr(
+		shim_blend_to_gl(source),
+		shim_blend_to_gl(dest)
+	);
+	PRINT_GL_ERROR("glBlendFunc\n");
 }
 
 bool is_blending_enabled()
@@ -2880,26 +2235,14 @@ bool is_blending_enabled()
 
 void enable_colour_write(bool onoff)
 {
-	if (shim::opengl) {
-		if (onoff) {
-			glColorMask_ptr(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-			PRINT_GL_ERROR("glColorMask\n");
-		}
-		else {
-			glColorMask_ptr(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-			PRINT_GL_ERROR("glColorMask\n");
-		}
+	if (onoff) {
+		glColorMask_ptr(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		PRINT_GL_ERROR("glColorMask\n");
 	}
-#ifdef _WIN32
 	else {
-		if (onoff) {
-			shim::d3d_device->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA);
-		}
-		else {
-			shim::d3d_device->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
-		}
+		glColorMask_ptr(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		PRINT_GL_ERROR("glColorMask\n");
 	}
-#endif
 }
 
 void set_min_aspect_ratio(float min)
@@ -3046,13 +2389,6 @@ bool enable_press_and_hold(bool enable)
 #endif
 }
 
-#ifdef _WIN32
-bool is_d3d_lost()
-{
-	return internal::gfx_context.d3d_lost;
-}
-#endif
-
 bool is_fullscreen()
 {
 	return internal::gfx_context.fullscreen || internal::gfx_context.fullscreen_window;
@@ -3100,28 +2436,11 @@ void resize_window(int width, int height)
 	shim::real_screen_size = {width, height};
 
 	internal::handle_lost_device(false);
-
-#ifdef _WIN32
-	if (shim::opengl == false) {
-		fill_d3d_pp(shim::real_screen_size.w, shim::real_screen_size.h);
-
-		HRESULT hr = shim::d3d_device->Reset(&d3d_pp);
-
-		if (hr != D3D_OK) {
-			util::infomsg("Device couldn't be reset/created!\n");
-			internal::gfx_context.d3d_lost = true;
-			return;
-		}
-		else {
-			internal::gfx_context.d3d_lost = false;
-			internal::handle_found_device(false);
-		}
-	}
-	else
-#endif
+	/* This can't be right... twice? FIXME
 	{
 		internal::handle_found_device(false);
 	}
+	*/
 }
 
 gfx::Image *gen_plasma(int seed, float alpha1, float alpha2, SDL_Color tint)
@@ -3272,30 +2591,7 @@ void handle_lost_device(bool including_opengl, bool force)
 	delete internal::gfx_context.work_image;
 	internal::gfx_context.work_image = 0;
 
-#ifdef _WIN32
-	if (shim::opengl == false) {
-		if (internal::gfx_context.target_image) {
-			Image *img = internal::gfx_context.target_image;
-			internal::gfx_context.target_image = 0;
-			img->release_target();
-		}
-
-		if (internal::gfx_context.render_target != 0) {
-			util::verbosemsg("handle_lost_device, render_target->Release=%d\n", internal::gfx_context.render_target->Release());
-			internal::gfx_context.render_target = 0;
-		}
-
-		if (internal::gfx_context.depth_stencil_buffer != 0) {
-			util::verbosemsg("handle_lost_device, depth_stencil_buffer->Release=%d\n", internal::gfx_context.depth_stencil_buffer->Release());
-			internal::gfx_context.depth_stencil_buffer = 0;
-			d3d_device_depth_count--;
-		}
-		
-		shim::d3d_device->SetDepthStencilSurface(0);
-	}
-#endif
-
-	if (including_opengl || shim::opengl == false) {
+	if (including_opengl) {
 		Image::release_all(force);
 		Shader::release_all(force);
 	}
@@ -3313,21 +2609,7 @@ void handle_lost_device(bool including_opengl, bool force)
 void handle_found_device(bool including_opengl, bool force)
 {
 	try {
-#ifdef _WIN32
-		if (shim::opengl == false) {
-			d3d_create_depth_buffer();
-
-			set_initial_d3d_state();
-
-			if (internal::gfx_context.render_target == 0) {
-				if (shim::d3d_device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &internal::gfx_context.render_target) != D3D_OK) {
-					util::infomsg("GetBackBuffer failed after resize.\n");
-				}
-			}
-		}
-#endif
-
-		if (including_opengl || shim::opengl == false) {
+		if (including_opengl) {
 			Shader::reload_all(force);
 
 			set_default_shader();

@@ -29,9 +29,6 @@ struct GFX_Context {
 	Shader *untextured_shader;
 #ifdef _WIN32
 	HWND hwnd;
-	bool d3d_lost;
-	LPDIRECT3DSURFACE9 render_target;
-	LPDIRECT3DSURFACE9 depth_stencil_buffer;
 #elif defined __linux__ && !defined ANDROID
 	Display *x_display;
 	Window x_window;

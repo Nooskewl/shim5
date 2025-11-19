@@ -52,7 +52,6 @@ static bool joystick_was_connected;
 static bool joy_lb;
 static bool joy_rb;
 
-bool opengl;
 SDL_Color palette[256];
 int palette_size;
 SDL_Color black;
@@ -93,9 +92,6 @@ util::Point<int> cursor_hotspot;
 bool scale_mouse_cursor;
 bool multisampling;
 int aa_samples;
-#ifdef _WIN32
-IDirect3DDevice9 *d3d_device;
-#endif
 audio::MML *music;
 audio::MML *widget_sfx;
 double music_volume;
@@ -360,7 +356,6 @@ bool static_start(int sdl_init_flags)
 	catch (util::Error &e) {
 	}
 
-	opengl = root->get_nested_bool("shim>gfx>opengl", &opengl, false, true, true);
 	black.r = root->get_nested_byte("shim>gfx>colours>black.r", &black.r, 0);
 	black.g = root->get_nested_byte("shim>gfx>colours>black.g", &black.g, 0);
 	black.b = root->get_nested_byte("shim>gfx>colours>black.b", &black.b, 0);

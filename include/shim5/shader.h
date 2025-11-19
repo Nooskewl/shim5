@@ -26,27 +26,6 @@ public:
 	static void rebind_opengl_texture0();
 	static void audit();
 
-#ifdef _WIN32
-	struct D3D_Var_Info {
-		int num;
-		char type;
-	};
-
-	struct D3D_Shader {
-		std::map<std::string, D3D_Var_Info> vars;
-		std::map<std::string, int> sizes;
-		Uint8 *data;
-		int sz;
-	};
-	struct D3D_Vertex_Shader : public D3D_Shader {
-		IDirect3DVertexShader9 *shader;
-	};
-	struct D3D_Fragment_Shader : public D3D_Shader {
-		IDirect3DPixelShader9 *shader;
-	};
-	static D3D_Vertex_Shader *load_d3d_vertex_shader(std::string filename, bool load_from_filesystem = false);
-	static D3D_Fragment_Shader *load_d3d_fragment_shader(std::string filename, bool load_from_filesystem = false);
-#endif
 	struct OpenGL_Shader {
 		GLenum type;
 		Precision precision;
@@ -57,15 +36,6 @@ public:
 	static OpenGL_Shader *load_opengl_fragment_shader(std::string source, Precision precision = LOW);
 	
 	SHIM5_EXPORT Shader(OpenGL_Shader *vertex_shader, OpenGL_Shader *fragment_shader, bool is_master_vertex = true, bool is_master_fragment = true);
-
-#ifdef _WIN32
-	SHIM5_EXPORT Shader(D3D_Vertex_Shader *vertex_shader, D3D_Fragment_Shader *fragment_shader, bool is_master_vertex = true, bool is_master_fragment = true);
-#ifdef USE_D3DX
-	SHIM5_EXPORT Shader(std::string vertex_source, std::string fragment_source);
-	SHIM5_EXPORT bool is_d3dx();
-	SHIM5_EXPORT LPD3DXEFFECT get_d3d_effect();
-#endif
-#endif
 
 	SHIM5_EXPORT ~Shader();
 
@@ -84,9 +54,6 @@ public:
 	SHIM5_EXPORT void set_opengl_attributes(float *pos, float *normal, float *texcoord, float *colour);
 
 private:
-#ifdef _WIN32
-	static void load_d3d_shader(std::string filename, D3D_Shader *shader, bool load_from_filesystem = false);
-#endif
 	static std::string add_opengl_header(bool is_vertex, Precision precision, std::string source);
 	static GLuint compile_opengl_vertex_shader(std::string source);
 	static GLuint compile_opengl_fragment_shader(std::string source);
@@ -110,26 +77,10 @@ private:
 	float *pos_ptr, *normal_ptr, *texcoord_ptr, *colour_ptr;
 	std::map<std::string, GLint> uniform_locations;
 
-	// D3D
-#ifdef _WIN32
-#ifdef USE_D3DX
-	bool _is_d3dx;
-	LPD3DXEFFECT d3d_effect;
-	D3DXHANDLE d3d_technique;
-	std::string vertex_source;
-	std::string fragment_source;
-#endif
-	D3D_Vertex_Shader *d3d_vertex;
-	D3D_Fragment_Shader *d3d_fragment;
-#endif
-	//--
-
 	static std::vector<Shader *> loaded_shaders;
 	static std::vector< std::pair<std::string, Image *> > bound_images;
 	static Shader *last_shader;
 	static GLuint opengl_texture0;
-	static int d3d_vertex_shader_count;
-	static int d3d_fragment_shader_count;
 };
 
 } // End namespace gfx
