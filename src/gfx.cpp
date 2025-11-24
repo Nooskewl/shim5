@@ -666,7 +666,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glFrontFace_ptr(GL_CW);
 	PRINT_GL_ERROR("glFrontFace\n");
 	glCullFace_ptr(GL_BACK);
-	PRINT_GL_ERROR("glFrontFace\n");
+	PRINT_GL_ERROR("glCullFace\n");
 
 	shim::real_screen_size = {w, h};
 }
@@ -2595,11 +2595,6 @@ void handle_lost_device(bool including_opengl, bool force)
 	Vertex_Cache::instance()->reset();
 	
 	handled_lost = true;
-
-// FIXME:
-	audit();
-	Image::audit();
-	Shader::audit();
 }
 
 void handle_found_device(bool including_opengl, bool force)
