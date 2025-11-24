@@ -326,7 +326,7 @@ static void check_joysticks()
 #endif
 	{
 		int nj;
-	       	SDL_GetJoysticks(&nj);
+		SDL_JoystickID *ids = SDL_GetGamepads(&nj);
 		if (nj != num_joysticks) {
 			if (nj == 0 && num_joysticks != 0) {
 				if (shim::joystick_disconnect_callback) {
@@ -342,7 +342,7 @@ static void check_joysticks()
 			}
 			joysticks.clear();
 			for (int i = 0; i < num_joysticks; i++) {
-				j.gc = SDL_OpenGamepad(i);
+				j.gc = SDL_OpenGamepad(ids[i]);
 				if (j.gc == NULL) {
 					util::infomsg("Error opening game controller: %s\n", SDL_GetError());
 
