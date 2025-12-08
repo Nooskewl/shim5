@@ -15,52 +15,45 @@
 
 namespace noo {
 
-namespace shim {
-
-extern SHIM5_EXPORT std::string organisation_name; // set this first thing too
-extern SHIM5_EXPORT std::string game_name; // set this first thing too
-
-} // End namespace shim
-
 namespace util {
 
-class SHIM5_EXPORT Error {
+class Error {
 public:
-	Error();
-	Error(std::string error_message);
-	virtual ~Error();
+	SHIM5_EXPORT Error();
+	SHIM5_EXPORT Error(std::string error_message);
+	SHIM5_EXPORT virtual ~Error();
 	
 	std::string error_message;
 };
 
-class SHIM5_EXPORT MemoryError : public Error {
+class MemoryError : public Error {
 public:
-	MemoryError(std::string error_message);
-	virtual ~MemoryError();
+	SHIM5_EXPORT MemoryError(std::string error_message);
+	SHIM5_EXPORT virtual ~MemoryError();
 };
 
-class SHIM5_EXPORT LoadError : public Error {
+class LoadError : public Error {
 public:
-	LoadError(std::string error_message);
-	virtual ~LoadError();
+	SHIM5_EXPORT LoadError(std::string error_message);
+	SHIM5_EXPORT virtual ~LoadError();
 };
 
-class SHIM5_EXPORT FileNotFoundError : public Error {
+class FileNotFoundError : public Error {
 public:
-	FileNotFoundError(std::string error_message);
-	virtual ~FileNotFoundError();
+	SHIM5_EXPORT FileNotFoundError(std::string error_message);
+	SHIM5_EXPORT virtual ~FileNotFoundError();
 };
 
-class SHIM5_EXPORT ParseError : public Error {
+class ParseError : public Error {
 public:
-	ParseError(std::string error_message);
-	virtual ~ParseError();
+	SHIM5_EXPORT ParseError(std::string error_message);
+	SHIM5_EXPORT virtual ~ParseError();
 };
 
-class SHIM5_EXPORT GLError : public Error {
+class GLError : public Error {
 public:
-	GLError(std::string error_message);
-	virtual ~GLError();
+	SHIM5_EXPORT GLError(std::string error_message);
+	SHIM5_EXPORT virtual ~GLError();
 };
 
 enum Path_Type {
@@ -143,6 +136,15 @@ private:
 
 } // End namespace util
 
+} // End namespace noo
+
+namespace noo {
+namespace shim {
+
+extern SHIM5_EXPORT std::string organisation_name; // set this first thing too
+extern SHIM5_EXPORT std::string game_name; // set this first thing too
+
+} // End namespace shim
 } // End namespace noo
 
 #endif // NOO_LIBUTIL_H
