@@ -204,6 +204,10 @@ SDL_Color Font::draw(SDL_Color colour, std::string text, util::Point<float> dest
 	dest_position.x = dest_position.x;
 	dest_position.y = (dest_position.y-1);
 
+	if (rtl) {
+		dest_position.y -= get_height();
+	}
+
 	for (size_t sheet = 0; sheet < sheets.size(); sheet++) {
 		util::Point<float> pos = dest_position;
 		int offset = 0;
