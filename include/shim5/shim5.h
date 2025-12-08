@@ -7,7 +7,6 @@
 #include "shim5/cd.h"
 #include "shim5/cloud.h"
 #include "shim5/cpa.h"
-#include "shim5/error.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
 #include "shim5/image.h"
@@ -25,7 +24,6 @@
 #include "shim5/shader.h"
 #include "shim5/sprite.h"
 #include "shim5/tilemap.h"
-#include "shim5/tokenizer.h"
 #include "shim5/translation.h"
 #ifdef USE_TTF
 #include "shim5/ttf.h"

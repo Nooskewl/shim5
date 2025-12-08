@@ -1,7 +1,6 @@
 #include "shim5/audio.h"
 #include "shim5/cpa.h"
 #include "shim5/devsettings.h"
-#include "shim5/error.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
 #include "shim5/image.h"
@@ -16,6 +15,7 @@
 #include "shim5/translation.h"
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
+#include "libutil/libutil.h"
 
 #include "shim5/internal/audio.h"
 #include "shim5/internal/gfx.h"
@@ -67,8 +67,6 @@ SDL_Color interface_edit_bg;
 std::vector<gui::GUI *> guis;
 float scale;
 std::string window_title;
-std::string organisation_name;
-std::string game_name;
 gfx::Shader *current_shader;
 gfx::Shader *default_shader;
 gfx::Shader *model_shader;

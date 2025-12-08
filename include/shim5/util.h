@@ -57,20 +57,6 @@ std::string SHIM5_EXPORT load_text(std::string filename);
 char SHIM5_EXPORT *slurp_file(std::string filename, int *sz);
 char SHIM5_EXPORT *slurp_file_from_filesystem(std::string filename, int *sz);
 
-enum Path_Type {
-	DOCUMENTS = 1,
-	APPDATA,
-	HOME,
-	SAVED_GAMES
-};
-
-// These 3 are safe to call before calling shim::start
-std::string SHIM5_EXPORT get_standard_path(Path_Type type, bool create);
-// appdata_dir is used for crashdumps, can be used for anything else you want like config files
-std::string SHIM5_EXPORT get_appdata_dir();
-std::string SHIM5_EXPORT get_savegames_dir();
-void SHIM5_EXPORT set_appdata_dir(std::string appdata_dir, bool create);
-
 void SHIM5_EXPORT open_with_system(std::string filename); // open with default app
 void SHIM5_EXPORT open_url(std::string url);
 

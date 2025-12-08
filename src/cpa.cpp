@@ -1,10 +1,10 @@
 #include <zlib.h>
 
 #include "shim5/cpa.h"
-#include "shim5/error.h"
 #include "shim5/gui.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
+#include "libutil/libutil.h"
 
 #ifdef IOS
 #include "shim5/ios.h"

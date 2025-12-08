@@ -1,6 +1,5 @@
 // These maps are produced by AshEdit: https://github.com/Nooskewl/AshEdit
 
-#include "shim5/error.h"
 #include "shim5/gfx.h"
 #include "shim5/image.h"
 #include "shim5/shader.h"
@@ -8,6 +7,7 @@
 #include "shim5/tilemap.h"
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
+#include "libutil/libutil.h"
 
 using namespace noo;
 

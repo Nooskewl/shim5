@@ -5,6 +5,8 @@
 #include "shim5/util.h"
 #include "shim5/widgets.h"
 
+#include "shim5/internal/gfx.h"
+
 using namespace noo;
 
 namespace noo {
@@ -13,6 +15,8 @@ namespace gui {
 
 DevSettings_GUI::DevSettings_GUI()
 {
+	SDL_StartTextInput(gfx::internal::gfx_context.window);
+
 	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
 
 	list = new DevSettings_List();
@@ -26,6 +30,7 @@ DevSettings_GUI::DevSettings_GUI()
 
 DevSettings_GUI::~DevSettings_GUI()
 {
+	SDL_StopTextInput(gfx::internal::gfx_context.window);
 }
 
 bool DevSettings_GUI::is_editing()

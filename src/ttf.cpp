@@ -1,6 +1,5 @@
 #ifdef USE_TTF
 
-#include "shim5/error.h"
 #include "shim5/gfx.h"
 #include "shim5/image.h"
 #include "shim5/shader.h"

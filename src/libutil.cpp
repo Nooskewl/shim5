@@ -21,7 +21,17 @@
 #include "shim5/steamworks.h"
 #endif
 
+static bool appdata_dir_set = false;
+static std::string appdata_dir;
+
 namespace noo {
+
+namespace shim {
+
+std::string organisation_name;
+std::string game_name;
+
+} // End namespace shim
 
 namespace util {
 
@@ -541,6 +551,178 @@ std::string itos(int i)
 	char buf[20];
 	snprintf(buf, 20, "%d", i);
 	return std::string(buf);
+}
+
+static std::string get_game_name()
+{
+	if (shim::game_name != "") {
+		return shim::game_name;
+	}
+	return "Nooskewl Shim";
+}
+
+std::string get_standard_path(Path_Type type, bool create)
+{
+#ifdef _WIN32
+	if (type == SAVED_GAMES) {
+		std::string userprofile = getenv("USERPROFILE");
+		if (userprofile != "") {
+			userprofile += "\\Saved Games";
+			if (create) {
+				mkdir(userprofile);
+			}
+			return userprofile;
+		}
+	}
+
+	int i;
+	if (type == DOCUMENTS) {
+		i = CSIDL_PERSONAL;
+	}
+	else if (type == APPDATA) {
+		i = CSIDL_APPDATA;
+	}
+	else if (type == HOME) {
+		i = CSIDL_PROFILE;
+	}
+	else {
+		return "";
+	}
+
+	if (create) {
+		i |= CSIDL_FLAG_CREATE;
+	}
+
+	char buf[MAX_PATH];
+
+	HRESULT result = SHGetFolderPath(
+		gfx::internal::gfx_context.hwnd,
+		i,
+		NULL,
+		0,
+		buf
+	);
+
+	if (result == S_OK) {
+		return std::string(buf);
+	}
+
+	return "";
+#elif (defined __linux__ || defined __EMSCRIPTEN__) && !defined ANDROID
+	std::string path = getenv("HOME");
+	if (create) {
+		mkdir(path);
+	}
+	if (type == DOCUMENTS) {
+		path += "/Documents";
+	}
+	else if (type == APPDATA) {
+		path += "/.config";
+	}
+	if (create) {
+		mkdir(path);
+	}
+	return path;
+#elif defined ANDROID
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
+	jclass clazz(env->GetObjectClass(activity));
+
+	jmethodID method_id;
+	
+	if (type == SAVED_GAMES) {
+		method_id = env->GetMethodID(clazz, "getSDCardDir", "()Ljava/lang/String;");
+	}
+	else {
+		method_id = env->GetMethodID(clazz, "getAppdataDir", "()Ljava/lang/String;");
+	}
+
+	jstring s = (jstring)env->CallObjectMethod(activity, method_id);
+
+	const char *native = env->GetStringUTFChars(s, 0);
+
+	std::string path = native;
+
+	if (type == SAVED_GAMES) {
+		path += "/" + shim::game_name;
+		if (create) {
+			mkdir(path.c_str());
+		}
+	}
+
+	env->ReleaseStringUTFChars(s, native);
+
+	env->DeleteLocalRef(s);
+
+	env->DeleteLocalRef(activity);
+	env->DeleteLocalRef(clazz);
+
+	return path;
+#elif defined IOS
+	std::string path = ios_get_standard_path(type);
+	if (create) {
+		mkdir(path);
+	}
+	return path;
+#else
+	std::string path = macosx_get_standard_path(type);
+	if (create) {
+		mkdir(path);
+	}
+	return path;
+#endif
+}
+
+std::string get_appdata_dir()
+{
+	if (appdata_dir_set) {
+		return appdata_dir;
+	}
+
+	std::string appdata = get_standard_path(APPDATA, true);
+	if (shim::organisation_name != "") {
+		appdata += "/" + shim::organisation_name;
+		mkdir(appdata);
+	}
+	appdata += "/" + get_game_name();
+	mkdir(appdata);
+	return appdata;
+}
+
+std::string get_savegames_dir()
+{
+	std::string path;
+
+#ifdef ANDROID
+	path = util::get_standard_path(util::SAVED_GAMES, true);
+#elif defined _WIN32
+	path = util::get_standard_path(util::SAVED_GAMES, true);
+	path += "/" + shim::game_name;
+	util::mkdir(path);
+#else
+	path = util::get_appdata_dir();
+#endif
+
+	return path;
+}
+
+void set_appdata_dir(std::string appdata_dir, bool create)
+{
+	if (create) {
+		std::string s;
+		for (size_t i = 0; i < appdata_dir.length(); i++) {
+			char c = appdata_dir[i];
+			if (c == '/' || c == '\\') {
+				mkdir(s);
+			}
+			char cs[2];
+			cs[0] = c;
+			cs[1] = 0;
+			s += cs;
+		}
+	}
+	::appdata_dir = appdata_dir;
+	appdata_dir_set = true;
 }
 
 } // End namespace util

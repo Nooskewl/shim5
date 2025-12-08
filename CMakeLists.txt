@@ -37,7 +37,6 @@ set(LIB_SRC
 	src/devsettings.cpp
 	src/font.cpp
 	src/shim.cpp
-	src/error.cpp
 	src/flac.cpp
 	src/gfx.cpp
 	src/gui.cpp
@@ -55,7 +54,6 @@ set(LIB_SRC
 	src/sound.cpp
 	src/sprite.cpp
 	src/tilemap.cpp
-	src/tokenizer.cpp
 	src/translation.cpp
 	src/util.cpp
 	src/vertex_cache.cpp
@@ -65,7 +63,9 @@ set(LIB_SRC
 
 SET(LIBUTIL_SRC
 	src/libutil.cpp
+	src/error.cpp
 	src/mt19937ar.cpp
+	src/tokenizer.cpp
 	src/utf8.cpp
 )
 

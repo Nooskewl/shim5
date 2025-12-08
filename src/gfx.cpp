@@ -1,4 +1,3 @@
-#include "shim5/error.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
 #include "shim5/image.h"

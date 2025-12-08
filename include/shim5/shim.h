@@ -78,8 +78,6 @@ extern SHIM5_EXPORT SDL_Color interface_edit_bg;
 extern SHIM5_EXPORT std::vector<gui::GUI *> guis;
 extern SHIM5_EXPORT float scale;
 extern SHIM5_EXPORT std::string window_title; // set this first thing to change it (before call to shim::start)
-extern SHIM5_EXPORT std::string organisation_name; // set this first thing too
-extern SHIM5_EXPORT std::string game_name; // set this first thing too
 extern SHIM5_EXPORT gfx::Shader *current_shader;
 extern SHIM5_EXPORT gfx::Shader *default_shader;
 extern SHIM5_EXPORT gfx::Shader *model_shader;

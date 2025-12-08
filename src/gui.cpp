@@ -1,4 +1,3 @@
-#include "shim5/error.h"
 #include "shim5/font.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
@@ -9,6 +8,7 @@
 #include "shim5/sprite.h"
 #include "shim5/translation.h"
 #include "shim5/util.h"
+#include "libutil/libutil.h"
 
 #include "shim5/internal/gfx.h"
 #include "shim5/internal/shim.h"

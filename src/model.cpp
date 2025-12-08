@@ -1,6 +1,5 @@
 // DirectX .x model loader
 
-#include "shim5/error.h"
 #include "shim5/gfx.h"
 #include "shim5/image.h"
 #include "shim5/model.h"
@@ -8,6 +7,7 @@
 #include "shim5/shim.h"
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
+#include "libutil/libutil.h"
 
 #include "shim5/internal/gfx.h"
 

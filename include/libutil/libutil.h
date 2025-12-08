@@ -15,7 +15,60 @@
 
 namespace noo {
 
+namespace shim {
+
+extern SHIM5_EXPORT std::string organisation_name; // set this first thing too
+extern SHIM5_EXPORT std::string game_name; // set this first thing too
+
+} // End namespace shim
+
 namespace util {
+
+class SHIM5_EXPORT Error {
+public:
+	Error();
+	Error(std::string error_message);
+	virtual ~Error();
+	
+	std::string error_message;
+};
+
+class SHIM5_EXPORT MemoryError : public Error {
+public:
+	MemoryError(std::string error_message);
+	virtual ~MemoryError();
+};
+
+class SHIM5_EXPORT LoadError : public Error {
+public:
+	LoadError(std::string error_message);
+	virtual ~LoadError();
+};
+
+class SHIM5_EXPORT FileNotFoundError : public Error {
+public:
+	FileNotFoundError(std::string error_message);
+	virtual ~FileNotFoundError();
+};
+
+class SHIM5_EXPORT ParseError : public Error {
+public:
+	ParseError(std::string error_message);
+	virtual ~ParseError();
+};
+
+class SHIM5_EXPORT GLError : public Error {
+public:
+	GLError(std::string error_message);
+	virtual ~GLError();
+};
+
+enum Path_Type {
+	DOCUMENTS = 1,
+	APPDATA,
+	HOME,
+	SAVED_GAMES
+};
 
 SHIM5_EXPORT void mkdir(std::string path);
 
@@ -67,6 +120,26 @@ SHIM5_EXPORT std::string utf8_substr(std::string s, int start, int count = -1);
 void SHIM5_EXPORT srand(uint32_t s);
 uint32_t SHIM5_EXPORT rand();
 uint32_t SHIM5_EXPORT rand(int min, int max_inclusive);
+
+// These 3 are safe to call before calling shim::start
+std::string SHIM5_EXPORT get_standard_path(Path_Type type, bool create);
+// appdata_dir is used for crashdumps, can be used for anything else you want like config files
+std::string SHIM5_EXPORT get_appdata_dir();
+std::string SHIM5_EXPORT get_savegames_dir();
+void SHIM5_EXPORT set_appdata_dir(std::string appdata_dir, bool create);
+
+class SHIM5_EXPORT Tokenizer {
+public:
+
+	Tokenizer(std::string s, char delimiter, bool skip_bunches = false);
+	std::string next();
+
+private:
+	std::string s;
+	char delimiter;
+	size_t offset;
+	bool skip_bunches;
+};
 
 } // End namespace util
 
