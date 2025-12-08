@@ -596,7 +596,8 @@ std::string get_standard_path(Path_Type type, bool create)
 	char buf[MAX_PATH];
 
 	HRESULT result = SHGetFolderPath(
-		gfx::internal::gfx_context.hwnd,
+		//gfx::internal::gfx_context.hwnd,
+		nullptr,
 		i,
 		NULL,
 		0,
