@@ -436,7 +436,7 @@ bool static_start(int sdl_init_flags)
 	cursor_hotspot.y = root->get_nested_int("shim>gfx>cursor_hotspot.y", &shim::cursor_hotspot.y, 0);
 	
 	debug = root->get_nested_bool("shim>misc>debug", &debug, false);
-	linear_filtering = root->get_nested_bool("shim>gfx>linear_filtering", &linear_filtering, false);
+	linear_filtering = root->get_nested_bool("shim>gfx>linear_filtering", &linear_filtering, false, true, true);
 
 	get_way_points = nullptr;
 

@@ -299,8 +299,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	internal::gfx_context.fullscreen = root->get_nested_bool("shim>gfx>fullscreen", &internal::gfx_context.fullscreen, false, true, true);
 	vsync = root->get_nested_bool("shim>gfx>vsync", &vsync, true, true, true);
 	show_fps = root->get_nested_bool("shim>gfx>show_fps", &show_fps, false);
-	window_w = root->get_nested_int("shim>gfx>width", &window_w, window_w);
-	window_h = root->get_nested_int("shim>gfx>height", &window_h, window_h);
 
 	screen_shake_end = SDL_GetTicks();
 	shim::using_screen_shake = false;
