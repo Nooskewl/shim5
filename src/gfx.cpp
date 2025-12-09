@@ -1753,11 +1753,7 @@ void flip()
 					shim::font->draw(shim::white, util::itos(fps), {x, y});
 				}
 			}
-			for (float y = 1; y < 3; y++) {
-				for (float x = 0; x < 4; x++) {
-					shim::font->draw(shim::black, util::itos(fps), {x, y});
-				}
-			}
+			shim::font->draw(shim::black, util::itos(fps), {2, 2});
 			gfx::set_matrices(_mv, _proj);
 			gfx::update_projection();
 		}
