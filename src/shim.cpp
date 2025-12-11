@@ -85,7 +85,6 @@ float z_add;
 //void (*user_render)();
 int refresh_rate;
 bool hide_window;
-int adapter;
 util::Point<int> cursor_hotspot;
 bool scale_mouse_cursor;
 bool multisampling;
@@ -323,7 +322,6 @@ bool static_start(int sdl_init_flags)
 	font = 0;
 	font_size = 8;
 	font_name = "font.ttf";
-	adapter = 0;
 	cursor_hotspot = {0, 0};
 	guis.clear();
 	last_mouse_event = SDL_GetTicks();
@@ -469,7 +467,9 @@ bool static_start_all(int sdl_init_flags)
 
 bool start()
 {
-	debug = debug || util::bool_arg(false, shim::argc, shim::argv, "debug");
+	util::JSON::Node *root = shim::shim_json->get_root();
+	debug = root->get_nested_bool("shim>misc>debug", &debug, false, true, true);
+	debug = util::bool_arg(debug, shim::argc, shim::argv, "debug");
 	int index;
 	if ((index = util::check_args(shim::argc, shim::argv, "+error-level")) >= 0) {
 		shim::error_level = atoi(shim::argv[index+1]);

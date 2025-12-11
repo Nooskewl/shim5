@@ -21,7 +21,7 @@ void macosx_centre_window(void *window)
 util::Size<int> macosx_get_desktop_resolution()
 {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	NSRect r = [[[NSScreen screens] objectAtIndex:shim::adapter] frame];
+	NSRect r = [[[NSScreen screens] objectAtIndex:0] frame];
 	util::Size<int> size(r.size.width, r.size.height);
 	[pool release];
 	return size;

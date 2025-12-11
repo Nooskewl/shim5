@@ -1,5 +1,6 @@
 #include "shim5/audio.h"
 #include "shim5/flac.h"
+#include "shim5/json.h"
 #include "shim5/sample.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
@@ -142,7 +143,10 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		length = length / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
 
 		SDL_AudioFormat out_format;
-		if (util::bool_arg(false, shim::argc, shim::argv, "16bit-samples")) {
+		bool _16bit_samples = true;
+		util::JSON::Node *root = shim::shim_json->get_root();
+		_16bit_samples = root->get_nested_bool("shim>audio>16bit_samples", nullptr, false, true, true);
+		if (util::bool_arg(_16bit_samples, shim::argc, shim::argv, "16bit-samples")) {
 			out_format = SDL_AUDIO_S16LE;
 		}
 		else {

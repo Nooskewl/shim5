@@ -78,7 +78,7 @@ int x_popup(std::string caption, std::string text, Popup_Type type)
 	GC gc;
 	XEvent e;
 	int s;
-	s = shim::adapter;
+	s = 0;
 
 	long event_mask = ExposureMask | KeyPressMask | ButtonPressMask;
 
@@ -115,7 +115,7 @@ int x_popup(std::string caption, std::string text, Popup_Type type)
 	int x = 10;
 	int y = 10;
 
-	const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(to_display_id(shim::adapter));
+	const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(to_display_id(0));
 	x = (mode->w - width) / 2;
 	y = (mode->h - height) / 2 * 0.75f;
 

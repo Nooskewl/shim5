@@ -290,11 +290,6 @@ static void set_default_shader()
 // window_w/h are passed back out (restart needs them)
 static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling, int &window_w, int &window_h)
 {
-#if defined __linux__ && !defined ANDROID
-	std::string env = std::string("SDL_VIDEO_FULLSCREEN_HEAD=") + util::itos(shim::adapter);
-	putenv((char *)env.c_str());
-#endif
-	
 	util::JSON::Node *root = shim::shim_json->get_root();
 	internal::gfx_context.fullscreen = root->get_nested_bool("shim>gfx>fullscreen", &internal::gfx_context.fullscreen, false, true, true);
 	internal::gfx_context.fullscreen = util::bool_arg(internal::gfx_context.fullscreen, shim::argc, shim::argv, "fullscreen");
@@ -332,7 +327,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	}
 
 	const SDL_DisplayMode *mode;
-	SDL_DisplayID id = to_display_id(shim::adapter);
+	SDL_DisplayID id = to_display_id(0);
 
 #ifdef IOS
 	mode = SDL_GetDesktopDisplayMode(id);
@@ -384,7 +379,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (internal::gfx_context.fullscreen) {
 		// On Windows these MUST be set like this for OpenGL
 		SDL_Rect r;
-		SDL_GetDisplayBounds(shim::adapter, &r);
+		SDL_GetDisplayBounds(0, &r);
 		win_x = r.x;
 		win_y = r.y;
 		if (window_w <= 0 || window_h <= 0) {
@@ -394,9 +389,9 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		}
 	}
 	else {
-		win_x = SDL_WINDOWPOS_CENTERED_DISPLAY(shim::adapter);
+		win_x = SDL_WINDOWPOS_CENTERED_DISPLAY(0);
 		SDL_Rect r;
-		SDL_GetDisplayBounds(shim::adapter, &r);
+		SDL_GetDisplayBounds(0, &r);
 		win_y = r.y + centre_y;
 	}
 
@@ -666,17 +661,6 @@ static void destroy_window()
 
 static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w, int window_h)
 {
-	shim::adapter = root->get_nested_int("shim>gfx>adapter", &shim::adapter, shim::adapter, true, true);
-	int index;
-	if ((index = util::check_args(shim::argc, shim::argv, "+adapter")) > 0) {
-		shim::adapter = atoi(shim::argv[index+1]);
-		int count;
-		SDL_DisplayID *disp = SDL_GetDisplays(&count);
-		if (shim::adapter >= count) {
-			shim::adapter = 0;
-		}
-	}
-
 	create_window(scaled_w, scaled_h, force_integer_scaling, window_w, window_h);
 
 	std::string default_vertex_source;
@@ -738,7 +722,7 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 	internal::recreate_work_image();
 
 	SDL_DisplayMode mode;
-	if (internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &mode) == 0) {
+	if (internal::My_SDL_GetCurrentDisplayMode(0, &mode) == 0) {
 		shim::refresh_rate = mode.refresh_rate;
 	}
 }
@@ -1659,7 +1643,7 @@ void flip()
 		int flags = SDL_GetWindowFlags(internal::gfx_context.window);
 		if (flags & SDL_WINDOW_INPUT_FOCUS) {
 			SDL_DisplayMode m;
-			if (internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &m) == 0) {
+			if (internal::My_SDL_GetCurrentDisplayMode(0, &m) == 0) {
 				if (last_screen_mode.w > 0 && (m.w != last_screen_mode.w || m.h != last_screen_mode.h)) {
 					int w = m.w;
 					int h = m.h;
@@ -2232,11 +2216,11 @@ util::Size<int> get_desktop_resolution()
 {
 	util::Size<int> size;
 #if defined IOS
-	int num = SDL_GetNumDisplayModes(shim::adapter);
+	int num = SDL_GetNumDisplayModes(0);
 	size = {0, 0};
 	for (int i = 0; i < num; i++) {
 		SDL_DisplayMode mode;
-		SDL_GetDisplayMode(shim::adapter, i, &mode);
+		SDL_GetDisplayMode(0, i, &mode);
 		if ((mode.w > size.w && mode.h > size.h) || (mode.w == size.w && mode.h > size.h) || (mode.w > size.w && mode.h == size.h)) {
 			size = {mode.w, mode.h};
 		}
@@ -2244,7 +2228,7 @@ util::Size<int> get_desktop_resolution()
 #elif defined SDL_PLATFORM_APPLE
 	size = macosx_get_desktop_resolution();
 #else
-	SDL_DisplayID id = to_display_id(shim::adapter);
+	SDL_DisplayID id = to_display_id(0);
 	const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(id);
 	size = {mode->w, mode->h};
 #endif
@@ -2264,12 +2248,12 @@ std::vector< util::Size<int> > get_supported_video_modes()
 		w = shim::real_screen_size.w;
 		h = shim::real_screen_size.h;
 	}
-	else if (internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &mode) == 0) {
+	else if (internal::My_SDL_GetCurrentDisplayMode(0, &mode) == 0) {
 		w = mode.w;
 		h = mode.h;
 	}
 
-	SDL_DisplayID id = to_display_id(shim::adapter);
+	SDL_DisplayID id = to_display_id(0);
 	int count;
 	SDL_DisplayMode **m = SDL_GetFullscreenDisplayModes(id, &count);
 	if (m != nullptr) {
@@ -2615,7 +2599,7 @@ int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 	DISPLAY_DEVICE d;
 	memset(&d, 0, sizeof(d));
 	d.cb = sizeof(d);
-	EnumDisplayDevices(0, shim::adapter, &d, 0);
+	EnumDisplayDevices(0, 0, &d, 0);
 	if (EnumDisplaySettingsEx(d.DeviceName, ENUM_CURRENT_SETTINGS, &m, EDS_ROTATEDMODE) == 0) {
 		return 1;
 	}
@@ -2630,7 +2614,7 @@ int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 	mode->refresh_rate = 0;
 	return 0;
 #else
-	SDL_DisplayID id = to_display_id(shim::adapter);
+	SDL_DisplayID id = to_display_id(0);
 	const SDL_DisplayMode *m = SDL_GetCurrentDisplayMode(id);
 	if (m != nullptr) {
 		*mode = *m;
