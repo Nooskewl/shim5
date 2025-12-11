@@ -97,7 +97,6 @@ extern SHIM5_EXPORT float z_add; // added to all z values for drawing images/pri
 //extern void SHIM5_EXPORT (*user_render)();
 extern SHIM5_EXPORT int refresh_rate;
 extern SHIM5_EXPORT bool hide_window;
-extern SHIM5_EXPORT int adapter;
 extern SHIM5_EXPORT util::Point<int> cursor_hotspot;
 extern SHIM5_EXPORT util::Point<float> screen_shake_save;
 extern SHIM5_EXPORT bool using_screen_shake;
