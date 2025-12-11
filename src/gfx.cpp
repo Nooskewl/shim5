@@ -666,6 +666,7 @@ static void destroy_window()
 
 static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w, int window_h)
 {
+	shim::adapter = root->get_nested_int("shim>gfx>adapter", &shim::adapter, shim::adapter, true, true);
 	int index;
 	if ((index = util::check_args(shim::argc, shim::argv, "+adapter")) > 0) {
 		shim::adapter = atoi(shim::argv[index+1]);
