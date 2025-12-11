@@ -297,39 +297,25 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	
 	util::JSON::Node *root = shim::shim_json->get_root();
 	internal::gfx_context.fullscreen = root->get_nested_bool("shim>gfx>fullscreen", &internal::gfx_context.fullscreen, false, true, true);
+	internal::gfx_context.fullscreen = util::bool_arg(internal::gfx_context.fullscreen, shim::argc, shim::argv, "fullscreen");
+	
 	vsync = root->get_nested_bool("shim>gfx>vsync", &vsync, true, true, true);
+	vsync = util::bool_arg(vsync, shim::argc, shim::argv, "vsync");
+	
 	show_fps = root->get_nested_bool("shim>gfx>show_fps", &show_fps, false);
+	show_fps = util::bool_arg(show_fps, shim::argc, shim::argv, "fps");
 
 	screen_shake_end = SDL_GetTicks();
 	shim::using_screen_shake = false;
 
-	internal::gfx_context.fullscreen = util::bool_arg(internal::gfx_context.fullscreen, shim::argc, shim::argv, "fullscreen");
-	vsync = util::bool_arg(vsync, shim::argc, shim::argv, "vsync");
-	show_fps = util::bool_arg(show_fps, shim::argc, shim::argv, "fps");
-
-	int scale_index = util::check_args(shim::argc, shim::argv, "+scale");
-	if (scale_index > 0 && scaled_w > 0 && scaled_h > 0) {
-		int scale = atoi(shim::argv[scale_index+1]);
-		int orig = scale;
-		if (scale > 0) {
-			bool changed = false;
-			while (scale * scaled_w < minimum_window_size.w || scale * scaled_h < minimum_window_size.h) {
-				scale++;
-				changed = true;
-			}
-			if (changed) {
-				util::infomsg("Changing scale to %d (%d too small!)\n", scale, orig);
-			}
-			window_w = scaled_w * scale;
-			window_h = scaled_h * scale;
-		}
-	}
-
+	window_w = root->get_nested_int("shim>gfx>width", nullptr, window_w, true, true);
 	int width_index = util::check_args(shim::argc, shim::argv, "+width");
-	int height_index = util::check_args(shim::argc, shim::argv, "+height");
 	if (width_index > 0) {
 		window_w = atoi(shim::argv[width_index+1]);
 	}
+
+	window_h = root->get_nested_int("shim>gfx>height", nullptr, window_h, true, true);
+	int height_index = util::check_args(shim::argc, shim::argv, "+height");
 	if (height_index > 0) {
 		window_h = atoi(shim::argv[height_index+1]);
 	}
@@ -352,6 +338,12 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	mode = SDL_GetDesktopDisplayMode(id);
 	window_w = mode->w;
 	window_h = mode->h;
+#else
+	if (internal::gfx_context.fullscreen == true) {
+		mode = SDL_GetDesktopDisplayMode(id);
+		window_w = mode->w;
+		window_h = mode->h;
+	}
 #endif
 
 	int flags = 0;
@@ -384,19 +376,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 	if (shim::hide_window) {
 		flags |= SDL_WINDOW_HIDDEN;
-	}
-
-	if (internal::gfx_context.inited == false && internal::gfx_context.restarting == false && internal::gfx_context.fullscreen) {
-		SDL_DisplayMode m;
-		int ret = internal::My_SDL_GetCurrentDisplayMode(shim::adapter, &m);
-		
-		if (ret == 0) {
-			if ((m.w > m.h) != (window_w > window_h)) {
-				int tmp = window_w;
-				window_w = window_h;
-				window_h = tmp;
-			}
-		}
 	}
 
 	int win_x;
