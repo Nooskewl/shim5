@@ -1,4 +1,5 @@
 #include "shim5/audio.h"
+#include "shim5/json.h"
 #include "shim5/mml.h"
 #include "shim5/sample.h"
 #include "shim5/shim.h"
@@ -388,23 +389,27 @@ bool start()
 {
 	shim::music = 0;
 
-	internal::audio_context.mute = util::bool_arg(false, shim::argc, shim::argv, "mute");
+	util::JSON::Node *root = shim::shim_json->get_root();
+
+	internal::audio_context.mute = root->get_nested_bool("shim>audio>mute", &internal::audio_context.mute, false, true, true);
+	internal::audio_context.mute = util::bool_arg(internal::audio_context.mute, shim::argc, shim::argv, "mute");
+
+	int arg;
+
+	internal::audio_context.device_spec.freq = root->get_nested_int("shim>audio>freq", &internal::audio_context.device_spec.freq, 48000, true, true);
+	if ((arg = util::check_args(shim::argc, shim::argv, "+freq")) > 0) {
+		internal::audio_context.device_spec.freq = atoi(shim::argv[arg+1]);
+	}
+	bool float_samples = false;
+	float_samples = root->get_nested_bool("shim>audio>float_samples", nullptr, false, true, true);
+	if (util::bool_arg(float_samples, shim::argc, shim::argv, "float-samples")) {
+		internal::audio_context.device_spec.format = SDL_AUDIO_F32LE;
+	}
+	else {
+		internal::audio_context.device_spec.format = SDL_AUDIO_S16LE;
+	}
 
 	if (internal::audio_context.mute == false) {
-		int arg;
-
-		if ((arg = util::check_args(shim::argc, shim::argv, "+freq")) > 0) {
-			internal::audio_context.device_spec.freq = atoi(shim::argv[arg+1]);
-		}
-		else {
-			internal::audio_context.device_spec.freq = 44100;
-		}
-		if (util::bool_arg(true, shim::argc, shim::argv, "float-samples")) {
-			internal::audio_context.device_spec.format = SDL_AUDIO_F32LE;
-		}
-		else {
-			internal::audio_context.device_spec.format = SDL_AUDIO_S16LE;
-		}
 		internal::audio_context.device_spec.channels = 2;
 
 		audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &internal::audio_context.device_spec, audio_callback, nullptr);
