@@ -61,7 +61,6 @@ SDL_Color transparent;
 SDL_Color interface_bg;
 SDL_Color interface_highlight;
 SDL_Color interface_text;
-SDL_Color interface_text_shadow;
 SDL_Color interface_edit_fg;
 SDL_Color interface_edit_bg;
 std::vector<gui::GUI *> guis;
@@ -380,10 +379,6 @@ bool static_start(int sdl_init_flags)
 	interface_text.g = root->get_nested_byte("shim>gfx>colours>interface_text.g", &interface_text.g, 255);
 	interface_text.b = root->get_nested_byte("shim>gfx>colours>interface_text.b", &interface_text.b, 255);
 	interface_text.a = root->get_nested_byte("shim>gfx>colours>interface_text.a", &interface_text.a, 255);
-	interface_text_shadow.r = root->get_nested_byte("shim>gfx>colours>interface_text_shadow.r", &interface_text_shadow.r, 0);
-	interface_text_shadow.g = root->get_nested_byte("shim>gfx>colours>interface_text_shadow.g", &interface_text_shadow.g, 0);
-	interface_text_shadow.b = root->get_nested_byte("shim>gfx>colours>interface_text_shadow.b", &interface_text_shadow.b, 0);
-	interface_text_shadow.a = root->get_nested_byte("shim>gfx>colours>interface_text_shadow.a", &interface_text_shadow.a, 255);
 	interface_edit_fg.r = root->get_nested_byte("shim>gfx>colours>interface_edit_fg.r", &interface_edit_fg.r, 0);
 	interface_edit_fg.g = root->get_nested_byte("shim>gfx>colours>interface_edit_fg.g", &interface_edit_fg.g, 0);
 	interface_edit_fg.b = root->get_nested_byte("shim>gfx>colours>interface_edit_fg.b", &interface_edit_fg.b, 0);

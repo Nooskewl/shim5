@@ -72,7 +72,6 @@ extern SHIM5_EXPORT SDL_Color transparent;
 extern SHIM5_EXPORT SDL_Color interface_bg;
 extern SHIM5_EXPORT SDL_Color interface_highlight;
 extern SHIM5_EXPORT SDL_Color interface_text;
-extern SHIM5_EXPORT SDL_Color interface_text_shadow;
 extern SHIM5_EXPORT SDL_Color interface_edit_fg;
 extern SHIM5_EXPORT SDL_Color interface_edit_bg;
 extern SHIM5_EXPORT std::vector<gui::GUI *> guis;
