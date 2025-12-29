@@ -131,6 +131,8 @@
 #define glTexParameteri_ptr glTexParameteri
 #define glGetError_ptr glGetError
 #define glDrawArrays_ptr glDrawArrays
+#define glReadPixels_ptr glReadPixels
+#define glGetIntegerv_ptr glGetIntegerv
 #endif
 
 #ifdef IOS
@@ -243,6 +245,7 @@ typedef void (APIENTRY * glTexParameteri_func)(GLenum, GLenum, GLint);
 typedef void (APIENTRY * glDrawArrays_func)(GLenum, GLint, GLsizei);
 typedef GLenum (APIENTRY * glGetError_func)(void);
 typedef void (APIENTRY * glReadPixels_func)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *);
+typedef void (APIENTRY * glGetIntegerv_func)(GLenum, GLint *);
 extern SHIM5_EXPORT glStencilFuncSeparate_func glStencilFuncSeparate_ptr;
 extern SHIM5_EXPORT glStencilOpSeparate_func glStencilOpSeparate_ptr;
 extern SHIM5_EXPORT glBindFramebuffer_func glBindFramebuffer_ptr;
@@ -319,6 +322,7 @@ extern SHIM5_EXPORT glTexParameteri_func glTexParameteri_ptr;
 extern SHIM5_EXPORT glGetError_func glGetError_ptr;
 extern SHIM5_EXPORT glDrawArrays_func glDrawArrays_ptr;
 extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
+extern SHIM5_EXPORT glGetIntegerv_func glGetIntegerv_ptr;
 #endif
 
 #define GLM_FORCE_RADIANS
