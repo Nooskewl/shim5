@@ -10,7 +10,7 @@
 #define SMALL_TEXTURE_OFFSET 0.00001f
 #define CLAMP(v) if (v < 0.0f) v = 0.0f; else if (v > 1.0f) v = 1.0f;
 
-#define INCR_SIZE 1024
+#define INCR_SIZE 1024*32
 
 using namespace noo;
 
