@@ -183,7 +183,7 @@ static void next_notification()
 	notification_start_time = SDL_GetTicks();
 }
 
-static void set_viewport()
+static void _set_viewport()
 {
 	glViewport_ptr(scissor_x, shim::real_screen_size.h-(scissor_y+scissor_h), scissor_w, scissor_h);
 	PRINT_GL_ERROR("glViewport\n");
@@ -961,7 +961,7 @@ void real_set_scissor(int x, int y, int w, int h)
 	glEnable_ptr(GL_SCISSOR_TEST);
 	PRINT_GL_ERROR("glEnable_ptr(GL_SCISSOR_TEST) (%d, %d, %d, %d)\n", x, y, w, h);
 	glScissor_ptr(x, szy-h-y, w, h);
-	PRINT_GL_ERROR("glScissor");
+	PRINT_GL_ERROR("glScissor\n");
 }
 
 void get_scissor(int **x, int **y, int **w, int **h)
@@ -1454,7 +1454,7 @@ void set_screen_size(util::Size<int> size)
 	scissor_w = MIN(orig_size.w, int(shim::screen_size.w*shim::scale));
 	scissor_h = MIN(orig_size.h, int(shim::screen_size.h*shim::scale));
 
-	set_viewport();
+	_set_viewport();
 
 	real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 	
@@ -1757,6 +1757,10 @@ void clear(SDL_Color colour)
 			gfx::set_default_projection(shim::real_screen_size, util::Point<int>(0, 0), 1.0f);
 			gfx::update_projection();
 
+			GLint vp[4];
+			glGetIntegerv_ptr(GL_VIEWPORT, vp);
+			PRINT_GL_ERROR("glGetIntegerv\n");
+
 			glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
 			PRINT_GL_ERROR("glViewport\n");
 
@@ -1773,13 +1777,10 @@ void clear(SDL_Color colour)
 				black_bars_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
 			}
 			
-			set_viewport();
+			glViewport_ptr(vp[0], vp[1], vp[2], vp[3]);
 
 			gfx::set_matrices(mv_bak, proj_bak);
 			gfx::update_projection();
-		}
-		if (scissor_disabled == false) {
-			real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
 		}
 	}
 
@@ -1807,10 +1808,6 @@ void clear_depth_buffer(float value)
 	PRINT_GL_ERROR("glClearDepthf\n");
 	glClear_ptr(GL_DEPTH_BUFFER_BIT);
 	PRINT_GL_ERROR("glClear_ptr(GL_DEPTH_BUFFER_BIT)\n");
-
-	if (scissor_disabled == false && internal::gfx_context.target_image == 0) {
-		real_set_scissor(scissor_x, scissor_y, scissor_w, scissor_h);
-	}
 }
 
 void clear_stencil_buffer(int value)
@@ -2010,6 +2007,14 @@ void set_scissor(int x, int y, int w, int h)
 		sx = sy = 0;
 		scale = 1.0f;
 	}
+	if (x < 0) {
+		x = 0;
+	}
+	if (y < 0) {
+		y = 0;
+	}
+	w = MIN(shim::screen_size.w-x, w);
+	h = MIN(shim::screen_size.h-y, h);
 	real_set_scissor(int(sx + x * scale), int(sy + y * scale), int(w * scale), int(h * scale));
 }
 
@@ -2031,6 +2036,44 @@ void unset_scissor()
 		*/
 		glDisable_ptr(GL_SCISSOR_TEST);
 	}
+}
+
+void set_viewport(int x, int y, int w, int h)
+{
+	int sx, sy;
+	float scale;
+	if (internal::gfx_context.target_image == internal::gfx_context.work_image || internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
+		sx = scissor_x;
+		sy = scissor_y;
+		scale = shim::scale;
+	}
+	else {
+		sx = sy = 0;
+		scale = 1.0f;
+	}
+	if (x < 0) {
+		x = 0;
+	}
+	if (y < 0) {
+		y = 0;
+	}
+	w = MIN(shim::screen_size.w-x, w);
+	h = MIN(shim::screen_size.h-y, h);
+	int szy, szh;
+	if (internal::gfx_context.target_image == 0) {
+		szy = shim::real_screen_size.h;
+	}
+	else {
+		szy = internal::gfx_context.target_image->size.h;
+	}
+	szh = h * scale;
+	glViewport_ptr(int(sx + x * scale), szy-szh-int(sy + y * scale), int(w * scale), int(h * scale));
+	PRINT_GL_ERROR("glViewport\n");
+}
+
+void unset_viewport()
+{
+	_set_viewport();
 }
 
 void enable_depth_test(bool onoff)
