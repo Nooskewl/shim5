@@ -588,8 +588,8 @@ Model::Node *Model::read_text_frame(SDL_IOStream *file)
 					skip_whitespace(file);
 					std::string s3 = read_word(file);
 					triangles[face*3+0] = atoi(s1.c_str());
-					triangles[face*3+1] = atoi(s2.c_str());
-					triangles[face*3+2] = atoi(s3.c_str());
+					triangles[face*3+2] = atoi(s2.c_str());
+					triangles[face*3+1] = atoi(s3.c_str());
 					face++;
 				}
 				else {
