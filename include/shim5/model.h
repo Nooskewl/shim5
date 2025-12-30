@@ -148,7 +148,10 @@ private:
 		Uint32 frames_per_second;
 	};
 
-	static std::map<std::string, Instance *> loaded_models;
+	static std::map<int, Instance *> loaded_models;
+	static int model_count;
+
+	int model_id;
 
 	std::vector<Node *> roots;
 	std::vector<int> ungot;

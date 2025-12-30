@@ -17,20 +17,22 @@ namespace noo {
 
 namespace gfx {
 
-std::map<std::string, Model::Instance *> Model::loaded_models;
+std::map<int, Model::Instance *> Model::loaded_models;
+int Model::model_count;
 
 void Model::static_start()
 {
 	loaded_models.clear();
+	model_count = 0;
 }
 
 void Model::update_all()
 {
 	Uint32 elapsed = 1000 / shim::logic_rate;
 
-	std::map<std::string, Instance *>::iterator it;
+	std::map<int, Instance *>::iterator it;
 	for (it = loaded_models.begin(); it != loaded_models.end(); it++) {
-		const std::pair<std::string, Instance *> &p = *it;
+		const std::pair<int, Instance *> &p = *it;
 		Instance *instance = p.second;
 		if (instance->started) {
 			instance->elapsed += elapsed;
@@ -173,6 +175,7 @@ Model::Model()
 	instance->started = false;
 	instance->elapsed = 0;
 	instance->frames_per_second = 60;
+	instance->current_animation = "";
 }
 
 Model::Model(std::string filename, bool load_from_filesystem) :
@@ -183,6 +186,7 @@ Model::Model(std::string filename, bool load_from_filesystem) :
 	instance->started = false;
 	instance->elapsed = 0;
 	instance->frames_per_second = 60;
+	instance->current_animation = "";
 
 	read(filename, load_from_filesystem);
 }
@@ -211,6 +215,8 @@ Model::~Model()
 		const std::pair<std::string, Animation *> &p = *it;
 		destroy(p.second);
 	}
+
+	loaded_models.erase(loaded_models.find(model_id));
 
 	delete instance;
 }
@@ -287,7 +293,8 @@ void Model::read(std::string filename, bool load_from_filesystem)
 
 	util::close_file(file);
 
-	loaded_models[filename] = instance;
+	model_id = model_count++;
+	loaded_models[model_id] = instance;
 }
 
 std::vector<Model::Node *> Model::get_nodes()
