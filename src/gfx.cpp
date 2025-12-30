@@ -1763,6 +1763,8 @@ void clear(SDL_Color colour)
 
 			glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
 			PRINT_GL_ERROR("glViewport\n");
+			glDisable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
 
 			if (shim::screen_offset.x > 0) {
 				int w = shim::screen_offset.x;
@@ -1777,6 +1779,8 @@ void clear(SDL_Color colour)
 				black_bars_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
 			}
 			
+			glEnable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
 			glViewport_ptr(vp[0], vp[1], vp[2], vp[3]);
 
 			gfx::set_matrices(mv_bak, proj_bak);
