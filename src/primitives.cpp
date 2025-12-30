@@ -166,6 +166,16 @@ void draw_filled_triangle(SDL_Color vertex_colours[3], util::Point<float> a, uti
 	if (prim_held == false) {
 		draw_primitives_start();
 	}
+	if ((b.x*a.y+c.x*b.y+a.x*c.y) < (a.x*b.y+b.x*c.y+c.x*a.y)) {
+		util::Point<float> tmp;
+		tmp = c;
+		c = b;
+		b = tmp;
+		SDL_Color tmpc;
+		tmpc = vertex_colours[2];
+		vertex_colours[2] = vertex_colours[1];
+		vertex_colours[1] = tmpc;
+	}
 	Vertex_Cache::instance()->cache(vertex_colours, a, b, c);
 	if (prim_held == false) {
 		draw_primitives_end();
