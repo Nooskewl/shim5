@@ -281,6 +281,18 @@ static int shim_blend_to_gl(Blend_Mode m)
 	return -1;
 }
 
+static int shim_front_face_to_gl(Front_Face face)
+{
+	switch (face) {
+		case FACE_CW:
+			return GL_CW;
+		case FACE_CCW:
+			return GL_CCW;
+	}
+
+	return -1;
+}
+
 static void set_default_shader()
 {
 	shim::current_shader = shim::default_shader;
@@ -2189,6 +2201,12 @@ void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op z
 		PRINT_GL_ERROR("glStencilOpSeparate\n");
 	}
 #endif
+}
+
+void set_front_face(Front_Face face)
+{
+	glFrontFace_ptr(shim_front_face_to_gl(face));
+	PRINT_GL_ERROR("glFrontFace\n");
 }
 
 void set_cull_mode(Faces cull)

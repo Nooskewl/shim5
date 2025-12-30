@@ -32,6 +32,11 @@ enum Stencil_Op {
 	STENCILOP_DECR
 };
 
+enum Front_Face {
+	FACE_CW,
+	FACE_CCW
+};
+
 enum Faces {
 	NO_FACE = 0,
 	FRONT_FACE,
@@ -75,6 +80,7 @@ void SHIM5_EXPORT enable_two_sided_stencil(bool onoff);
 void SHIM5_EXPORT set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask);
 void SHIM5_EXPORT set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask);
 
+void SHIM5_EXPORT set_front_face(Front_Face face);
 void SHIM5_EXPORT set_cull_mode(Faces cull);
 
 void SHIM5_EXPORT enable_blending(bool onoff);
