@@ -637,7 +637,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	PRINT_GL_ERROR("glBlendFunc\n");
 	glEnable_ptr(GL_CULL_FACE);
 	PRINT_GL_ERROR("glEnable_ptr(GL_CULL_FACE)\n");
-	glFrontFace_ptr(GL_CW);
+	glFrontFace_ptr(GL_CCW);
 	PRINT_GL_ERROR("glFrontFace\n");
 	glCullFace_ptr(GL_BACK);
 	PRINT_GL_ERROR("glCullFace\n");
