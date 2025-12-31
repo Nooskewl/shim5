@@ -109,6 +109,11 @@ glGetError_func glGetError_ptr;
 glDrawArrays_func glDrawArrays_ptr;
 glReadPixels_func glReadPixels_ptr;
 glGetIntegerv_func glGetIntegerv_ptr;
+glGenVertexArrays_func glGenVertexArrays_ptr;
+glGenBuffers_func glGenBuffers_ptr;
+glBindVertexArray_func glBindVertexArray_ptr;
+glBindBuffer_func glBindBuffer_ptr;
+glBufferData_func glBufferData_ptr;
 #endif
 
 #if defined SDL_PLATFORM_APPLE && !defined IOS
@@ -533,6 +538,11 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
 	glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
 	glGetIntegerv_ptr = (glGetIntegerv_func)SDL_GL_GetProcAddress("glGetIntegerv");
+	glGenVertexArrays_ptr = (glGenVertexArrays_func)SDL_GL_GetProcAddress("glGenVertexArrays");
+	glGenBuffers_ptr = (glGenBuffers_func)SDL_GL_GetProcAddress("glGenBuffers");
+	glBindVertexArray_ptr = (glBindVertexArray_func)SDL_GL_GetProcAddress("glBindVertexArray");
+	glBindBuffer_ptr = (glBindBuffer_func)SDL_GL_GetProcAddress("glBindBuffer");
+	glBufferData_ptr = (glBufferData_func)SDL_GL_GetProcAddress("glBufferData");
 
 	if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
 	if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
@@ -610,6 +620,11 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
 	if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
 	if (glGetIntegerv_ptr == 0) { util::debugmsg("glGetIntegerv_ptr=%p\n", glGetIntegerv_ptr); }
+	if (glGenVertexArrays_ptr == 0) { util::debugmsg("glGenVertexArrays_ptr=%p\n", glGenVertexArrays_ptr); }
+	if (glGenBuffers_ptr == 0) { util::debugmsg("glGenBuffers_ptr=%p\n", glGenBuffers_ptr); }
+	if (glBindVertexArray_ptr == 0) { util::debugmsg("glBindVertexArray_ptr=%p\n", glBindVertexArray_ptr); }
+	if (glBindBuffer_ptr == 0) { util::debugmsg("glBindBuffer_ptr=%p\n", glBindBuffer_ptr); }
+	if (glBufferData_ptr == 0) { util::debugmsg("glBufferData_ptr=%p\n", glBufferData_ptr); }
 #endif
 
 	gfx::clear(shim::black);

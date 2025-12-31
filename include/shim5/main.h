@@ -133,6 +133,11 @@
 #define glDrawArrays_ptr glDrawArrays
 #define glReadPixels_ptr glReadPixels
 #define glGetIntegerv_ptr glGetIntegerv
+#define glGenVertexArrays_ptr glGenVertexArrays
+#define glGenBuffers_ptr glGenBuffers
+#define glBindVertexArray_ptr glBindVertexArray
+#define glBindBuffer_ptr glBindBuffer
+#define glBufferData_ptr glBufferData
 #endif
 
 #ifdef IOS
@@ -147,6 +152,7 @@
 #else
 #ifdef _WIN32
 #include <windows.h>
+/*
 #define GL_FRAMEBUFFER                    0x8D40
 #define GL_RENDERBUFFER                   0x8D41
 #define GL_INCR_WRAP                      0x8507
@@ -162,8 +168,10 @@
 #define GL_VERTEX_SHADER                  0x8B31
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_COMPILE_STATUS                 0x8B81
+*/
 #endif
 #include <GL/gl.h>
+#include <GL/glext.h>
 #endif
 // OpenGL extensions (ES already has these)
 #ifdef SDL_PLATFORM_APPLE
@@ -246,6 +254,11 @@ typedef void (APIENTRY * glDrawArrays_func)(GLenum, GLint, GLsizei);
 typedef GLenum (APIENTRY * glGetError_func)(void);
 typedef void (APIENTRY * glReadPixels_func)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *);
 typedef void (APIENTRY * glGetIntegerv_func)(GLenum, GLint *);
+typedef void (APIENTRY * glGenVertexArrays_func)(GLsizei, GLuint *);
+typedef void (APIENTRY * glGenBuffers_func)(GLsizei, GLuint *);
+typedef void (APIENTRY * glBindVertexArray_func)(GLuint);
+typedef void (APIENTRY * glBindBuffer_func)(GLenum, GLuint);
+typedef void (APIENTRY * glBufferData_func)(GLenum, GLsizei *, const void *, GLenum);
 extern SHIM5_EXPORT glStencilFuncSeparate_func glStencilFuncSeparate_ptr;
 extern SHIM5_EXPORT glStencilOpSeparate_func glStencilOpSeparate_ptr;
 extern SHIM5_EXPORT glBindFramebuffer_func glBindFramebuffer_ptr;
@@ -323,6 +336,11 @@ extern SHIM5_EXPORT glGetError_func glGetError_ptr;
 extern SHIM5_EXPORT glDrawArrays_func glDrawArrays_ptr;
 extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
 extern SHIM5_EXPORT glGetIntegerv_func glGetIntegerv_ptr;
+extern SHIM5_EXPORT glGenVertexArrays_func glGenVertexArrays_ptr;
+extern SHIM5_EXPORT glGenBuffers_func glGenBuffers_ptr;
+extern SHIM5_EXPORT glBindVertexArray_func glBindVertexArray_ptr;
+extern SHIM5_EXPORT glBindBuffer_func glBindBuffer_ptr;
+extern SHIM5_EXPORT glBufferData_func glBufferData_ptr;
 #endif
 
 #define GLM_FORCE_RADIANS
