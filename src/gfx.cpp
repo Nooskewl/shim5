@@ -81,6 +81,7 @@ glGetShaderiv_func glGetShaderiv_ptr;
 glGetShaderInfoLog_func glGetShaderInfoLog_ptr;
 glCreateShader_func glCreateShader_ptr;
 glBlendFunc_func glBlendFunc_ptr;
+glBlendFuncSeparate_func glBlendFuncSeparate_ptr;
 glEnable_func glEnable_ptr;
 glDisable_func glDisable_ptr;
 glFrontFace_func glFrontFace_ptr;
@@ -109,9 +110,7 @@ glGetError_func glGetError_ptr;
 glDrawArrays_func glDrawArrays_ptr;
 glReadPixels_func glReadPixels_ptr;
 glGetIntegerv_func glGetIntegerv_ptr;
-glGenVertexArrays_func glGenVertexArrays_ptr;
 glGenBuffers_func glGenBuffers_ptr;
-glBindVertexArray_func glBindVertexArray_ptr;
 glBindBuffer_func glBindBuffer_ptr;
 glBufferData_func glBufferData_ptr;
 glDeleteBuffers_func glDeleteBuffers_ptr;
@@ -499,6 +498,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glGetShaderInfoLog_ptr = (glGetShaderInfoLog_func)SDL_GL_GetProcAddress("glGetShaderInfoLog");
 	glCreateShader_ptr = (glCreateShader_func)SDL_GL_GetProcAddress("glCreateShader");
 	glBlendFunc_ptr = (glBlendFunc_func)SDL_GL_GetProcAddress("glBlendFunc");
+	glBlendFuncSeparate_ptr = (glBlendFuncSeparate_func)SDL_GL_GetProcAddress("glBlendFuncSeparate");
 	glEnable_ptr = (glEnable_func)SDL_GL_GetProcAddress("glEnable");
 	glDisable_ptr = (glDisable_func)SDL_GL_GetProcAddress("glDisable");
 	glFrontFace_ptr = (glFrontFace_func)SDL_GL_GetProcAddress("glFrontFace");
@@ -528,6 +528,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
 	glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
 	glBlendFunc_ptr = (glBlendFunc_func)SDL_GL_GetProcAddress("glBlendFunc");
+	glBlendFuncSeparate_ptr = (glBlendFuncSeparate_func)SDL_GL_GetProcAddress("glBlendFuncSeparate");
 	glActiveTexture_ptr = (glActiveTexture_func)SDL_GL_GetProcAddress("glActiveTexture");
 	glColorMask_ptr = (glColorMask_func)SDL_GL_GetProcAddress("glColorMask");
 	glDeleteTextures_ptr = (glDeleteTextures_func)SDL_GL_GetProcAddress("glDeleteTextures");
@@ -539,9 +540,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
 	glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
 	glGetIntegerv_ptr = (glGetIntegerv_func)SDL_GL_GetProcAddress("glGetIntegerv");
-	glGenVertexArrays_ptr = (glGenVertexArrays_func)SDL_GL_GetProcAddress("glGenVertexArrays");
 	glGenBuffers_ptr = (glGenBuffers_func)SDL_GL_GetProcAddress("glGenBuffers");
-	glBindVertexArray_ptr = (glBindVertexArray_func)SDL_GL_GetProcAddress("glBindVertexArray");
 	glBindBuffer_ptr = (glBindBuffer_func)SDL_GL_GetProcAddress("glBindBuffer");
 	glBufferData_ptr = (glBufferData_func)SDL_GL_GetProcAddress("glBufferData");
 	glDeleteBuffers_ptr = (glDeleteBuffers_func)SDL_GL_GetProcAddress("glDeleteBuffers");
@@ -594,6 +593,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glGetShaderInfoLog_ptr == 0) { util::debugmsg("glGetShaderInfoLog_ptr=%p\n", glGetShaderInfoLog_ptr); }
 	if (glCreateShader_ptr == 0) { util::debugmsg("glCreateShader_ptr=%p\n", glCreateShader_ptr); }
 	if (glBlendFunc_ptr == 0) { util::debugmsg("glBlendFunc_ptr=%p\n", glBlendFunc_ptr); }
+	if (glBlendFuncSeparate_ptr == 0) { util::debugmsg("glBlendFuncSeparate_ptr=%p\n", glBlendFuncSeparate_ptr); }
 	if (glEnable_ptr == 0) { util::debugmsg("glEnable_ptr=%p\n", glEnable_ptr); }
 	if (glDisable_ptr == 0) { util::debugmsg("glDisable_ptr=%p\n", glDisable_ptr); }
 	if (glFrontFace_ptr == 0) { util::debugmsg("glFrontFace_ptr=%p\n", glFrontFace_ptr); }
@@ -611,6 +611,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
 	if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
 	if (glBlendFunc_ptr == 0) { util::debugmsg("glBlendFunc_ptr=%p\n", glBlendFunc_ptr); }
+	if (glBlendFuncSeparate_ptr == 0) { util::debugmsg("glBlendFuncSeparate_ptr=%p\n", glBlendFuncSeparate_ptr); }
 	if (glActiveTexture_ptr == 0) { util::debugmsg("glActiveTexture_ptr=%p\n", glActiveTexture_ptr); }
 	if (glColorMask_ptr == 0) { util::debugmsg("glColorMask_ptr=%p\n", glColorMask_ptr); }
 	if (glDeleteTextures_ptr == 0) { util::debugmsg("glDeleteTextures_ptr=%p\n", glDeleteTextures_ptr); }
@@ -622,9 +623,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
 	if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
 	if (glGetIntegerv_ptr == 0) { util::debugmsg("glGetIntegerv_ptr=%p\n", glGetIntegerv_ptr); }
-	if (glGenVertexArrays_ptr == 0) { util::debugmsg("glGenVertexArrays_ptr=%p\n", glGenVertexArrays_ptr); }
 	if (glGenBuffers_ptr == 0) { util::debugmsg("glGenBuffers_ptr=%p\n", glGenBuffers_ptr); }
-	if (glBindVertexArray_ptr == 0) { util::debugmsg("glBindVertexArray_ptr=%p\n", glBindVertexArray_ptr); }
 	if (glBindBuffer_ptr == 0) { util::debugmsg("glBindBuffer_ptr=%p\n", glBindBuffer_ptr); }
 	if (glBufferData_ptr == 0) { util::debugmsg("glBufferData_ptr=%p\n", glBufferData_ptr); }
 	if (glDeleteBuffers_ptr == 0) { util::debugmsg("glDeleteBuffers_ptr=%p\n", glDeleteBuffers_ptr); }
