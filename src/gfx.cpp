@@ -114,6 +114,7 @@ glGenBuffers_func glGenBuffers_ptr;
 glBindVertexArray_func glBindVertexArray_ptr;
 glBindBuffer_func glBindBuffer_ptr;
 glBufferData_func glBufferData_ptr;
+glDeleteBuffers_func glDeleteBuffers_ptr;
 #endif
 
 #if defined SDL_PLATFORM_APPLE && !defined IOS
@@ -543,6 +544,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glBindVertexArray_ptr = (glBindVertexArray_func)SDL_GL_GetProcAddress("glBindVertexArray");
 	glBindBuffer_ptr = (glBindBuffer_func)SDL_GL_GetProcAddress("glBindBuffer");
 	glBufferData_ptr = (glBufferData_func)SDL_GL_GetProcAddress("glBufferData");
+	glDeleteBuffers_ptr = (glDeleteBuffers_func)SDL_GL_GetProcAddress("glDeleteBuffers");
 
 	if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
 	if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
@@ -625,6 +627,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glBindVertexArray_ptr == 0) { util::debugmsg("glBindVertexArray_ptr=%p\n", glBindVertexArray_ptr); }
 	if (glBindBuffer_ptr == 0) { util::debugmsg("glBindBuffer_ptr=%p\n", glBindBuffer_ptr); }
 	if (glBufferData_ptr == 0) { util::debugmsg("glBufferData_ptr=%p\n", glBufferData_ptr); }
+	if (glDeleteBuffers_ptr == 0) { util::debugmsg("glDeleteBuffers_ptr=%p\n", glDeleteBuffers_ptr); }
 #endif
 
 	gfx::clear(shim::black);

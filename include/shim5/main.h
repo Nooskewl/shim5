@@ -138,6 +138,7 @@
 #define glBindVertexArray_ptr glBindVertexArray
 #define glBindBuffer_ptr glBindBuffer
 #define glBufferData_ptr glBufferData
+#define glDeleteBuffers_ptr glDeleteBuffers
 #endif
 
 #ifdef IOS
@@ -259,6 +260,7 @@ typedef void (APIENTRY * glGenBuffers_func)(GLsizei, GLuint *);
 typedef void (APIENTRY * glBindVertexArray_func)(GLuint);
 typedef void (APIENTRY * glBindBuffer_func)(GLenum, GLuint);
 typedef void (APIENTRY * glBufferData_func)(GLenum, GLsizei *, const void *, GLenum);
+typedef void (APIENTRY * glDeleteBuffers_func)(GLsizei, const GLuint *);
 extern SHIM5_EXPORT glStencilFuncSeparate_func glStencilFuncSeparate_ptr;
 extern SHIM5_EXPORT glStencilOpSeparate_func glStencilOpSeparate_ptr;
 extern SHIM5_EXPORT glBindFramebuffer_func glBindFramebuffer_ptr;
@@ -341,6 +343,7 @@ extern SHIM5_EXPORT glGenBuffers_func glGenBuffers_ptr;
 extern SHIM5_EXPORT glBindVertexArray_func glBindVertexArray_ptr;
 extern SHIM5_EXPORT glBindBuffer_func glBindBuffer_ptr;
 extern SHIM5_EXPORT glBufferData_func glBufferData_ptr;
+extern SHIM5_EXPORT glDeleteBuffers_func glDeleteBuffers_ptr;
 #endif
 
 #define GLM_FORCE_RADIANS
