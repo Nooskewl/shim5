@@ -374,20 +374,20 @@ void Shader::set_opengl_attributes(float *pos, float *normal, float *texcoord, f
 		}
 		if (texcoord_attrib != -1 && texcoord_ptr != texcoord) {
 			texcoord_ptr = texcoord;
-			glVertexAttribPointer_ptr(texcoord_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), texcoord);
+			glVertexAttribPointer_ptr(texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 12 * sizeof(float), texcoord);
 			PRINT_GL_ERROR("glVertexAttribPointer _ptr(in_texcoord)\n");
 		}
 		if (colour_attrib != -1 && colour_ptr != colour) {
 			colour_ptr = colour;
-			glVertexAttribPointer_ptr(colour_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), colour);
+			glVertexAttribPointer_ptr(colour_attrib, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(float), colour);
 			PRINT_GL_ERROR("glVertexAttribPointer _ptr(in_colour)\n");
 		}
 	}
 	else {
 		glVertexAttribPointer_ptr(pos_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(0*sizeof(float)));
 		glVertexAttribPointer_ptr(normal_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(3*sizeof(float)));
-		glVertexAttribPointer_ptr(texcoord_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(6*sizeof(float)));
-		glVertexAttribPointer_ptr(colour_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(8*sizeof(float)));
+		glVertexAttribPointer_ptr(texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(6*sizeof(float)));
+		glVertexAttribPointer_ptr(colour_attrib, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(8*sizeof(float)));
 	}
 }
 
