@@ -1092,7 +1092,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 #else
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 	if (::create_depth_buffer) {
 #if defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
