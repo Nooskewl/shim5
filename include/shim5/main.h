@@ -5,7 +5,9 @@
 // Disable warnings about dll-interface. Even Microsoft admits they're superfluous
 #pragma warning(disable : 4251)
 #pragma warning(disable : 4275)
+#endif
 
+#ifdef _WIN32_NOPE
 #ifdef SHIM5_STATIC
 #define SHIM5_EXPORT
 #else

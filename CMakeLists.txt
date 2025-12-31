@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(shim5)
 
 option(SHARED "Build as a shared library" OFF)
@@ -183,6 +183,7 @@ if(MINGW)
 	LIST(APPEND LIBS zlibstatic)
 	target_link_libraries(${SHIM_LIB} util ${LIBS})
 	set_target_properties(${SHIM_LIB} PROPERTIES COMPILE_FLAGS "-DSHIM5_BUILD ${FLAGS}")
+	set_target_properties(util PROPERTIES COMPILE_FLAGS "-DSHIM5_BUILD ${FLAGS}")
 	if(WANT_EXAMPLES)
 		set(EXAMPLE_LIBS ${LIBS} util ${SHIM_LIB})
 		set_target_properties(example PROPERTIES COMPILE_FLAGS "${FLAGS}")
