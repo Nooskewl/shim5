@@ -388,6 +388,7 @@ void Shader::set_opengl_attributes(float *pos, float *normal, float *texcoord, f
 		glVertexAttribPointer_ptr(normal_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(3*sizeof(float)));
 		glVertexAttribPointer_ptr(texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(6*sizeof(float)));
 		glVertexAttribPointer_ptr(colour_attrib, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(8*sizeof(float)));
+		PRINT_GL_ERROR("glVertexAttribPointer\n");
 	}
 }
 
