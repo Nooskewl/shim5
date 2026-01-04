@@ -9,6 +9,7 @@
 #include <direct.h>
 #include <shlobj.h>
 #include <dbghelp.h>
+#include "shim5/langid.h"
 #else
 #include <sys/types.h>
 #endif
@@ -49,79 +50,249 @@ void mkdir(std::string path)
 #ifdef _WIN32
 std::string get_system_language_windows()
 {
-	LONG l = GetUserDefaultLCID();
+	LANGID l = GetUserDefaultUILanguage();
 
 	// returns names in Steam format
 
 	if (
-		l == 1031 ||
-		l == 2055 ||
-		l == 3079 ||
-		l == 4103 ||
-		l == 5127
-	) {
-		return "german";
+		l == Arabic ||
+		l == Arabic_Algeria ||
+		l == Arabic_Bahrain ||
+		l == Arabic_Egypt ||
+		l == Arabic_Iraq ||
+		l == Arabic_Jordan ||
+		l == Arabic_Kuwait ||
+		l == Arabic_Lebanon ||
+		l == Arabic_Libya ||
+		l == Arabic_Morocco ||
+		l == Arabic_Oman ||
+		l == Arabic_Qatar ||
+		l == Arabic_Saudi_Arabia ||
+		l == Arabic_Syria ||
+		l == Arabic_Tunisia ||
+		l == Arabic_U_A_E_ ||
+		l == Arabic_Yemen) {
+		return "arabic";
 	}
-	else if (l == 1032) {
-		return "greek";
+
+	if (
+		l == Bulgarian ||
+		l == Bulgarian_Bulgaria) {
+		return "bulgarian";
 	}
-	else if (
-		l == 1034 ||
-		l == 2058 ||
-		l == 3082 ||
-		l == 4106 ||
-		l == 5130 ||
-		l == 6154 ||
-		l == 7178 ||
-		l == 8202 ||
-		l == 9226 ||
-		l == 10250 ||
-		l == 11274 ||
-		l == 12298 ||
-		l == 13322 ||
-		l == 14346 ||
-		l == 15370 ||
-		l == 16394 ||
-		l == 17418 ||
-		l == 18442 ||
-		l == 19466 ||
-		l == 20490
-	) {
-		return "spanish";
+
+	if (	
+		l == Chinese_Simplified ||
+		l == Chinese_Simplified_Legacy ||
+		l == Chinese_Simplified__PRC ||
+		l == Chinese_Simplified__Singapore) {
+		return "schinese";
 	}
-	else if (
-		l == 1036 ||
-		l == 2060 ||
-		l == 3084 ||
-		l == 4108 ||
-		l == 5132
-	) {
-		return "french";
+
+	if (
+		l == Chinese_Traditional ||
+		l == Chinese_Traditional_Legacy ||
+		l == Chinese_Traditional__Hong_Kong_S_A_R_ ||
+		l == Chinese_Traditional__Macao_S_A_R_ ||
+		l == Chinese_Traditional__Taiwan) {
+		return "tchinese";
 	}
-	else if (
-		l == 1043 ||
-		l == 2067
-	) {
+
+	if (
+		l == Czech ||
+		l == Czech_Czech_Republic) {
+		return "czech";
+	}
+
+	if (
+		l == Danish ||
+		l == Danish_Denmark) {
+		return "danish";
+	}
+
+	if (
+		l == Dutch ||
+		l == Dutch_Belgium ||
+		l == Dutch_Netherlands) {
 		return "dutch";
 	}
-	else if (l == 1045) {
-		return "polish";
+
+	if (
+		l == Finnish ||
+		l == Finnish_Finland) {
+		return "finnish";
 	}
-	else if (l == 1046) {
-		return "brazilian";
+
+	if (
+		l == French ||
+		l == French_Belgium ||
+		l == French_Cameroon ||
+		l == French_Canada ||
+		l == French_Caribbean ||
+		l == French_Congo_DRC ||
+		l == French_Cote_dIvoire ||
+		l == French_France ||
+		l == French_Haiti ||
+		l == French_Luxembourg ||
+		l == French_Mali ||
+		l == French_Monaco ||
+		l == French_Morocco ||
+		l == French_Reunion ||
+		l == French_Senegal ||
+		l == French_Switzerland) {
+		return "french";
 	}
-	else if (l == 2070) {
-		return "portuguese";
+
+	if (
+		l == German ||
+		l == German_Austria ||
+		l == German_Germany ||
+		l == German_Liechtenstein ||
+		l == German_Luxembourg ||
+		l == German_Switzerland) {
+		return "german";
 	}
-	else if (l == 1049) {
-		return "russian";
+
+	if (
+		l == Greek ||
+		l == Greek_Greece) {
+		return "greek";
 	}
-	else if (l == 1042) {
+
+	if (
+		l == Hungarian ||
+		l == Hungarian_Hungary) {
+		return "hungarian";
+	}
+
+	if (
+		l == Indonesian ||
+		l == Indonesian_Indonesia) {
+		return "indonesian";
+	}
+
+	if (
+		l == Italian ||
+		l == Italian_Italy ||
+		l == Italian_Switzerland) {
+		return "italian";
+	}
+
+	if (
+		l == Japanese ||
+		l == Japanese_Japan) {
+		return "japanese";
+	}
+
+	if (
+		l == Korean ||
+		l == Korean_Korea) {
 		return "korean";
 	}
-	else {
-		return "english";
+
+	if (
+		l == Norwegian ||
+		l == Norwegian_Bokmal ||
+		l == Norwegian_Nynorsk ||
+		l == Norwegian__Bokmal_Norway ||
+		l == Norwegian__Nynorsk_Norway) {
+		return "norwegian";
 	}
+
+	if (
+		l == Polish ||
+		l == Polish_Poland) {
+		return "polish";
+	}
+
+	if (
+		l == Portuguese ||
+		l == Portuguese_Portugal) {
+		return "portuguese";
+	}
+
+	if (
+		l == Portuguese_Brazil) {
+		return "brazilian";
+	}
+
+	if (
+		l == Romanian ||
+		l == Romanian_Moldova ||
+		l == Romanian_Romania) {
+		return "romanian";
+	}
+
+	if (
+		l == Russian ||
+		l == Russian_Moldova ||
+		l == Russian_Russia) {
+		return "russian";
+	}
+
+	if (
+		l == Spanish ||
+		l == Spanish_Spain) {
+		return "spanish";
+	}
+
+	if (
+		l == Spanish_Argentina ||
+		l == Spanish_Venezuela ||
+		l == Spanish_Bolivia ||
+		l == Spanish_Chile ||
+		l == Spanish_Colombia ||
+		l == Spanish_Costa_Rica ||
+		l == Spanish_Cuba ||
+		l == Spanish_Dominican_Republic ||
+		l == Spanish_Ecuador ||
+		l == Spanish_El_Salvador ||
+		l == Spanish_Guatemala ||
+		l == Spanish_Honduras ||
+		l == Spanish_Latin_America ||
+		l == Spanish_Mexico ||
+		l == Spanish_Nicaragua ||
+		l == Spanish_Panama ||
+		l == Spanish_Paraguay ||
+		l == Spanish_Peru ||
+		l == Spanish_Puerto_Rico ||
+		l == Spanish_United_States ||
+		l == Spanish_Uruguay) {
+		return "latam";
+	}
+
+	if (
+		l == Swedish ||
+		l == Swedish_Finland ||
+		l == Swedish_Sweden) {
+		return "swedish";
+	}
+
+	if (
+		l == Thai ||
+		l == Thai_Thailand) {
+		return "thai";
+	}
+
+	if (
+		l == Turkish ||
+		l == Turkish_Turkey) {
+		return "turkish";
+	}
+
+	if (
+		l == Ukrainian ||
+		l == Ukrainian_Ukraine) {
+		return "ukrainian";
+	}
+
+	if (
+		l == Vietnamese ||
+		l == Vietnamese_Vietnam) {
+		return "vietnamese";
+	}
+
+	return "english";
 }
 #endif
 
