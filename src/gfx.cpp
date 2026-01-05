@@ -396,6 +396,20 @@ static Front_Face gl_front_face_to_shim(GLenum face)
 	return FACE_CW;
 }
 
+static Faces gl_faces_to_shim(GLenum face)
+{
+	switch (face) {
+		case GL_FRONT:
+			return FRONT_FACE;
+		case GL_BACK:
+			return BACK_FACE;
+		case GL_FRONT_AND_BACK:
+			return NO_FACE;
+	}
+
+	return NO_FACE;
+}
+
 static void set_default_shader()
 {
 	shim::current_shader = shim::default_shader;
@@ -2305,7 +2319,7 @@ void set_depth_mode(Compare_Func func)
 Compare_Func get_depth_mode()
 {
 	GLint m;
-	glGetIntegerv(GL_DEPTH_FUNC, &m);
+	glGetIntegerv_ptr(GL_DEPTH_FUNC, &m);
 	PRINT_GL_ERROR("glGetIntegerv\n");
 
 	return gl_compare_to_shim(m);
@@ -2456,6 +2470,14 @@ void set_front_face(Front_Face face)
 	PRINT_GL_ERROR("glFrontFace\n");
 }
 
+Front_Face get_front_face()
+{
+	GLint f;
+	glGetIntegerv_ptr(GL_FRONT_FACE, &f);
+	PRINT_GL_ERROR("glGetIntegerv");
+	return gl_front_face_to_shim(f);
+}
+
 void set_cull_mode(Faces cull)
 {
 	if (cull == NO_FACE) {
@@ -2475,6 +2497,14 @@ void set_cull_mode(Faces cull)
 			PRINT_GL_ERROR("glCullFace\n");
 		}
 	}
+}
+
+Faces get_cull_mode()
+{
+	GLint m;
+	glGetIntegerv_ptr(GL_CULL_FACE_MODE, &m);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	return gl_faces_to_shim(m);
 }
 
 void enable_blending(bool onoff)
@@ -2503,9 +2533,9 @@ void set_blend_mode(Blend_Mode source, Blend_Mode dest)
 void get_blend_mode(Blend_Mode &src, Blend_Mode &dst)
 {
 	GLint s, d;
-	glGetIntegerv(GL_BLEND_SRC, &s);
+	glGetIntegerv_ptr(GL_BLEND_SRC, &s);
 	PRINT_GL_ERROR("glGetIntegerv\n");
-	glGetIntegerv(GL_BLEND_DST, &d);
+	glGetIntegerv_ptr(GL_BLEND_DST, &d);
 	PRINT_GL_ERROR("glGetIntegerv\n");
 
 	src = gl_blend_to_shim(s);

@@ -89,6 +89,8 @@ void SHIM5_EXPORT get_stencil_mode_backfaces(Compare_Func &func, Stencil_Op &fai
 
 void SHIM5_EXPORT set_front_face(Front_Face face);
 void SHIM5_EXPORT set_cull_mode(Faces cull);
+Front_Face SHIM5_EXPORT get_front_face();
+Faces SHIM5_EXPORT get_cull_mode();
 
 void SHIM5_EXPORT enable_blending(bool onoff);
 void SHIM5_EXPORT set_blend_mode(Blend_Mode source, Blend_Mode dest);
