@@ -136,6 +136,8 @@
 #define glDrawArrays_ptr glDrawArrays
 #define glReadPixels_ptr glReadPixels
 #define glGetIntegerv_ptr glGetIntegerv
+#define glGetBooleanv_ptr glGetBooleanv
+#define glIsEnabled_ptr glIsEnabled
 #define glGenBuffers_ptr glGenBuffers
 #define glBindBuffer_ptr glBindBuffer
 #define glBufferData_ptr glBufferData
@@ -258,6 +260,8 @@ typedef void (APIENTRY * glDrawArrays_func)(GLenum, GLint, GLsizei);
 typedef GLenum (APIENTRY * glGetError_func)(void);
 typedef void (APIENTRY * glReadPixels_func)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *);
 typedef void (APIENTRY * glGetIntegerv_func)(GLenum, GLint *);
+typedef void (APIENTRY * glGetBooleanv_func)(GLenum, GLboolean *);
+typedef GLboolean (APIENTRY * glIsEnabled_func)(GLenum);
 typedef void (APIENTRY * glGenBuffers_func)(GLsizei, GLuint *);
 typedef void (APIENTRY * glBindBuffer_func)(GLenum, GLuint);
 typedef void (APIENTRY * glBufferData_func)(GLenum, GLsizei *, const void *, GLenum);
@@ -340,6 +344,8 @@ extern SHIM5_EXPORT glGetError_func glGetError_ptr;
 extern SHIM5_EXPORT glDrawArrays_func glDrawArrays_ptr;
 extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
 extern SHIM5_EXPORT glGetIntegerv_func glGetIntegerv_ptr;
+extern SHIM5_EXPORT glGetBooleanv_func glGetBooleanv_ptr;
+extern SHIM5_EXPORT glIsEnabled_func glIsEnabled_ptr;
 extern SHIM5_EXPORT glGenBuffers_func glGenBuffers_ptr;
 extern SHIM5_EXPORT glBindBuffer_func glBindBuffer_ptr;
 extern SHIM5_EXPORT glBufferData_func glBufferData_ptr;

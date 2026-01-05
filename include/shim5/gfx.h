@@ -73,10 +73,14 @@ void SHIM5_EXPORT clear_buffers();
 
 void SHIM5_EXPORT enable_depth_test(bool onoff);
 void SHIM5_EXPORT enable_depth_write(bool onoff);
+bool SHIM5_EXPORT is_depth_test_enabled();
+bool SHIM5_EXPORT is_depth_write_enabled();
 void SHIM5_EXPORT set_depth_mode(Compare_Func func);
 
 void SHIM5_EXPORT enable_stencil(bool onoff);
 void SHIM5_EXPORT enable_two_sided_stencil(bool onoff);
+bool SHIM5_EXPORT is_stencil_enabled();
+bool SHIM5_EXPORT is_two_sided_stencil_enabled();
 void SHIM5_EXPORT set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask);
 void SHIM5_EXPORT set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask);
 
@@ -88,6 +92,7 @@ void SHIM5_EXPORT set_blend_mode(Blend_Mode source, Blend_Mode dest);
 bool SHIM5_EXPORT is_blending_enabled();
 
 void SHIM5_EXPORT enable_colour_write(bool onoff);
+bool SHIM5_EXPORT is_colour_write_enabled();
 
 void SHIM5_EXPORT set_default_projection(util::Size<int> screen_size, util::Point<int> screen_offset, float scale);
 void SHIM5_EXPORT get_matrices(glm::mat4 &modelview, glm::mat4 &proj);

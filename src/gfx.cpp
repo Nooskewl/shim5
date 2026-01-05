@@ -110,6 +110,8 @@ glGetError_func glGetError_ptr;
 glDrawArrays_func glDrawArrays_ptr;
 glReadPixels_func glReadPixels_ptr;
 glGetIntegerv_func glGetIntegerv_ptr;
+glGetBooleanv_func glGetBooleanv_ptr;
+glIsEnabled_func glIsEnabled_ptr;
 glGenBuffers_func glGenBuffers_ptr;
 glBindBuffer_func glBindBuffer_ptr;
 glBufferData_func glBufferData_ptr;
@@ -547,6 +549,8 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
 	glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
 	glGetIntegerv_ptr = (glGetIntegerv_func)SDL_GL_GetProcAddress("glGetIntegerv");
+	glGetBooleanv_ptr = (glGetBooleanv_func)SDL_GL_GetProcAddress("glGetBooleanv");
+	glIsEnabled_ptr = (glIsEnabled_func)SDL_GL_GetProcAddress("glIsEnabled");
 	glGenBuffers_ptr = (glGenBuffers_func)SDL_GL_GetProcAddress("glGenBuffers");
 	glBindBuffer_ptr = (glBindBuffer_func)SDL_GL_GetProcAddress("glBindBuffer");
 	glBufferData_ptr = (glBufferData_func)SDL_GL_GetProcAddress("glBufferData");
@@ -630,6 +634,8 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
 	if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
 	if (glGetIntegerv_ptr == 0) { util::debugmsg("glGetIntegerv_ptr=%p\n", glGetIntegerv_ptr); }
+	if (glGetBooleanv_ptr == 0) { util::debugmsg("glGetBooleanv_ptr=%p\n", glGetBooleanv_ptr); }
+	if (glIsEnabled_ptr == 0) { util::debugmsg("glIsEnabled_ptr=%p\n", glIsEnabled_ptr); }
 	if (glGenBuffers_ptr == 0) { util::debugmsg("glGenBuffers_ptr=%p\n", glGenBuffers_ptr); }
 	if (glBindBuffer_ptr == 0) { util::debugmsg("glBindBuffer_ptr=%p\n", glBindBuffer_ptr); }
 	if (glBufferData_ptr == 0) { util::debugmsg("glBufferData_ptr=%p\n", glBufferData_ptr); }
@@ -2142,6 +2148,11 @@ void enable_depth_test(bool onoff)
 	}
 }
 
+bool is_depth_test_enabled()
+{
+	return glIsEnabled_ptr(GL_DEPTH_TEST);
+}
+
 void enable_depth_write(bool onoff)
 {
 	if (onoff) {
@@ -2154,6 +2165,14 @@ void enable_depth_write(bool onoff)
 	}
 
 	depth_write_enabled = onoff;
+}
+
+bool is_depth_write_enabled()
+{
+	GLboolean b;
+	glGetBooleanv_ptr(GL_DEPTH_WRITEMASK, &b);
+	PRINT_GL_ERROR("glGetBooleanv\n");
+	return b;
 }
 
 void set_depth_mode(Compare_Func func)
@@ -2174,11 +2193,21 @@ void enable_stencil(bool onoff)
 	}
 }
 
+bool is_stencil_enabled()
+{
+	return glIsEnabled_ptr(GL_STENCIL_TEST);
+}
+
 void enable_two_sided_stencil(bool onoff)
 {
 	two_sided_stencil = onoff;
 
 	// nothing?
+}
+
+bool is_two_sided_stencil_enabled()
+{
+	return two_sided_stencil;
 }
 
 void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
@@ -2306,6 +2335,14 @@ void enable_colour_write(bool onoff)
 		glColorMask_ptr(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		PRINT_GL_ERROR("glColorMask\n");
 	}
+}
+
+bool is_colour_write_enabled()
+{
+	GLboolean b[4];
+	glGetBooleanv_ptr(GL_COLOR_WRITEMASK, b);
+	PRINT_GL_ERROR("glGetBooleanv\n");
+	return b[0];
 }
 
 void set_min_aspect_ratio(float min)
