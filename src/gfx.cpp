@@ -2400,6 +2400,56 @@ void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op z
 #endif
 }
 
+void get_stencil_mode(Compare_Func &func, Stencil_Op &fail, Stencil_Op &zfail, Stencil_Op &pass, int &reference, int &mask)
+{
+	GLint _func, _fail, _zfail, _pass, _ref, _mask;
+	
+	glGetIntegerv_ptr(GL_STENCIL_FUNC, &_func);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_FAIL, &_fail);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_PASS_DEPTH_FAIL, &_zfail);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_PASS_DEPTH_PASS, &_pass);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_REF, &_ref);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_VALUE_MASK, &_mask);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+
+	func = gl_compare_to_shim(_func);
+	fail = gl_stencilop_to_shim(_fail);
+	zfail = gl_stencilop_to_shim(_zfail);
+	pass = gl_stencilop_to_shim(_pass);
+	reference = _ref;
+	mask = _mask;
+}
+
+void get_stencil_mode_backfaces(Compare_Func &func, Stencil_Op &fail, Stencil_Op &zfail, Stencil_Op &pass, int &reference, int &mask)
+{
+	GLint _func, _fail, _zfail, _pass, _ref, _mask;
+	
+	glGetIntegerv_ptr(GL_STENCIL_BACK_FUNC, &_func);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_BACK_FAIL, &_fail);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_BACK_PASS_DEPTH_FAIL, &_zfail);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_BACK_PASS_DEPTH_PASS, &_pass);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_BACK_REF, &_ref);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv_ptr(GL_STENCIL_BACK_VALUE_MASK, &_mask);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+
+	func = gl_compare_to_shim(_func);
+	fail = gl_stencilop_to_shim(_fail);
+	zfail = gl_stencilop_to_shim(_zfail);
+	pass = gl_stencilop_to_shim(_pass);
+	reference = _ref;
+	mask = _mask;
+}
+
 void set_front_face(Front_Face face)
 {
 	glFrontFace_ptr(shim_front_face_to_gl(face));

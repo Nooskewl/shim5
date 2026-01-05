@@ -156,6 +156,7 @@
 #else
 #ifdef _WIN32
 #include <windows.h>
+/*
 #define GL_FRAMEBUFFER                    0x8D40
 #define GL_RENDERBUFFER                   0x8D41
 #define GL_INCR_WRAP                      0x8507
@@ -174,9 +175,10 @@
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_ARRAY_BUFFER_BINDING           0x8894
 #define GL_STATIC_DRAW                    0x88E4
+*/
 #endif
 #include <GL/gl.h>
-//#include <GL/glext.h>
+#include <GL/glext.h>
 #endif
 // OpenGL extensions (ES already has these)
 #ifdef SDL_PLATFORM_APPLE

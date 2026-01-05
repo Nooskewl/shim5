@@ -84,6 +84,8 @@ bool SHIM5_EXPORT is_stencil_enabled();
 bool SHIM5_EXPORT is_two_sided_stencil_enabled();
 void SHIM5_EXPORT set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask);
 void SHIM5_EXPORT set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask);
+void SHIM5_EXPORT get_stencil_mode(Compare_Func &func, Stencil_Op &fail, Stencil_Op &zfail, Stencil_Op &pass, int &reference, int &mask);
+void SHIM5_EXPORT get_stencil_mode_backfaces(Compare_Func &func, Stencil_Op &fail, Stencil_Op &zfail, Stencil_Op &pass, int &reference, int &mask);
 
 void SHIM5_EXPORT set_front_face(Front_Face face);
 void SHIM5_EXPORT set_cull_mode(Faces cull);
