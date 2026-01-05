@@ -2093,6 +2093,22 @@ void unset_scissor()
 	}
 }
 
+void get_scissor(int &x, int &y, int &w, int &h)
+{
+	if (user_scissor_set) {
+		x = user_scissor.x;
+		y = user_scissor.y;
+		w = user_scissor_size.w;
+		h = user_scissor_size.h;
+	}
+	else {
+		x = 0;
+		y = 0;
+		w = shim::screen_size.w;
+		h = shim::screen_size.h;
+	}
+}
+
 void set_viewport(int x, int y, int w, int h)
 {
 	user_viewport = util::Point<int>(x, y);
@@ -2134,6 +2150,22 @@ void unset_viewport()
 {
 	user_viewport_set = false;
 	_set_viewport();
+}
+
+void get_viewport(int &x, int &y, int &w, int &h)
+{
+	if (user_viewport_set) {
+		x = user_viewport.x;
+		y = user_viewport.y;
+		w = user_viewport_size.w;
+		h = user_viewport_size.h;
+	}
+	else {
+		x = 0;
+		y = 0;
+		w = shim::screen_size.w;
+		h = shim::screen_size.h;
+	}
 }
 
 void enable_depth_test(bool onoff)

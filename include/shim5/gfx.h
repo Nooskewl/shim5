@@ -101,9 +101,11 @@ void SHIM5_EXPORT update_projection();
 
 void SHIM5_EXPORT set_scissor(int x, int y, int w, int h);
 void SHIM5_EXPORT unset_scissor();
+void SHIM5_EXPORT get_scissor(int &x, int &y, int &w, int &h);
 
 void SHIM5_EXPORT set_viewport(int x, int y, int w, int h);
 void SHIM5_EXPORT unset_viewport();
+void SHIM5_EXPORT get_viewport(int &x, int &y, int &w, int &h);
 
 Image SHIM5_EXPORT *get_target_image();
 void SHIM5_EXPORT set_target_image(Image *image);
