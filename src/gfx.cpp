@@ -1907,15 +1907,18 @@ void clear(SDL_Color colour)
 
 	if (internal::gfx_context.target_image == 0) {
 		if (black_bars_callback != nullptr && internal::gfx_context.inited == true) {
-			glDisable_ptr(GL_SCISSOR_TEST);
-			PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
-
 			GLint vp[4];
 			glGetIntegerv_ptr(GL_VIEWPORT, vp);
 			PRINT_GL_ERROR("glGetIntegerv\n");
 
 			glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
 			PRINT_GL_ERROR("glViewport\n");
+
+			GLboolean enabled = glIsEnabled_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glIsEnabled(GL_SCISSOR_TEST)\n");
+
+			glDisable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
 
 			glm::mat4 mv_bak, proj_bak;
 			gfx::get_matrices(mv_bak, proj_bak);
@@ -1938,10 +1941,12 @@ void clear(SDL_Color colour)
 			gfx::set_matrices(mv_bak, proj_bak);
 			gfx::update_projection();
 
-			glEnable_ptr(GL_SCISSOR_TEST);
-			PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
-			
 			glViewport_ptr(vp[0], vp[1], vp[2], vp[3]);
+
+			if (enabled) {
+				glEnable_ptr(GL_SCISSOR_TEST);
+				PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
+			}
 		}
 	}
 }
