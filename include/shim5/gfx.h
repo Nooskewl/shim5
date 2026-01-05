@@ -76,6 +76,7 @@ void SHIM5_EXPORT enable_depth_write(bool onoff);
 bool SHIM5_EXPORT is_depth_test_enabled();
 bool SHIM5_EXPORT is_depth_write_enabled();
 void SHIM5_EXPORT set_depth_mode(Compare_Func func);
+Compare_Func SHIM5_EXPORT get_depth_mode();
 
 void SHIM5_EXPORT enable_stencil(bool onoff);
 void SHIM5_EXPORT enable_two_sided_stencil(bool onoff);

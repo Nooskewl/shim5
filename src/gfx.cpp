@@ -2302,6 +2302,15 @@ void set_depth_mode(Compare_Func func)
 	PRINT_GL_ERROR("glDepthFunc\n");
 }
 
+Compare_Func get_depth_mode()
+{
+	GLint m;
+	glGetIntegerv(GL_DEPTH_FUNC, &m);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+
+	return gl_compare_to_shim(m);
+}
+
 void enable_stencil(bool onoff)
 {
 	if (onoff) {
