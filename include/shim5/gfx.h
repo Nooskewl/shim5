@@ -90,6 +90,7 @@ void SHIM5_EXPORT set_cull_mode(Faces cull);
 void SHIM5_EXPORT enable_blending(bool onoff);
 void SHIM5_EXPORT set_blend_mode(Blend_Mode source, Blend_Mode dest);
 bool SHIM5_EXPORT is_blending_enabled();
+void SHIM5_EXPORT get_blend_mode(Blend_Mode &src, Blend_Mode &dst);
 
 void SHIM5_EXPORT enable_colour_write(bool onoff);
 bool SHIM5_EXPORT is_colour_write_enabled();

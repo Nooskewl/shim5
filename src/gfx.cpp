@@ -2441,6 +2441,18 @@ void set_blend_mode(Blend_Mode source, Blend_Mode dest)
 	PRINT_GL_ERROR("glBlendFunc\n");
 }
 
+void get_blend_mode(Blend_Mode &src, Blend_Mode &dst)
+{
+	GLint s, d;
+	glGetIntegerv(GL_BLEND_SRC, &s);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+	glGetIntegerv(GL_BLEND_DST, &d);
+	PRINT_GL_ERROR("glGetIntegerv\n");
+
+	src = gl_blend_to_shim(s);
+	dst = gl_blend_to_shim(d);
+}
+
 bool is_blending_enabled()
 {
 	return blending_enabled;
