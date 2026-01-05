@@ -309,44 +309,104 @@ std::string get_system_language_linux()
 		str = nl_langinfo(_NL_IDENTIFICATION_LANGUAGE);
 	}
 
-	std::string l_str = str.substr(0, 5);
+	std::string o_str = str;
 	str = str.substr(0, 2);
 
-	// convert to steam style since that was the first one we did
-	if (str == "de") {
-		str = "german";
+	o_str = util::lowercase(o_str);
+	str = util::lowercase(str);
+	
+	if (str == "ar") {
+		str = "arabic";
 	}
-	else if (str == "fr") {
-		str = "french";
+	else if (str == "bg") {
+		str = "bulgarian";
+	}
+	else if (str == "zh") {
+		if (o_str.substr(0, 7) == "zh_hans") {
+			str = "schinese";
+		}
+		else {
+			str = "tchinese";
+		}
+	}
+	else if (str == "cs") {
+		str = "czech";
+	}
+	else if (str == "da") {
+		str = "danish";
 	}
 	else if (str == "nl") {
 		str = "dutch";
 	}
+	else if (str == "fi") {
+		str = "finnish";
+	}
+	else if (str == "fr") {
+		str = "french";
+	}
+	else if (str == "de") {
+		str = "german";
+	}
 	else if (str == "el") {
 		str = "greek";
 	}
+	else if (str == "hu") {
+		str = "hungarian";
+	}
+	else if (str == "id") {
+		str = "indonesian";
+	}
 	else if (str == "it") {
 		str = "italian";
+	}
+	else if (str == "ja") {
+		str = "japanese";
+	}
+	else if (str == "ko") {
+		str = "korean";
+	}
+	else if (str == "no") {
+		str = "norwegian";
 	}
 	else if (str == "pl") {
 		str = "polish";
 	}
 	else if (str == "pt") {
-		if (l_str == "pt_BR") {
+		if (o_str.substr(0, 5) == "pt_br") {
 			str = "brazilian";
 		}
 		else {
 			str = "portuguese";
 		}
 	}
+	else if (str == "ro") {
+		str = "romanian";
+	}
 	else if (str == "ru") {
 		str = "russian";
 	}
 	else if (str == "es") {
-		str = "spanish";
+		if (o_str.substr(0, 5) == "es_es") {
+			str = "spanish";
+		}
+		else {
+			str = "latam";
+		}
 	}
-	else if (str == "ko") {
-		str = "korean";
+	else if (str == "sv") {
+		str = "swedish";
+	}
+	else if (str == "th") {
+		str = "thai";
+	}
+	else if (str == "tr") {
+		str = "turkish";
+	}
+	else if (str == "uk") {
+		str = "ukrainian";
+	}
+	else if (str == "vi") {
+		str = "vietnamese";
 	}
 	else {
 		str = "english";
