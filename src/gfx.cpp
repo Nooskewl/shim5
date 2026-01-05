@@ -307,6 +307,95 @@ static int shim_front_face_to_gl(Front_Face face)
 	return -1;
 }
 
+static Compare_Func gl_compare_to_shim(GLenum func)
+{
+	switch (func) {
+		case GL_NEVER:
+			return COMPARE_NEVER;
+		case GL_LESS:
+			return COMPARE_LESS;
+		case GL_EQUAL:
+			return COMPARE_EQUAL;
+		case GL_LEQUAL:
+			return COMPARE_LESSEQUAL;
+		case GL_GREATER:
+			return COMPARE_GREATER;
+		case GL_NOTEQUAL:
+			return COMPARE_NOTEQUAL;
+		case GL_GEQUAL:
+			return COMPARE_GREATEREQUAL;
+		case GL_ALWAYS:
+			return COMPARE_ALWAYS;
+	}
+
+	return COMPARE_NEVER;
+}
+
+static Stencil_Op gl_stencilop_to_shim(GLenum op)
+{
+	switch (op) {
+		case GL_KEEP:
+			return STENCILOP_KEEP;
+		case GL_ZERO:
+			return STENCILOP_ZERO;
+		case GL_REPLACE:
+			return STENCILOP_REPLACE;
+		case GL_INCR:
+			return STENCILOP_INCRSAT;
+		case GL_DECR:
+			return STENCILOP_DECRSAT;
+		case GL_INVERT:
+			return STENCILOP_INVERT;
+#if !defined ANDROID && !defined __EMSCRIPTEN__
+		case GL_INCR_WRAP:
+			return STENCILOP_INCR;
+		case GL_DECR_WRAP:
+			return STENCILOP_DECR;
+#else
+		default:
+			return STENCILOP_KEEP;
+#endif
+	}
+
+	return STENCILOP_KEEP;
+}
+
+static Blend_Mode gl_blend_to_shim(GLenum m)
+{
+	if (m == GL_ZERO) {
+		return BLEND_ZERO;
+	}
+	else if (m == GL_ONE) {
+		return BLEND_ONE;
+	}
+	else if (m == GL_SRC_COLOR) {
+		return BLEND_SRCCOLOR;
+	}
+	else if (m == GL_ONE_MINUS_SRC_COLOR) {
+		return BLEND_INVSRCCOLOR;
+	}
+	else if (m == GL_SRC_ALPHA) {
+		return BLEND_SRCALPHA;
+	}
+	else if (m == GL_ONE_MINUS_SRC_ALPHA) {
+		return BLEND_INVSRCALPHA;
+	}
+
+	return BLEND_ONE;
+}
+
+static Front_Face gl_front_face_to_shim(GLenum face)
+{
+	switch (face) {
+		case GL_CW:
+			return FACE_CW;
+		case GL_CCW:
+			return FACE_CCW;
+	}
+
+	return FACE_CW;
+}
+
 static void set_default_shader()
 {
 	shim::current_shader = shim::default_shader;
