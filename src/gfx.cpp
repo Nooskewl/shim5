@@ -1791,9 +1791,6 @@ void flip()
 
 void clear(SDL_Color colour)
 {
-	glDisable_ptr(GL_SCISSOR_TEST);
-	PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
-
 	glClearColor_ptr(colour.r/255.0f, colour.g/255.0f, colour.b/255.0f, colour.a/255.0f);
 	PRINT_GL_ERROR("glClearColor\n");
 	glClear_ptr(GL_COLOR_BUFFER_BIT);
@@ -1801,10 +1798,8 @@ void clear(SDL_Color colour)
 
 	if (internal::gfx_context.target_image == 0) {
 		if (black_bars_callback != nullptr && internal::gfx_context.inited == true) {
-			glm::mat4 mv_bak, proj_bak;
-			gfx::get_matrices(mv_bak, proj_bak);
-			gfx::set_default_projection(shim::real_screen_size, util::Point<int>(0, 0), 1.0f);
-			gfx::update_projection();
+			glDisable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
 
 			GLint vp[4];
 			glGetIntegerv_ptr(GL_VIEWPORT, vp);
@@ -1812,6 +1807,11 @@ void clear(SDL_Color colour)
 
 			glViewport_ptr(0, 0, shim::real_screen_size.w, shim::real_screen_size.h);
 			PRINT_GL_ERROR("glViewport\n");
+
+			glm::mat4 mv_bak, proj_bak;
+			gfx::get_matrices(mv_bak, proj_bak);
+			gfx::set_default_projection(shim::real_screen_size, util::Point<int>(0, 0), 1.0f);
+			gfx::update_projection();
 
 			if (shim::screen_offset.x > 0) {
 				int w = shim::screen_offset.x;
@@ -1826,28 +1826,19 @@ void clear(SDL_Color colour)
 				black_bars_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
 			}
 			
-			glViewport_ptr(vp[0], vp[1], vp[2], vp[3]);
-
 			gfx::set_matrices(mv_bak, proj_bak);
 			gfx::update_projection();
-		}
 
-		glEnable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
-	}
-	else if (user_scissor_set) {
-		glEnable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
+			glEnable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
+			
+			glViewport_ptr(vp[0], vp[1], vp[2], vp[3]);
+		}
 	}
 }
 
 void clear_depth_buffer(float value)
 {
-	if (internal::gfx_context.target_image == 0) {
-		glDisable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glDisable\n");
-	}
-
 #if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 	if (glClearDepthf_ptr == 0) {
 		glClearDepth_ptr(value);
@@ -1860,20 +1851,10 @@ void clear_depth_buffer(float value)
 	PRINT_GL_ERROR("glClearDepthf\n");
 	glClear_ptr(GL_DEPTH_BUFFER_BIT);
 	PRINT_GL_ERROR("glClear_ptr(GL_DEPTH_BUFFER_BIT)\n");
-	
-	if (internal::gfx_context.target_image == 0) {
-		glEnable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glEnable\n");
-	}
 }
 
 void clear_stencil_buffer(int value)
 {
-	if (internal::gfx_context.target_image == 0) {
-		glDisable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glDisable\n");
-	}
-
 	if (::create_stencil_buffer == false) {
 		return;
 	}
@@ -1882,11 +1863,6 @@ void clear_stencil_buffer(int value)
 	PRINT_GL_ERROR("glClearStencil\n");
 	glClear_ptr(GL_STENCIL_BUFFER_BIT);
 	PRINT_GL_ERROR("glClear_ptr(GL_STENCIL_BUFFER_BIT)\n");
-	
-	if (internal::gfx_context.target_image == 0) {
-		glEnable_ptr(GL_SCISSOR_TEST);
-		PRINT_GL_ERROR("glEnable\n");
-	}
 }
 
 void clear_buffers()
