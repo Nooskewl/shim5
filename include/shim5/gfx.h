@@ -170,10 +170,10 @@ void SHIM5_EXPORT screen_shake(float amount, Uint32 length);
 void SHIM5_EXPORT apply_screen_shake();
 
 enum Letterbox_Type {
-	BAR_TOP,
-	BAR_BOTTOM,
-	BAR_LEFT,
-	BAR_RIGHT
+	LETTERBOX_TOP,
+	LETTERBOX_BOTTOM,
+	LETTERBOX_LEFT,
+	LETTERBOX_RIGHT
 };
 
 typedef void (*_letterbox_callback)(Letterbox_Type type, int x, int y, int w, int h);

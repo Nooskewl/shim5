@@ -1932,14 +1932,14 @@ void clear(SDL_Color colour)
 			if (shim::screen_offset.x > 0) {
 				int w = shim::screen_offset.x;
 				int h = shim::real_screen_size.h;
-				letterbox_callback(BAR_LEFT, 0, 0, w, h);
-				letterbox_callback(BAR_RIGHT, shim::real_screen_size.w-w, 0, w, h);
+				letterbox_callback(LETTERBOX_LEFT, 0, 0, w, h);
+				letterbox_callback(LETTERBOX_RIGHT, shim::real_screen_size.w-w, 0, w, h);
 			}
 			else if (shim::screen_offset.y > 0) {
 				int w = shim::real_screen_size.w;
 				int h = shim::screen_offset.y;
-				letterbox_callback(BAR_TOP, 0, 0, w, h);
-				letterbox_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
+				letterbox_callback(LETTERBOX_TOP, 0, 0, w, h);
+				letterbox_callback(LETTERBOX_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
 			}
 			
 			shim::current_shader = old;
