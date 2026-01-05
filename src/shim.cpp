@@ -79,7 +79,7 @@ bool create_depth_buffer;
 bool create_stencil_buffer;
 util::Size<int> depth_buffer_size;
 util::Point<int> screen_offset;
-float black_bar_percent;
+float letterbox_percent;
 float z_add;
 //void (*user_render)();
 int refresh_rate;
@@ -307,7 +307,7 @@ bool static_start(int sdl_init_flags)
 	pushed_events.clear();
 	waiting_for_fullscreen_change = false;
 	waiting_for_resize = false;
-	black_bar_percent = 0.0f;
+	letterbox_percent = 0.0f;
 	z_add = 0.0f;
 	//user_render = 0;
 	refresh_rate = 0;

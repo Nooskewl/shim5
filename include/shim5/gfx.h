@@ -169,15 +169,15 @@ gfx::Image SHIM5_EXPORT *gen_plasma(int seed, float alpha1, float alpha2, SDL_Co
 void SHIM5_EXPORT screen_shake(float amount, Uint32 length);
 void SHIM5_EXPORT apply_screen_shake();
 
-enum Black_Bar_Type {
+enum Letterbox_Type {
 	BAR_TOP,
 	BAR_BOTTOM,
 	BAR_LEFT,
 	BAR_RIGHT
 };
 
-typedef void (*_black_bars_callback)(Black_Bar_Type type, int x, int y, int w, int h);
-void SHIM5_EXPORT register_black_bars_callback(_black_bars_callback);
+typedef void (*_letterbox_callback)(Letterbox_Type type, int x, int y, int w, int h);
+void SHIM5_EXPORT register_letterbox_callback(_letterbox_callback);
 
 #if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32 || defined __EMSCRIPTEN__)
 void SHIM5_EXPORT create_mouse_cursors();

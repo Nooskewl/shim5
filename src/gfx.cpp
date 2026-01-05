@@ -172,7 +172,7 @@ static glm::mat4 screen_shake_mv;
 static glm::mat4 screen_shake_p;
 static glm::mat4 default_modelview;
 static glm::mat4 default_proj;
-static gfx::_black_bars_callback black_bars_callback;
+static gfx::_letterbox_callback letterbox_callback;
 
 #if defined _WIN32
 static HICON icon_small, icon_big;
@@ -1404,9 +1404,9 @@ void get_lost_device_callbacks(gfx::_lost_device_callback_pointer lost, gfx::_lo
 	*found = found_device_callback;
 }
 
-void register_black_bars_callback(gfx::_black_bars_callback callback)
+void register_letterbox_callback(gfx::_letterbox_callback callback)
 {
-	black_bars_callback = callback;
+	letterbox_callback = callback;
 }
 
 Image *get_target_image()
@@ -1503,7 +1503,7 @@ void set_screen_size(util::Size<int> size)
 		shim::scale = 1.0f;
 	}
 	else {
-		float inv = 1.0f - (shim::black_bar_percent * 2.0f);
+		float inv = 1.0f - (shim::letterbox_percent * 2.0f);
 
 		size = {int(inv * size.w), int(inv * size.h)};
 
@@ -1906,7 +1906,7 @@ void clear(SDL_Color colour)
 	PRINT_GL_ERROR("glClear_ptr(GL_COLOR_BUFFER_BIT)\n");
 
 	if (internal::gfx_context.target_image == 0) {
-		if (black_bars_callback != nullptr && internal::gfx_context.inited == true) {
+		if (letterbox_callback != nullptr && internal::gfx_context.inited == true) {
 			GLint vp[4];
 			glGetIntegerv_ptr(GL_VIEWPORT, vp);
 			PRINT_GL_ERROR("glGetIntegerv\n");
@@ -1928,14 +1928,14 @@ void clear(SDL_Color colour)
 			if (shim::screen_offset.x > 0) {
 				int w = shim::screen_offset.x;
 				int h = shim::real_screen_size.h;
-				black_bars_callback(BAR_LEFT, 0, 0, w, h);
-				black_bars_callback(BAR_RIGHT, shim::real_screen_size.w-w, 0, w, h);
+				letterbox_callback(BAR_LEFT, 0, 0, w, h);
+				letterbox_callback(BAR_RIGHT, shim::real_screen_size.w-w, 0, w, h);
 			}
 			else if (shim::screen_offset.y > 0) {
 				int w = shim::real_screen_size.w;
 				int h = shim::screen_offset.y;
-				black_bars_callback(BAR_TOP, 0, 0, w, h);
-				black_bars_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
+				letterbox_callback(BAR_TOP, 0, 0, w, h);
+				letterbox_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
 			}
 			
 			gfx::set_matrices(mv_bak, proj_bak);

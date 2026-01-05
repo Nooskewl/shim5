@@ -91,7 +91,7 @@ extern SHIM5_EXPORT bool create_depth_buffer;
 extern SHIM5_EXPORT bool create_stencil_buffer;
 extern SHIM5_EXPORT util::Size<int> depth_buffer_size;
 extern SHIM5_EXPORT util::Point<int> screen_offset; // begin of where game is drawn after black bars
-extern SHIM5_EXPORT float black_bar_percent;
+extern SHIM5_EXPORT float letterbox_percent;
 extern SHIM5_EXPORT float z_add; // added to all z values for drawing images/primitives
 //extern void SHIM5_EXPORT (*user_render)();
 extern SHIM5_EXPORT int refresh_rate;
