@@ -1920,6 +1920,10 @@ void clear(SDL_Color colour)
 			glDisable_ptr(GL_SCISSOR_TEST);
 			PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
 
+			gfx::Shader *old = shim::current_shader;
+			shim::current_shader = shim::default_shader;
+			shim::current_shader->use();
+
 			glm::mat4 mv_bak, proj_bak;
 			gfx::get_matrices(mv_bak, proj_bak);
 			gfx::set_default_projection(shim::real_screen_size, util::Point<int>(0, 0), 1.0f);
@@ -1938,6 +1942,9 @@ void clear(SDL_Color colour)
 				letterbox_callback(BAR_BOTTOM, 0, shim::real_screen_size.h-h, w, h);
 			}
 			
+			shim::current_shader = old;
+			shim::current_shader->use();
+
 			gfx::set_matrices(mv_bak, proj_bak);
 			gfx::update_projection();
 
