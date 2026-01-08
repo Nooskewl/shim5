@@ -169,7 +169,7 @@ Uint8 JSON::Node::as_byte()
 
 void JSON::Node::set_string(std::string s)
 {
-	value = "\"" + s + "\"";
+	value = s;
 	if (userdata != NULL) {
 		assert(type == NONE || type == STRING);
 
@@ -439,7 +439,7 @@ void JSON::Node::add_nested_string(std::string loc, void *userdata, std::string 
 	}
 	Node *add = new Node;
 	add->key = last;
-	add->value = "\"" + val + "\"";
+	add->value = val;
 	add->type = STRING;
 	add->userdata = userdata;
 	add->trigger = trigger;
@@ -602,7 +602,7 @@ void JSON::Node::update_value()
 
 	switch (type) {
 		case STRING:
-			value = "\"" + *static_cast<std::string *>(userdata) + "\"";
+			value = *static_cast<std::string *>(userdata);
 			break;
 		case INT:
 			value = util::string_printf("%d", *static_cast<int *>(userdata));
@@ -828,7 +828,7 @@ std::string JSON::read_token(SDL_IOStream *file, bool is_string)
 
 std::string JSON::read_string(SDL_IOStream *file)
 {
-	return "\"" + read_token(file, true) + "\"";
+	return read_token(file, true);
 }
 
 std::string JSON::read_value(SDL_IOStream *file)
