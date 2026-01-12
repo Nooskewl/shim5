@@ -271,6 +271,11 @@ int JSON::Node::size()
 {
 	return children.size();
 }
+
+std::string JSON::Node::get_value()
+{
+	return value;
+}
 		
 void JSON::Node::set_type_string(void *userdata, std::string s)
 {

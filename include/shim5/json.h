@@ -63,6 +63,7 @@ public:
 
 		Type get_type();
 		int size();
+		std::string get_value();
 
 		// sets type, userdata and value
 		void set_type_string(void *userdata, std::string s);
