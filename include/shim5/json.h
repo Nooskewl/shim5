@@ -27,7 +27,7 @@ public:
 		typedef NodeMap::iterator NodeIt;
 
 		std::string key;
-		std::string value; // can be [array]
+		std::string value; // can be [array] or [hash]
 		std::vector<Node *> children;
 		std::map<std::string, Node *> child_map;
 
@@ -61,6 +61,9 @@ public:
 		void set_type(Type t);
 		void set_userdata(void *u);
 
+		Type get_type();
+		int size();
+
 		// sets type, userdata and value
 		void set_type_string(void *userdata, std::string s);
 		void set_type_int(void *userdata, int i);
@@ -80,6 +83,8 @@ public:
 		void add_nested_bool(std::string loc, void *userdata, bool val, Trigger *trigger = NULL, bool readonly = false);
 		void add_nested_double(std::string loc, void *userdata, double val, Trigger *trigger = NULL, bool readonly = false);
 		void add_nested_byte(std::string loc, void *userdata, Uint8 val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_array(std::string loc);
+		void add_nested_hash(std::string loc);
 
 		bool remove_child(Node *child, bool del = true); // del = delete also
 
@@ -96,6 +101,7 @@ public:
 
 	JSON(std::string filename, bool load_from_filesystem = false);
 	JSON(SDL_IOStream *file);
+	JSON(bool array);
 	~JSON();
 
 	Node *get_root();

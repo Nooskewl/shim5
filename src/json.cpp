@@ -122,7 +122,12 @@ std::string JSON::Node::to_json(int indent)
 		}
 	}
 	else {
-		s += value;
+		if (type == STRING) {
+			s += "\"" + value + "\"";
+		}
+		else {
+			s += value;
+		}
 	}
 
 	return s;
@@ -255,6 +260,16 @@ void JSON::Node::set_type(Type t)
 void JSON::Node::set_userdata(void *u)
 {
 	userdata = u;
+}
+
+JSON::Node::Type JSON::Node::get_type()
+{
+	return type;
+}
+
+int JSON::Node::size()
+{
+	return children.size();
 }
 		
 void JSON::Node::set_type_string(void *userdata, std::string s)
@@ -568,6 +583,64 @@ void JSON::Node::add_nested_byte(std::string loc, void *userdata, Uint8 val, Tri
 	add_nested(loc, add);
 }
 
+void JSON::Node::add_nested_array(std::string loc)
+{
+	Node *existing = find(loc);
+	if (existing != NULL) {
+		existing->set_type(NONE);
+		existing->set_userdata(nullptr);
+		existing->readonly = true;
+		return;
+	}
+
+	std::string last;
+	size_t pos = loc.rfind('>');
+	if (pos == std::string::npos) {
+		last = loc;
+	}
+	else {
+		last = loc.substr(pos+1);
+	}
+	Node *add = new Node;
+	add->key = last;
+	add->value = "[array]";
+	add->type = NONE;
+	add->userdata = nullptr;
+	add->trigger = nullptr;
+	add->readonly = true;
+
+	add_nested(loc, add);
+}
+
+void JSON::Node::add_nested_hash(std::string loc)
+{
+	Node *existing = find(loc);
+	if (existing != NULL) {
+		existing->set_type(NONE);
+		existing->set_userdata(nullptr);
+		existing->readonly = true;
+		return;
+	}
+
+	std::string last;
+	size_t pos = loc.rfind('>');
+	if (pos == std::string::npos) {
+		last = loc;
+	}
+	else {
+		last = loc.substr(pos+1);
+	}
+	Node *add = new Node;
+	add->key = last;
+	add->value = "[hash]";
+	add->type = NONE;
+	add->userdata = nullptr;
+	add->trigger = nullptr;
+	add->readonly = true;
+
+	add_nested(loc, add);
+}
+
 bool JSON::Node::remove_child(Node *child, bool del)
 {
 	for (NodeIt it = child_map.begin(); it != child_map.end(); it++) {
@@ -637,6 +710,23 @@ JSON::JSON(SDL_IOStream *file) :
 	line(1)
 {
 	read(file);
+}
+
+JSON::JSON(bool array)
+{
+	root = new Node;
+
+	root->parent = NULL;
+
+	root->type = Node::NONE;
+	root->userdata = NULL;
+
+	root->key = "[root]";
+
+	root->value = array ? "[array]" : "[hash]";
+
+	root->trigger = NULL;
+	root->readonly = false;
 }
 
 JSON::~JSON()
