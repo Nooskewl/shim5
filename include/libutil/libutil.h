@@ -134,6 +134,9 @@ private:
 	bool skip_bunches;
 };
 
+int SHIM5_EXPORT check_args(int argc, char **argv, std::string arg);
+bool SHIM5_EXPORT bool_arg(bool default_value, int argc, char **argv, std::string arg);
+
 } // End namespace util
 
 } // End namespace noo

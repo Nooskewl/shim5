@@ -46,9 +46,6 @@ SDL_IOStream *open_file(std::string filename, int *sz, bool data_only = false);
 void close_file(SDL_IOStream *file);
 void free_data(SDL_IOStream *file);
 
-int SHIM5_EXPORT check_args(int argc, char **argv, std::string arg);
-bool SHIM5_EXPORT bool_arg(bool default_value, int argc, char **argv, std::string arg);
-
 SHIM5_EXPORT std::string string_printf(const char *fmt, ...);
 
 std::string SHIM5_EXPORT escape_string(std::string s, char c); // add backslashes before c characters in s

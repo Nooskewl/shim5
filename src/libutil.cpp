@@ -957,6 +957,41 @@ void set_appdata_dir(std::string appdata_dir, bool create)
 	appdata_dir_set = true;
 }
 
+int check_args(int argc, char **argv, std::string arg)
+{
+	if (argc <= 0 || argv == 0) {
+		return -1;
+	}
+
+	for (int i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], arg.c_str())) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+bool bool_arg(bool default_value, int argc, char **argv, std::string arg)
+{
+	if (argc <= 0 || argv == 0) {
+		return default_value;
+	}
+
+	std::string on = std::string("+") + arg;
+	std::string off = std::string("-") + arg;
+
+	for (int i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], on.c_str())) {
+			default_value = true;
+		}
+		else if (!strcmp(argv[i], off.c_str())) {
+			default_value = false;
+		}
+	}
+
+	return default_value;
+}
+
 } // End namespace util
 
 } // End namespace noo
