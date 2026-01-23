@@ -126,6 +126,7 @@ public:
 
 	Tokenizer(std::string s, char delimiter, bool skip_bunches = false);
 	std::string next();
+	std::string remaining();
 
 private:
 	std::string s;

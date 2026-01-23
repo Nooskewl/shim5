@@ -47,6 +47,13 @@ std::string Tokenizer::next()
 	return ret;
 }
 
+std::string Tokenizer::remaining()
+{
+	std::string ret = s.substr(offset);
+	offset = s.length();
+	return ret;
+}
+
 } // End namespace util
 
 } // End namespace noo
