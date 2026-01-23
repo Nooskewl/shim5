@@ -25,6 +25,7 @@
 #include "shim5/sprite.h"
 #include "shim5/tilemap.h"
 #include "shim5/translation.h"
+#include "shim5/trigger.h"
 #ifdef USE_TTF
 #include "shim5/ttf.h"
 #endif
