@@ -298,7 +298,8 @@ std::vector<std::string> CPA::get_all_filenames()
 CPA::CPA(std::string fn) :
 	load_from_filesystem(false),
 	load_from_exe(false),
-	exe_data_offset(0)
+	exe_data_offset(0),
+	data(nullptr)
 {
 	bool loaded_cpa = false;
 
@@ -397,6 +398,7 @@ CPA::CPA(Uint8 *buf, int sz) :
 	load_from_exe(false),
 	exe_data_offset(0)
 {
+	data = buf;
 	file = SDL_IOFromMem(buf, sz);
 
 	try {
@@ -426,6 +428,8 @@ CPA::~CPA()
 	if (file) {
 		SDL_CloseIO(file);
 	}
+
+	delete[] data;
 }
 
 void CPA::load_datafile()

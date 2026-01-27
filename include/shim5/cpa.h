@@ -53,6 +53,7 @@ private:
 	bool load_from_filesystem;
 	bool load_from_exe;
 	int exe_data_offset;
+	Uint8 *data;
 };
 
 } // End namespace util
