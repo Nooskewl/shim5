@@ -295,7 +295,7 @@ std::vector<std::string> CPA::get_all_filenames()
 	return v;
 }
 
-CPA::CPA() :
+CPA::CPA(std::string fn) :
 	load_from_filesystem(false),
 	load_from_exe(false),
 	exe_data_offset(0)
@@ -307,25 +307,21 @@ CPA::CPA() :
 	load_from_filesystem = true;
 #elif defined ANDROID_XXX
 	// Don't use a compressed .cpa on Android -- the APK is already compressed
-	//file = SDL_IOFromFile("data.cpa", "rb");
+	//file = SDL_IOFromFile(fn, "rb");
 #elif defined IOS_XXX 
 	// Don't use a compressed .cpa on iOS -- it's too slow
-	//std::string path = ios_get_resource_path("data.cpa");
+	//std::string path = ios_get_resource_path(fn);
 	//file = SDL_IOFromFile(path.c_str(), "rb");
 #elif defined SDL_PLATFORM_APPLE
 	const char *base = SDL_GetBasePath();
-	std::string filename = std::string(base) + "data.cpa";
+	std::string filename = std::string(base) + fn;
 	file = SDL_IOFromFile(filename.c_str(), "rb");
 #else
-	List_Directory ld("*.cpa");
-	std::string filename;
+	std::string filename = fn;
 
-	while ((filename = ld.next()) != "") {
-		file = SDL_IOFromFile(filename.c_str(), "rb");
-		if (file != 0) {
-			infomsg("Using %s.\n", filename.c_str());
-			break;
-		}
+	file = SDL_IOFromFile(filename.c_str(), "rb");
+	if (file != 0) {
+		infomsg("Using %s.\n", filename.c_str());
 	}
 #endif
 
@@ -359,6 +355,7 @@ CPA::CPA() :
 	}
 }
 
+#if 0
 CPA::CPA(std::string argv0) :
 	load_from_filesystem(false),
 	load_from_exe(true)
@@ -393,6 +390,7 @@ CPA::CPA(std::string argv0) :
 		throw Error("No data in executable!");
 	}
 }
+#endif
 
 CPA::CPA(Uint8 *buf, int sz) :
 	load_from_filesystem(false),

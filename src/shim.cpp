@@ -111,6 +111,7 @@ bool dpad_enabled;
 void (*joystick_disconnect_callback)();
 bool force_tablet;
 util::CPA *cpa;
+util::CPA *default_cpa;
 int cpa_extra_bytes_after_exe_data;
 Uint8 *cpa_pointer_to_data;
 int cpa_data_size;
@@ -269,9 +270,11 @@ bool static_start(int sdl_init_flags)
 		if (cpa_pointer_to_data != 0) {
 			cpa = new util::CPA(cpa_pointer_to_data, cpa_data_size);
 		}
+		/*
 		else if (argv != 0) {
 			cpa = new util::CPA(argv[0]);
 		}
+		*/
 		else {
 			throw util::Error("Catch me!");
 		}
@@ -287,6 +290,8 @@ bool static_start(int sdl_init_flags)
 #if !defined ANDROID && IFDEFED_OUT_FOR_NOW
 	}
 #endif
+
+	default_cpa = cpa;
 
 #if defined IOS || defined ANDROID
 	app_in_background = false;

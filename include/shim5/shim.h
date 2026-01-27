@@ -132,6 +132,7 @@ extern SHIM5_EXPORT void (*joystick_disconnect_callback)();
 extern SHIM5_EXPORT bool force_tablet;
 // other
 extern SHIM5_EXPORT util::CPA *cpa;
+extern SHIM5_EXPORT util::CPA *default_cpa;
 extern SHIM5_EXPORT int notification_duration; // in millis
 extern SHIM5_EXPORT int notification_fade_duration; // in millis
 extern SHIM5_EXPORT Uint32 timer_event_id;
