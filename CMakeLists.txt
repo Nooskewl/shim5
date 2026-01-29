@@ -32,7 +32,6 @@ set(LIB_SRC
 	src/audio.cpp
 	src/cd.cpp
 	src/cloud.cpp
-	src/cpa.cpp
 	src/crash.cpp
 	src/devsettings.cpp
 	src/font.cpp
@@ -43,7 +42,6 @@ set(LIB_SRC
 	src/image.cpp
 	src/input.cpp
 	src/interp.cpp
-	src/json.cpp
 	src/md5.cpp
 	src/mml.cpp
 	src/model.cpp
@@ -55,18 +53,20 @@ set(LIB_SRC
 	src/sprite.cpp
 	src/tilemap.cpp
 	src/translation.cpp
-	src/util.cpp
 	src/vertex_cache.cpp
 	src/vorbis.cpp
 	src/widgets.cpp
 )
 
 SET(LIBUTIL_SRC
+	src/cpa.cpp
 	src/libutil.cpp
 	src/error.cpp
+	src/json.cpp
 	src/mt19937ar.cpp
 	src/tokenizer.cpp
 	src/utf8.cpp
+	src/util.cpp
 )
 
 if(STEAMWORKS)

@@ -12,6 +12,8 @@
 #endif
 
 #include <shim5/main.h>
+#include <shim5/cpa.h>
+#include <shim5/json.h>
 
 namespace noo {
 
@@ -138,6 +140,53 @@ private:
 int SHIM5_EXPORT check_args(int argc, char **argv, std::string arg);
 bool SHIM5_EXPORT bool_arg(bool default_value, int argc, char **argv, std::string arg);
 
+bool basic_start();
+bool static_start();
+void static_end();
+
+bool start();
+void end();
+
+template <typename T> T sign(T v) { return (T(0) < v) - (v < T(0)); }
+
+void SHIM5_EXPORT errormsg(const char *fmt, ...);
+void SHIM5_EXPORT errormsg(std::string s);
+void SHIM5_EXPORT infomsg(const char *fmt, ...);
+void SHIM5_EXPORT infomsg(std::string s);
+void SHIM5_EXPORT debugmsg(const char *fmt, ...);
+void SHIM5_EXPORT debugmsg(std::string s);
+void SHIM5_EXPORT verbosemsg(const char *fmt, ...);
+void SHIM5_EXPORT verbosemsg(std::string s);
+
+// some functions SDL doesn't have that are handy
+int SHIM5_EXPORT SDL_fgetc(SDL_IOStream *file);
+int SHIM5_EXPORT SDL_fputc(int c, SDL_IOStream *file);
+char SHIM5_EXPORT *SDL_fgets(SDL_IOStream *file, char * const buf, size_t max);
+int SHIM5_EXPORT SDL_fputs(const char *string, SDL_IOStream *file);
+SHIM5_EXPORT void SDL_fprintf(SDL_IOStream *file, const char *fmt, ...);
+
+SDL_IOStream *open_file(std::string filename, int *sz, bool data_only = false);
+void close_file(SDL_IOStream *file);
+void free_data(SDL_IOStream *file);
+
+SHIM5_EXPORT std::string string_printf(const char *fmt, ...);
+
+std::string SHIM5_EXPORT escape_string(std::string s, char c); // add backslashes before c characters in s
+
+std::string SHIM5_EXPORT load_text(std::string filename);
+char SHIM5_EXPORT *slurp_file(std::string filename, int *sz);
+char SHIM5_EXPORT *slurp_file_from_filesystem(std::string filename, int *sz);
+
+#ifdef ANDROID
+bool SHIM5_EXPORT is_chromebook();
+#endif
+
+Uint64 file_date(std::string filename);
+
+#ifndef _WIN32 // FIXME: need this for Windows
+time_t utc_secs();
+#endif
+
 } // End namespace util
 
 } // End namespace noo
@@ -147,6 +196,21 @@ namespace shim {
 
 extern SHIM5_EXPORT std::string organisation_name; // set this first thing too
 extern SHIM5_EXPORT std::string game_name; // set this first thing too
+extern SHIM5_EXPORT int argc;
+extern SHIM5_EXPORT char **argv;
+extern SHIM5_EXPORT bool debug;
+extern SHIM5_EXPORT util::CPA *cpa;
+extern SHIM5_EXPORT util::CPA *default_cpa;
+// this is for loading data from the EXE
+extern SHIM5_EXPORT int cpa_extra_bytes_after_exe_data;
+// these two are for loading data from a memory buffer
+extern SHIM5_EXPORT Uint8 *cpa_pointer_to_data;
+extern SHIM5_EXPORT int cpa_data_size;
+extern SHIM5_EXPORT bool logging;
+extern SHIM5_EXPORT bool use_cwd;
+extern SHIM5_EXPORT bool log_tags;
+extern SHIM5_EXPORT int error_level; // 0=none, 1=errors, 2=info, 3=debug/opengl
+extern SHIM5_EXPORT util::JSON *shim_json;
 
 } // End namespace shim
 } // End namespace noo

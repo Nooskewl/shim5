@@ -131,37 +131,21 @@ extern SHIM5_EXPORT bool dpad_enabled;
 extern SHIM5_EXPORT void (*joystick_disconnect_callback)();
 extern SHIM5_EXPORT bool force_tablet;
 // other
-extern SHIM5_EXPORT util::CPA *cpa;
-extern SHIM5_EXPORT util::CPA *default_cpa;
 extern SHIM5_EXPORT int notification_duration; // in millis
 extern SHIM5_EXPORT int notification_fade_duration; // in millis
 extern SHIM5_EXPORT Uint32 timer_event_id;
-extern SHIM5_EXPORT int argc;
-extern SHIM5_EXPORT char **argv;
-// this is for loading data from the EXE
-extern SHIM5_EXPORT int cpa_extra_bytes_after_exe_data;
-// these two are for loading data from a memory buffer
-extern SHIM5_EXPORT Uint8 *cpa_pointer_to_data;
-extern SHIM5_EXPORT int cpa_data_size;
-extern SHIM5_EXPORT bool logging;
 // game should always set this to logic ticks per second (default is 60)
 // Note that this doesn't control execution speed (that is up to your main loop) but it tells some things how fast your main loop is running
 extern SHIM5_EXPORT int logic_rate;
-extern SHIM5_EXPORT bool use_cwd;
-extern SHIM5_EXPORT bool log_tags;
-extern SHIM5_EXPORT int error_level; // 0=none, 1=errors, 2=info, 3=debug/opengl
 #ifdef TVOS
 extern SHIM5_EXPORT bool pass_menu_to_os;
 #endif
 extern SHIM5_EXPORT int devsettings_num_rows; // in rows
 extern SHIM5_EXPORT int devsettings_max_width; // in pixels
-extern SHIM5_EXPORT bool debug;
 #ifdef STEAMWORKS
 extern SHIM5_EXPORT bool steam_init_failed;
 extern SHIM5_EXPORT void (*steam_overlay_activated_callback)();
 #endif
-
-extern SHIM5_EXPORT util::JSON *shim_json;
 
 extern SHIM5_EXPORT std::vector<util::A_Star::Way_Point> (*get_way_points)(util::Point<int> start);
 

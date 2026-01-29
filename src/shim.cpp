@@ -110,34 +110,15 @@ int mouse_button_repeat_max_movement;
 bool dpad_enabled;
 void (*joystick_disconnect_callback)();
 bool force_tablet;
-util::CPA *cpa;
-util::CPA *default_cpa;
-int cpa_extra_bytes_after_exe_data;
-Uint8 *cpa_pointer_to_data;
-int cpa_data_size;
 int notification_duration;
 int notification_fade_duration;
 Uint32 timer_event_id;
-int argc;
-char **argv;
-bool logging;
 int logic_rate;
-bool use_cwd;
-bool log_tags;
-#ifdef DEBUG
-int error_level = 9999;
-#elif defined IOS
-int error_level = 3; // let debugmsg hit Xcode console
-#else
-int error_level = 1;
-#endif
 #ifdef TVOS
 bool pass_menu_to_os;
 #endif
-util::JSON *shim_json;
 int devsettings_num_rows;
 int devsettings_max_width;
-bool debug;
 #ifdef STEAMWORKS
 bool steam_init_failed;
 void (*steam_overlay_activated_callback)();
