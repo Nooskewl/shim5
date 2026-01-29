@@ -65,7 +65,7 @@ void Sprite::update_all()
 	}
 }
 
-Sprite::Sprite(std::string json_filename, std::string image_directory, bool absolute_path)
+Sprite::Sprite(std::string json_filename, std::string image_directory, bool absolute_path, bool load_from_filesystem)
 {
 	instance = new Instance;
 	instance->started = false;
@@ -74,11 +74,11 @@ Sprite::Sprite(std::string json_filename, std::string image_directory, bool abso
 
 	reverse = false;
 
-	load(json_filename, image_directory, absolute_path);
+	load(json_filename, image_directory, absolute_path, load_from_filesystem);
 	start();
 }
 
-Sprite::Sprite(std::string image_directory)
+Sprite::Sprite(std::string image_directory, bool absolute_path, bool load_from_filesystem)
 {
 	instance = new Instance;
 	instance->started = false;
@@ -87,7 +87,7 @@ Sprite::Sprite(std::string image_directory)
 
 	reverse = false;
 
-	load(image_directory + "/sprite.json", image_directory);
+	load(image_directory + "/sprite.json", image_directory, absolute_path, load_from_filesystem);
 	start();
 }
 
@@ -121,9 +121,9 @@ Sprite::~Sprite()
 	}
 }
 
-void Sprite::load(std::string json_filename, std::string image_directory, bool absolute_path)
+void Sprite::load(std::string json_filename, std::string image_directory, bool absolute_path, bool load_from_filesystem)
 {
-	if (absolute_path == false) {
+	if (absolute_path == false && load_from_filesystem == false) {
 		json_filename = "gfx/sprites/" + json_filename;
 		image_directory = "gfx/sprites/" + image_directory;
 	}
@@ -133,7 +133,7 @@ void Sprite::load(std::string json_filename, std::string image_directory, bool a
 
 	util::JSON *json;
 	try {
-		json = new util::JSON(image_directory + "/sprite.json");
+		json = new util::JSON(image_directory + "/sprite.json", load_from_filesystem);
 	}
 	catch (util::Error &) {
 		delete instance;
@@ -151,7 +151,7 @@ void Sprite::load(std::string json_filename, std::string image_directory, bool a
 		Image *parent;
 		bool had_keep_data = false;
 	       	try {
-			json = new util::JSON(image_directory + "/" + anim->value + ".json");
+			json = new util::JSON(image_directory + "/" + anim->value + ".json", load_from_filesystem);
 			util::JSON::Node *frames = json->get_root()->find("frames");
 			if (frames == 0) {
 				throw util::Error("Invalid sprite JSON::Node, no frames hash");
@@ -160,10 +160,10 @@ void Sprite::load(std::string json_filename, std::string image_directory, bool a
 			had_keep_data = Image::keep_data;
 			Image::keep_data = true;
 			try {
-				parent = new Image(image_directory + "/" + anim->value + ".tga",  true);
+				parent = new Image(image_directory + "/" + anim->value + ".tga",  true, load_from_filesystem);
 			}
 			catch (util::Error &err) {
-				parent = new Image(image_directory + "/" + anim->value + ".png",  true);
+				parent = new Image(image_directory + "/" + anim->value + ".png",  true, load_from_filesystem);
 			}
 			for (int i = 0; i < count; i++) {
 				util::JSON::Node *json = frames->children[i];

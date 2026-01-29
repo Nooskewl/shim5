@@ -41,8 +41,8 @@ public:
 	
 	static std::map<std::string, Loaded_Sprite *> loaded_sprites;
 
-	SHIM5_EXPORT Sprite(std::string json_filename, std::string image_directory, bool absolute_path = false);
-	SHIM5_EXPORT Sprite(std::string image_directory);
+	SHIM5_EXPORT Sprite(std::string json_filename, std::string image_directory, bool absolute_path = false, bool load_from_filesystem = false);
+	SHIM5_EXPORT Sprite(std::string image_directory, bool absolute_path = false, bool load_from_filesystem = false);
 	SHIM5_EXPORT ~Sprite();
 
 	SHIM5_EXPORT bool set_animation_lazy(std::string name);
@@ -87,7 +87,7 @@ public:
 private:
 	static void update_loaded_sprite(std::string dirname, Sprite::Loaded_Sprite *s);
 
-	SHIM5_EXPORT void load(std::string json_filename, std::string image_directory, bool absolute_path = false);
+	SHIM5_EXPORT void load(std::string json_filename, std::string image_directory, bool absolute_path = false, bool load_from_filesystem = false);
 	Instance *instance;
 	std::string previous_animation;
 	bool reverse;
