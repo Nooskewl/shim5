@@ -14,7 +14,7 @@ class Image;
 class TTF : public Font
 {
 public:
-	static const int DEFAULT_SHEET_SIZE = 512;
+	static const int DEFAULT_SHEET_SIZE = 4096;
 
 	TTF(std::string filename, int size, int sheet_size = DEFAULT_SHEET_SIZE, bool load_from_filesystem = false);
 	virtual ~TTF();
