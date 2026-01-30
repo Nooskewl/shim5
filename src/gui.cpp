@@ -8,7 +8,7 @@
 #include "shim5/sprite.h"
 #include "shim5/translation.h"
 #include "shim5/util.h"
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #include "shim5/internal/gfx.h"
 #include "shim5/internal/shim.h"

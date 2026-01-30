@@ -16,15 +16,15 @@ class TTF : public Font
 public:
 	static const int DEFAULT_SHEET_SIZE = 4096;
 
-	TTF(std::string filename, int size, int sheet_size = DEFAULT_SHEET_SIZE, bool load_from_filesystem = false);
-	virtual ~TTF();
+	SHIM5_EXPORT TTF(std::string filename, int size, int sheet_size = DEFAULT_SHEET_SIZE, bool load_from_filesystem = false);
+	SHIM5_EXPORT virtual ~TTF();
 
-	bool cache_glyphs(std::string text);
-	void clear_cache();
+	SHIM5_EXPORT bool cache_glyphs(std::string text);
+	SHIM5_EXPORT void clear_cache();
 
-	int get_height();
+	SHIM5_EXPORT int get_height();
 
-	void set_smooth(bool smooth);
+	SHIM5_EXPORT void set_smooth(bool smooth);
 	
 private:
 	int get_sheet_size();

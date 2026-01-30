@@ -24,24 +24,24 @@ public:
 	static void reload_all(bool include_managed = false);
 	static int get_unfreed_count();
 	static void audit();
-	static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
-	static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
-	static unsigned char *read_backbuffer(bool include_black_bars = true, int *out_w = nullptr, int *out_h = nullptr);
-	static unsigned char *read_texture(gfx::Image *image);
-	static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
-	static bool save_png(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
+	SHIM5_EXPORT static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
+	SHIM5_EXPORT static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
+	SHIM5_EXPORT static unsigned char *read_backbuffer(bool include_black_bars = true, int *out_w = nullptr, int *out_h = nullptr);
+	SHIM5_EXPORT static unsigned char *read_texture(gfx::Image *image);
+	SHIM5_EXPORT static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
+	SHIM5_EXPORT static bool save_png(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
 	static unsigned char find_colour_in_palette(unsigned char *p);
 
 	// These parameters affect newly created images
-	static bool dumping_colours;
-	static bool keep_data;
-	static bool save_rle;
-	static bool ignore_palette;
-	static bool create_depth_buffer;
-	static bool create_stencil_buffer;
-	static bool premultiply_alpha;
-	static bool save_rgba;
-	static bool save_palettes;
+	SHIM5_EXPORT static bool dumping_colours;
+	SHIM5_EXPORT static bool keep_data;
+	SHIM5_EXPORT static bool save_rle;
+	SHIM5_EXPORT static bool ignore_palette;
+	SHIM5_EXPORT static bool create_depth_buffer;
+	SHIM5_EXPORT static bool create_stencil_buffer;
+	SHIM5_EXPORT static bool premultiply_alpha;
+	SHIM5_EXPORT static bool save_rgba;
+	SHIM5_EXPORT static bool save_palettes;
 
 	std::string filename;
 	util::Size<int> size;

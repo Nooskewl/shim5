@@ -2,7 +2,7 @@
 #include "shim5/image.h"
 #include "shim5/util.h"
 
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #define PAD 2
 

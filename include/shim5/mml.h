@@ -63,27 +63,27 @@ private:
 		int final_volume;
 	};
 
-	class SHIM5_EXPORT Track
+	class Track
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		Track(Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
+		SHIM5_EXPORT Track(Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
 		~Track();
 
-		void play(bool loop);
-		void stop();
-		void pause();
-		int update(float *buf, int length);
+		SHIM5_EXPORT void play(bool loop);
+		SHIM5_EXPORT void stop();
+		SHIM5_EXPORT void pause();
+		SHIM5_EXPORT int update(float *buf, int length);
 
-		bool is_playing();
-		bool is_done();
+		SHIM5_EXPORT bool is_playing();
+		SHIM5_EXPORT bool is_done();
 
-		void set_master_volume(float master_volume, float master_volume_samples);
-		float get_master_volume();
-		float get_master_volume_real();
+		SHIM5_EXPORT void set_master_volume(float master_volume, float master_volume_samples);
+		SHIM5_EXPORT float get_master_volume();
+		SHIM5_EXPORT float get_master_volume_real();
 
-		void set_pause_with_sfx(bool pause_with_sfx);
-		bool pause_with_sfx();
+		SHIM5_EXPORT void set_pause_with_sfx(bool pause_with_sfx);
+		SHIM5_EXPORT bool pause_with_sfx();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -184,7 +184,7 @@ private:
 		bool no_fade;
 	};
 
-	void load(SDL_IOStream *f, bool load_from_filesystem);
+	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
 
 	std::vector<Track *> tracks;
 	std::vector<Track *> reverb_tracks;

@@ -38,7 +38,7 @@ struct GFX_Context {
 #endif
 };
 
-extern GFX_Context gfx_context;
+extern SHIM5_EXPORT GFX_Context gfx_context;
 
 bool scale_mouse_event(TGUI_Event *event);
 void handle_lost_device(bool including_opengl, bool force = false);

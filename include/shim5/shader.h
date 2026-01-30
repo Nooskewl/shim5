@@ -32,8 +32,8 @@ public:
 		GLuint shader;
 		std::string source;
 	};
-	static OpenGL_Shader *load_opengl_vertex_shader(std::string source, Precision precision = LOW);
-	static OpenGL_Shader *load_opengl_fragment_shader(std::string source, Precision precision = LOW);
+	SHIM5_EXPORT static OpenGL_Shader *load_opengl_vertex_shader(std::string source, Precision precision = LOW);
+	SHIM5_EXPORT static OpenGL_Shader *load_opengl_fragment_shader(std::string source, Precision precision = LOW);
 	
 	SHIM5_EXPORT Shader(OpenGL_Shader *vertex_shader, OpenGL_Shader *fragment_shader, bool is_master_vertex = true, bool is_master_fragment = true);
 

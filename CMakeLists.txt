@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(shim5)
 
-option(SHARED "Build as a shared library" OFF)
-option(USE_STATIC_LIBS "Link with static libraries" ON)
+option(SHARED "Build as a shared library" ON)
+option(USE_STATIC_LIBS "Link with static libraries" OFF)
 option(DEBUG "Build for debugging" OFF)
 option(RASPBERRYPI "Build for Raspberry Pi" OFF)
 option(WANT_EXAMPLES "Build the examples" OFF)
@@ -32,7 +32,6 @@ set(LIB_SRC
 	src/audio.cpp
 	src/cd.cpp
 	src/cloud.cpp
-	src/crash.cpp
 	src/devsettings.cpp
 	src/font.cpp
 	src/shim.cpp
@@ -53,20 +52,16 @@ set(LIB_SRC
 	src/sprite.cpp
 	src/tilemap.cpp
 	src/translation.cpp
+	src/util.cpp
 	src/vertex_cache.cpp
 	src/vorbis.cpp
 	src/widgets.cpp
-)
-
-SET(LIBUTIL_SRC
 	src/cpa.cpp
-	src/libutil.cpp
 	src/error.cpp
 	src/json.cpp
 	src/mt19937ar.cpp
 	src/tokenizer.cpp
 	src/utf8.cpp
-	src/util.cpp
 )
 
 if(STEAMWORKS)
@@ -88,10 +83,8 @@ endif()
 
 set(SHIM_LIB shim5)
 if(SHARED)
-	add_library(util SHARED ${LIBUTIL_SRC})
 	add_library(${SHIM_LIB} SHARED ${LIB_SRC})
 else()
-	add_library(util STATIC ${LIBUTIL_SRC})
 	add_library(${SHIM_LIB} STATIC ${LIB_SRC})
 endif()
 
@@ -181,22 +174,21 @@ if(MINGW)
 		LIST(APPEND LIBS ogg)
 	endif()
 	LIST(APPEND LIBS zlibstatic)
-	target_link_libraries(${SHIM_LIB} util ${LIBS})
 	set_target_properties(${SHIM_LIB} PROPERTIES COMPILE_FLAGS "-DSHIM5_BUILD ${FLAGS}")
-	set_target_properties(util PROPERTIES COMPILE_FLAGS "-DSHIM5_BUILD ${FLAGS}")
+	target_link_libraries(${SHIM_LIB} ${LIBS})
 	if(WANT_EXAMPLES)
-		set(EXAMPLE_LIBS ${LIBS} util ${SHIM_LIB})
+		set(EXAMPLE_LIBS ${LIBS} ${SHIM_LIB})
 		set_target_properties(example PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		target_link_libraries(example ${EXAMPLE_LIBS})
 	endif()
 	if(WANT_TOOLS)
-		set(TOOL_LIBS util ${LIBS} ${SHIM_LIB})
+		set(TOOL_LIBS ${LIBS} ${SHIM_LIB})
 		set_target_properties(change_colour PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		set_target_properties(change_colour PROPERTIES LINK_FLAGS "${LFLAGS}")
 		target_link_libraries(change_colour ${TOOL_LIBS})
 		set_target_properties(compress_dir PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		set_target_properties(compress_dir PROPERTIES LINK_FLAGS "${LFLAGS}")
-		target_link_libraries(compress_dir mingw32 SDL3 SDL3_ttf util z)
+		target_link_libraries(compress_dir mingw32 SDL3 SDL3_ttf z)
 		set_target_properties(convert_model PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		set_target_properties(convert_model PROPERTIES LINK_FLAGS "${LFLAGS}")
 		target_link_libraries(convert_model ${TOOL_LIBS})
@@ -311,15 +303,15 @@ elseif(WIN32)
 	if(DEBUG)
 		set(FLAGS "${FLAGS} /DDEBUG")
 	endif()
-	target_link_libraries(${SHIM_LIB} util ${LIBS})
+	target_link_libraries(${SHIM_LIB} ${LIBS})
 	set_target_properties(${SHIM_LIB} PROPERTIES COMPILE_FLAGS "/DSHIM5_BUILD ${FLAGS}")
 	if(WANT_EXAMPLES)
-		set(EXAMPLE_LIBS ${SHIM_LIB} util ${PROGRAM_LIBS})
+		set(EXAMPLE_LIBS ${SHIM_LIB} ${PROGRAM_LIBS})
 		set_target_properties(example PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		target_link_libraries(example ${EXAMPLE_LIBS})
 	endif()
 	if(WANT_TOOLS)
-		set(TOOL_LIBS ${SHIM_LIB} util ${PROGRAM_LIBS})
+		set(TOOL_LIBS ${SHIM_LIB} ${PROGRAM_LIBS})
 		set_target_properties(change_colour PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		target_link_libraries(change_colour ${TOOL_LIBS})
 		set_target_properties(compress_dir PROPERTIES COMPILE_FLAGS "${FLAGS}")
@@ -448,16 +440,16 @@ else()
 	SET_TARGET_PROPERTIES(${SHIM_LIB} PROPERTIES COMPILE_FLAGS "${FLAGS}")
 	set_target_properties(${SHIM_LIB} PROPERTIES LINK_FLAGS "${LFLAGS}")
 	if(SHARED)
-		target_link_libraries(${SHIM_LIB} util ${LIBS})
+		target_link_libraries(${SHIM_LIB} ${LIBS})
 	endif()
 	if(WANT_EXAMPLES)
-		LIST(APPEND EXAMPLE_LIBS ${SHIM_LIB} util ${PROGRAM_LIBS})
+		LIST(APPEND EXAMPLE_LIBS ${SHIM_LIB} ${PROGRAM_LIBS})
 		SET_TARGET_PROPERTIES(example PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		SET_TARGET_PROPERTIES(example PROPERTIES LINK_FLAGS "${LFLAGS}")
 		target_link_libraries(example ${EXAMPLE_LIBS})
 	endif()
 	if(WANT_TOOLS)
-		LIST(APPEND TOOL_LIBS ${SHIM_LIB} util ${PROGRAM_LIBS})
+		LIST(APPEND TOOL_LIBS ${SHIM_LIB} ${PROGRAM_LIBS})
 		SET_TARGET_PROPERTIES(change_colour PROPERTIES COMPILE_FLAGS "${FLAGS}")
 		SET_TARGET_PROPERTIES(change_colour PROPERTIES LINK_FLAGS "${LFLAGS}")
 		target_link_libraries(change_colour ${TOOL_LIBS})

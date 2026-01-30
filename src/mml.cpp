@@ -3,7 +3,7 @@
 #include "shim5/sample.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #include "shim5/internal/audio.h"
 

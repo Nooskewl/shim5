@@ -7,7 +7,7 @@
 #include "shim5/tilemap.h"
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 using namespace noo;
 

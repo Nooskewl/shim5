@@ -4,7 +4,7 @@
 #include "shim5/gui.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #ifdef IOS
 #include "shim5/ios.h"

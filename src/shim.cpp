@@ -1,3 +1,4 @@
+#include "shim5/main.h"
 #include "shim5/audio.h"
 #include "shim5/cpa.h"
 #include "shim5/devsettings.h"
@@ -15,7 +16,7 @@
 #include "shim5/translation.h"
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #include "shim5/internal/audio.h"
 #include "shim5/internal/gfx.h"
@@ -126,6 +127,27 @@ void (*steam_overlay_activated_callback)();
 std::vector<util::A_Star::Way_Point> (*get_way_points)(util::Point<int> start);
 util::Point<float> screen_shake_save;
 bool using_screen_shake;
+std::string organisation_name;
+std::string game_name;
+int argc;
+char **argv;
+bool debug;
+util::CPA *cpa;
+util::CPA *default_cpa;
+int cpa_extra_bytes_after_exe_data;
+Uint8 *cpa_pointer_to_data;
+int cpa_data_size;
+bool logging;
+bool use_cwd;
+bool log_tags;
+#ifdef DEBUG
+int error_level = 9999;
+#elif defined IOS
+int error_level = 3; // let debugmsg hit Xcode console
+#else
+int error_level = 1;
+#endif
+util::JSON *shim_json;
 
 static void handle_resize(SDL_Event *event)
 {

@@ -7,6 +7,9 @@ namespace util {
 
 namespace internal {
 
+void SHIM5_EXPORT print_string(int level, const char *string);
+std::string SHIM5_EXPORT get_game_name();
+
 #ifdef _WIN32
 /* MSVC doesn't have snprintf */
 

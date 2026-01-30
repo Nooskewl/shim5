@@ -12,7 +12,7 @@ namespace gfx {
 class Vertex_Cache {
 public:
 	static void static_start();
-	static Vertex_Cache *instance();
+	SHIM5_EXPORT static Vertex_Cache *instance();
 	static void destroy();
 
 	// These ones use the already selected cache...

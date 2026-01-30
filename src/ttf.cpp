@@ -7,7 +7,7 @@
 #include "shim5/ttf.h"
 #include "shim5/util.h"
 
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #include "shim5/internal/gfx.h"
 

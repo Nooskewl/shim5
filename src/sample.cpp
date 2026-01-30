@@ -5,7 +5,7 @@
 #include "shim5/shim.h"
 #include "shim5/util.h"
 #include "shim5/vorbis.h"
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #include "shim5/internal/audio.h"
 

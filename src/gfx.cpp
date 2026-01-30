@@ -13,7 +13,7 @@
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
 
-#include "libutil/libutil.h"
+#include "shim5/util.h"
 
 #include "shim5/internal/gfx.h"
 #include "shim5/internal/shim.h"

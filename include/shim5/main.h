@@ -7,7 +7,7 @@
 #pragma warning(disable : 4275)
 #endif
 
-#ifdef _WIN32_NOPE
+#ifdef _WIN32
 #ifdef SHIM5_STATIC
 #define SHIM5_EXPORT
 #else

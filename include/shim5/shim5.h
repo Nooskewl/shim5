@@ -1,6 +1,8 @@
 #ifndef SHIM5_H
 #define SHIM5_H
 
+#include "shim5/main.h"
+
 #include "shim5/a_star.h"
 #include "shim5/achievements.h"
 #include "shim5/audio.h"
@@ -13,7 +15,6 @@
 #include "shim5/input.h"
 #include "shim5/interp.h"
 #include "shim5/json.h"
-#include "shim5/main.h"
 #include "shim5/md5.h"
 #include "shim5/mml.h"
 #include "shim5/model.h"
@@ -37,7 +38,5 @@
 #ifdef STEAMWORKS
 #include "shim5/steamworks.h"
 #endif
-
-#include "libutil/libutil.h"
 
 #endif // SHIM5_H
