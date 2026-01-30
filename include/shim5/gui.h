@@ -9,7 +9,7 @@ namespace noo {
 
 namespace gui {
 
-ALIGN(16) GUI {
+EXPORT_CLASS_ALIGN(GUI, 16) {
 public:
 	TGUI *gui;
 	TGUI_Widget *focus; // backup focus
@@ -60,8 +60,8 @@ public:
 
 	// For 16 byte alignment to make glm::mat4 able to use SIMD
 #ifdef _WIN32
-	SHIM5_EXPORT void *operator new(size_t i);
-	SHIM5_EXPORT void operator delete(void* p);
+	void *operator new(size_t i);
+	void operator delete(void* p);
 #endif
 
 protected:

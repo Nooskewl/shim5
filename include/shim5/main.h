@@ -23,9 +23,13 @@
 #define ALIGN(n) __declspec(align(n)) class
 
 #else // _WIN32
+#ifdef SHIM5_BUILD
+#define SHIM5_EXPORT __attribute__((visibility("default")))
+#else
 #define SHIM5_EXPORT
-#define EXPORT_STRUCT_ALIGN(x, n) struct __attribute__((aligned(n))) x
-#define EXPORT_CLASS_ALIGN(x, n) class __attribute__((aligned(n))) x
+#endif
+#define EXPORT_STRUCT_ALIGN(x, n) struct __attribute__((visibility("default"))) __attribute__((aligned(n))) x
+#define EXPORT_CLASS_ALIGN(x, n) class __attribute__((visibility("default"))) __attribute__((aligned(n))) x
 #define ALIGN(n) class __attribute__((aligned(n)))
 #endif
 
