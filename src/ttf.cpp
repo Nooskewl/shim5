@@ -146,7 +146,7 @@ TTF::Glyph *TTF::create_glyph(Uint32 ch, gfx::Image *glyph_image)
 	int row = n / n_per_row;
 	int col = n % n_per_row;
 	Glyph *glyph = new Glyph;
-	glyph->position = {col * (size*2+2) + 1, row * (size+2) + 1};
+	glyph->position = {col * (size*2+2) + 1, row * (size*2+2) + 1};
 	glyph->size = glyph_image->size;
 	glyph->sheet = curr_sheet;
 
