@@ -1,3 +1,4 @@
+// https://gist.github.com/herrcore/22e820f1e8a99238070cd7c5b350261e 
 enum langid_country
 {
 Afrikaans = 0x36,
