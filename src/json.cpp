@@ -750,8 +750,7 @@ void JSON::destroy(Node *node)
 
 void JSON::read(std::string filename, bool load_from_filesystem)
 {
-	int sz;
-	char *bytes;
+	std::string bytes;
 
 #ifdef TVOS
 	std::string s;
@@ -765,22 +764,18 @@ void JSON::read(std::string filename, bool load_from_filesystem)
 		sz = (int)s.length();
 		bytes = (char *)s.c_str();
 #else
-		bytes = slurp_file_from_filesystem(filename, &sz);
+		bytes = load_text_from_filesystem(filename);
 #endif
 	}
 	else {
-		bytes = slurp_file(filename, &sz);
+		bytes = load_text(filename);
 	}
 
-	SDL_IOStream *file = SDL_IOFromMem(bytes, sz);
+	SDL_IOStream *file = SDL_IOFromMem((void *)bytes.c_str(), bytes.length());
 
 	read(file);
 
 	SDL_CloseIO(file);
-
-#ifndef TVOS
-	delete[] bytes;
-#endif
 }
 
 void JSON::read(SDL_IOStream *file)

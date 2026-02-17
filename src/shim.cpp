@@ -338,7 +338,7 @@ bool static_start(int sdl_init_flags)
 	switch_out_screen_size = {-1, -1};
 
 	try {
-		shim_json = new util::JSON("shim5.json");
+		shim_json = new util::JSON("shim5.json", false);
 	}
 	catch (util::Error &e) {
 		// Use a default file
