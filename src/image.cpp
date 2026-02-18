@@ -1551,27 +1551,9 @@ void Image::Internal::release()
 
 unsigned char *Image::Internal::reload(bool keep_data, bool load_from_filesystem)
 {
-	std::string ext;
-
-	if (filename.length() < 3) {
-		ext = "tga";
-	}
-	else {
-		ext = filename.substr(filename.length()-3);
-	}
-
-	ext = util::uppercase(ext);
-
 	unsigned char *pixels;
 
-	if (ext == "TGA") {
-		pixels = Image::read_tga(filename, size, NULL, &opaque_topleft, &opaque_bottomright, &has_alpha, load_from_filesystem);
-	}
-#ifdef USE_PNG
-	else {
-		pixels = Image::read_png(filename, size, NULL, &opaque_topleft, &opaque_bottomright, &has_alpha, load_from_filesystem);
-	}
-#endif
+	pixels = Image::load_image(filename, size, NULL, &opaque_topleft, &opaque_bottomright, &has_alpha, load_from_filesystem);
 
 	if (pixels == 0) {
 		throw util::LoadError("Could not read " + filename);
