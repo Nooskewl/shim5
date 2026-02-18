@@ -59,6 +59,9 @@ namespace noo {
 
 namespace gfx {
 
+static std::map<std::string, image_loader> image_loaders;
+static std::map<std::string, image_saver> image_savers;
+
 std::vector<Image::Internal *> Image::loaded_images;
 
 static GLuint bound_fbo;
@@ -72,8 +75,23 @@ bool Image::premultiply_alpha;
 bool Image::save_rgba;
 bool Image::save_palettes;
 
+void Image::register_image_loader(std::string ext, image_loader func)
+{
+	image_loaders[ext] = func;
+}
+
+void Image::register_image_saver(std::string ext, image_saver func)
+{
+	image_savers[ext] = func;
+}
+
 void Image::static_start()
 {
+	register_image_loader("png", read_png);
+	register_image_loader("tga", read_tga);
+	register_image_saver("png", save_png);
+	register_image_saver("tga", save_tga);
+
 	bound_fbo = 0;
 	
 	util::JSON::Node *root = shim::shim_json->get_root();
@@ -379,7 +397,141 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 
 	return bytes;
 }
+
+bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba)
+{
+	int y;
+
+	FILE *fp = fopen(filename.c_str(), "wb");
+	if (!fp) {
+		return false;
+	}
+
+	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if (!png) {
+		return false;
+	}
+
+	png_infop info = png_create_info_struct(png);
+	if (!info) {
+		return false;
+	}
+
+	if (setjmp(png_jmpbuf(png))) {
+		return false;
+	}
+
+	png_init_io(png, fp);
+
+	png_set_IHDR(
+		png,
+		info,
+		size.w, size.h,
+		8,
+		PNG_COLOR_TYPE_RGBA,
+		PNG_INTERLACE_NONE,
+		PNG_COMPRESSION_TYPE_DEFAULT,
+		PNG_FILTER_TYPE_DEFAULT
+	);
+
+	png_write_info(png, info);
+
+	if (_save_rgba == false) {
+		png_set_filler(png, 0, PNG_FILLER_AFTER);
+	}
+
+	if (!data) {
+		return false;
+	}
+
+	unsigned char **row_pointers = new unsigned char *[size.h];
+	for (size_t i = 0; i < size.h; i++) {
+		row_pointers[i] = data + i * (size.w * 4);
+	}
+
+	png_write_image(png, row_pointers);
+	png_write_end(png, NULL);
+
+	fclose(fp);
+
+	png_destroy_write_struct(&png, &info);
+
+	delete[] row_pointers;
+
+	return true;
+}
 #endif
+
+// returns true if pixel is transparent
+bool Image::merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha)
+{
+	if (header->colourmaptype == 1) {
+		SDL_Color *colour;
+		if (ignore_palette) {
+			colour = &shim::palette[*p];
+		}
+		else {
+			colour = &header->palette[*p];
+		}
+		// Magic pink
+		// Paletted
+		if (colour->r == 255 && colour->g == 0 && colour->b == 255) {
+			// transparent
+			*pixel++ = 0;
+			*pixel++ = 0;
+			*pixel++ = 0;
+			*pixel++ = 0;
+			return true;
+		}
+		else {
+			*pixel++ = colour->r;
+			*pixel++ = colour->g;
+			*pixel++ = colour->b;
+			*pixel++ = 255;
+		}
+		*alpha = false;
+	}
+	else {
+		if (bytes == 4) {
+			if (premultiply_alpha) {
+				float a = p[3] / 255.0f;
+				*pixel++ = (unsigned char)(p[2] * a);
+				*pixel++ = (unsigned char)(p[1] * a);
+				*pixel++ = (unsigned char)(p[0] * a);
+			}
+			else {
+				*pixel++ = p[2];
+				*pixel++ = p[1];
+				*pixel++ = p[0];
+			}
+			*pixel++ = p[3];
+			if (p[3] != 255 && p[3] != 0) {
+				*alpha = true;
+			}
+			else {
+				*alpha = false;
+			}
+			return p[3] == 0;
+		}
+		else if (bytes == 3) {
+			*pixel++ = p[2];
+			*pixel++ = p[1];
+			*pixel++ = p[0];
+			*pixel++ = 255;
+			*alpha = false;
+		}
+		else if (bytes == 2) {
+			*pixel++ = (p[1] & 0x7c) << 1;
+			*pixel++ = ((p[1] & 0x03) << 6) | ((p[0] & 0xe0) >> 2);
+			*pixel++ = (p[0] & 0x1f) << 3;
+			*pixel++ = (p[1] & 0x80) ? 255 : 0;
+			*alpha = false;
+			return (p[1] & 0x80) == 0;
+		}
+	}
+
+	return false;
+}
 
 unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem)
 {
@@ -556,6 +708,126 @@ unsigned char *Image::read_tga(std::string filename, util::Size<int> &out_size, 
 	return pixels;
 }
 
+bool Image::save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba)
+{
+	unsigned char header[] = {
+		(unsigned char)0x00, // idlength
+		(unsigned char)0x01, // colourmap type 1 == palette
+		(unsigned char)(save_rle ? 0x09 : 0x01),
+		(unsigned char)0x00, (unsigned char)0x00, // colourmap origin (little endian)
+		(unsigned char)0x00, save_palettes ? (unsigned char)0x01 : (unsigned char)0x00, // # of palette entries
+		(unsigned char)0x18, // colourmap depth
+		(unsigned char)0x00, (unsigned char)0x00, // x origin
+		(unsigned char)0x00, (unsigned char)0x00, // y origin
+		(unsigned char)(size.w & 0xff), (unsigned char)((size.w >> 8) & 0xff), // width
+		(unsigned char)(size.h & 0xff), (unsigned char)((size.h >> 8) & 0xff), // height
+		(unsigned char)0x08, // bits per pixel
+		(unsigned char)0x00 // image descriptor
+	};
+
+	if (_save_rgba) {
+		header[1] = 0;
+		header[2] = 2;
+		header[5] = 0;
+		header[6] = 0;
+		header[7] = 0;
+		header[16] = 32;
+		header[17] = 8;
+	}
+
+	int header_size = 18;
+
+	SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "wb");
+	if (file == 0) {
+		throw util::Error("Couldn't open " + filename + " for writing");
+	}
+
+	for (int i = 0; i < header_size; i++) {
+		if (util::SDL_fputc(header[i], file) == EOF) {
+			throw util::Error("Write error writing to " + filename);
+		}
+	}
+
+	if (_save_rgba == false) {
+		if (save_palettes) {
+			for (int i = 0; i < 256; i++) {
+				if (util::SDL_fputc(shim::palette[i].b, file) == EOF) {
+					throw util::Error("Write error writing to " + filename);
+				}
+				if (util::SDL_fputc(shim::palette[i].g, file) == EOF) {
+					throw util::Error("Write error writing to " + filename);
+				}
+				if (util::SDL_fputc(shim::palette[i].r, file) == EOF) {
+					throw util::Error("Write error writing to " + filename);
+				}
+			}
+		}
+
+		#define R(n) *(pixel_ptr(loaded_data, n, false, size.w, size.h)+0)
+		#define G(n) *(pixel_ptr(loaded_data, n, false, size.w, size.h)+1)
+		#define B(n) *(pixel_ptr(loaded_data, n, false, size.w, size.h)+2)
+
+		if (save_rle) {
+			for (int i = 0; i < size.w * size.h;) {
+				int j, count;
+				int next_line = i - (i % size.w) + size.w - 1;
+				for (j = i, count = 0; j < size.w * size.h - 1 && j < next_line && count < 127; j++, count++) {
+					if (R(j) != R(j+1) || G(j) != G(j+1) || B(j) != B(j+1)) {
+						break;
+					}
+				}
+				int run_length = j - i + 1;
+				if (run_length > 1) {
+					util::SDL_fputc((run_length-1) | 0x80, file);
+					util::SDL_fputc(find_colour_in_palette(&R(i)), file);
+				}
+				else {
+					for (j = i, count = 0; j < size.w * size.h - 1 && j < next_line && count < 127; j++, count++) {
+						if (R(j) == R(j+1) && G(j) == G(j+1) && B(j) == B(j+1)) {
+							break;
+						}
+					}
+					run_length = j - i + 1;
+					// I noticed PSP never stores a non-run of 2 pixels, and this saves some space usually, so we do the same
+					if (run_length == 2) {
+						run_length--;
+					}
+					util::SDL_fputc((run_length-1), file);
+					util::SDL_fputc(find_colour_in_palette(&R(i)), file);
+					for (j = 0; j < run_length-1; j++) {
+						util::SDL_fputc(find_colour_in_palette(&R(i+j+1)), file);
+					}
+				}
+				i += run_length;
+			}
+		}
+		else {
+			for (int i = 0; i < size.w * size.h; i++) {
+				util::SDL_fputc(find_colour_in_palette(&R(i)), file);
+			}
+		}
+	}
+	else {
+		unsigned char *tmp = new unsigned char[size.w * size.h * 4];
+		unsigned char *p = tmp;
+		unsigned char *p2 = loaded_data;
+		for (int i = 0; i < size.w * size.h; i++) {
+			unsigned char r = *p2++;
+			unsigned char g = *p2++;
+			unsigned char b = *p2++;
+			unsigned char a = *p2++;
+			*p++ = b;
+			*p++ = g;
+			*p++ = r;
+			*p++ = a;
+		}
+		SDL_WriteIO(file, tmp, size.w * size.h * 4);
+		delete[] tmp;
+	}
+
+	return true;
+}
+
 unsigned char *Image::read_backbuffer(bool include_black_bars, int *out_w, int *out_h)
 {
 	int x, y, w, h;
@@ -613,76 +885,6 @@ unsigned char *Image::read_texture(gfx::Image *image)
 
 	return buf;
 #endif
-}
-
-bool Image::merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha)
-{
-	if (header->colourmaptype == 1) {
-		SDL_Color *colour;
-		if (ignore_palette) {
-			colour = &shim::palette[*p];
-		}
-		else {
-			colour = &header->palette[*p];
-		}
-		// Magic pink
-		// Paletted
-		if (colour->r == 255 && colour->g == 0 && colour->b == 255) {
-			// transparent
-			*pixel++ = 0;
-			*pixel++ = 0;
-			*pixel++ = 0;
-			*pixel++ = 0;
-			return true;
-		}
-		else {
-			*pixel++ = colour->r;
-			*pixel++ = colour->g;
-			*pixel++ = colour->b;
-			*pixel++ = 255;
-		}
-		*alpha = false;
-	}
-	else {
-		if (bytes == 4) {
-			if (premultiply_alpha) {
-				float a = p[3] / 255.0f;
-				*pixel++ = (unsigned char)(p[2] * a);
-				*pixel++ = (unsigned char)(p[1] * a);
-				*pixel++ = (unsigned char)(p[0] * a);
-			}
-			else {
-				*pixel++ = p[2];
-				*pixel++ = p[1];
-				*pixel++ = p[0];
-			}
-			*pixel++ = p[3];
-			if (p[3] != 255 && p[3] != 0) {
-				*alpha = true;
-			}
-			else {
-				*alpha = false;
-			}
-			return p[3] == 0;
-		}
-		else if (bytes == 3) {
-			*pixel++ = p[2];
-			*pixel++ = p[1];
-			*pixel++ = p[0];
-			*pixel++ = 255;
-			*alpha = false;
-		}
-		else if (bytes == 2) {
-			*pixel++ = (p[1] & 0x7c) << 1;
-			*pixel++ = ((p[1] & 0x03) << 6) | ((p[0] & 0xe0) >> 2);
-			*pixel++ = (p[0] & 0x1f) << 3;
-			*pixel++ = (p[1] & 0x80) ? 255 : 0;
-			*alpha = false;
-			return (p[1] & 0x80) == 0;
-		}
-	}
-
-	return false;
 }
 
 Image::Image(std::string filename, bool is_absolute_path, bool load_from_filesystem) :
@@ -936,189 +1138,36 @@ unsigned char Image::find_colour_in_palette(unsigned char *p)
 	return 0;
 }
 
-#ifdef USE_PNG
-bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba)
+unsigned char *Image::load_image(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem)
 {
-	int y;
-
-	FILE *fp = fopen(filename.c_str(), "wb");
-	if (!fp) {
-		return false;
+	std::pair<std::string, image_loader> p;
+	std::map<std::string, image_loader>::iterator it;
+	size_t loc = filename.rfind('.');
+	if (loc == std::string::npos) {
+		return nullptr;
 	}
-
-	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png) {
-		return false;
+	std::string ext = filename.substr(loc+1);
+	it = image_loaders.find(ext);
+	if (it == image_loaders.end()) {
+		return nullptr;
 	}
-
-	png_infop info = png_create_info_struct(png);
-	if (!info) {
-		return false;
-	}
-
-	if (setjmp(png_jmpbuf(png))) {
-		return false;
-	}
-
-	png_init_io(png, fp);
-
-	png_set_IHDR(
-		png,
-		info,
-		size.w, size.h,
-		8,
-		PNG_COLOR_TYPE_RGBA,
-		PNG_INTERLACE_NONE,
-		PNG_COMPRESSION_TYPE_DEFAULT,
-		PNG_FILTER_TYPE_DEFAULT
-	);
-
-	png_write_info(png, info);
-
-	if (_save_rgba == false) {
-		png_set_filler(png, 0, PNG_FILLER_AFTER);
-	}
-
-	if (!data) {
-		return false;
-	}
-
-	unsigned char **row_pointers = new unsigned char *[size.h];
-	for (size_t i = 0; i < size.h; i++) {
-		row_pointers[i] = data + i * (size.w * 4);
-	}
-
-	png_write_image(png, row_pointers);
-	png_write_end(png, NULL);
-
-	fclose(fp);
-
-	png_destroy_write_struct(&png, &info);
-
-	delete[] row_pointers;
-
-	return true;
+	return image_loaders[ext](filename, out_size, out_palette, opaque_topleft, opaque_bottomright, has_alpha, load_from_filesystem);
 }
-#endif
 
-bool Image::save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba)
+bool Image::save_image(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba)
 {
-	unsigned char header[] = {
-		(unsigned char)0x00, // idlength
-		(unsigned char)0x01, // colourmap type 1 == palette
-		(unsigned char)(save_rle ? 0x09 : 0x01),
-		(unsigned char)0x00, (unsigned char)0x00, // colourmap origin (little endian)
-		(unsigned char)0x00, save_palettes ? (unsigned char)0x01 : (unsigned char)0x00, // # of palette entries
-		(unsigned char)0x18, // colourmap depth
-		(unsigned char)0x00, (unsigned char)0x00, // x origin
-		(unsigned char)0x00, (unsigned char)0x00, // y origin
-		(unsigned char)(size.w & 0xff), (unsigned char)((size.w >> 8) & 0xff), // width
-		(unsigned char)(size.h & 0xff), (unsigned char)((size.h >> 8) & 0xff), // height
-		(unsigned char)0x08, // bits per pixel
-		(unsigned char)0x00 // image descriptor
-	};
-
-	if (_save_rgba) {
-		header[1] = 0;
-		header[2] = 2;
-		header[5] = 0;
-		header[6] = 0;
-		header[7] = 0;
-		header[16] = 32;
-		header[17] = 8;
+	std::pair<std::string, image_saver> p;
+	std::map<std::string, image_saver>::iterator it;
+	size_t loc = filename.rfind('.');
+	if (loc == std::string::npos) {
+		return false;
 	}
-
-	int header_size = 18;
-
-	SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "wb");
-	if (file == 0) {
-		throw util::Error("Couldn't open " + filename + " for writing");
+	std::string ext = filename.substr(loc+1);
+	it = image_savers.find(ext);
+	if (it == image_savers.end()) {
+		return false;
 	}
-
-	for (int i = 0; i < header_size; i++) {
-		if (util::SDL_fputc(header[i], file) == EOF) {
-			throw util::Error("Write error writing to " + filename);
-		}
-	}
-
-	if (_save_rgba == false) {
-		if (save_palettes) {
-			for (int i = 0; i < 256; i++) {
-				if (util::SDL_fputc(shim::palette[i].b, file) == EOF) {
-					throw util::Error("Write error writing to " + filename);
-				}
-				if (util::SDL_fputc(shim::palette[i].g, file) == EOF) {
-					throw util::Error("Write error writing to " + filename);
-				}
-				if (util::SDL_fputc(shim::palette[i].r, file) == EOF) {
-					throw util::Error("Write error writing to " + filename);
-				}
-			}
-		}
-
-		#define R(n) *(pixel_ptr(loaded_data, n, false, size.w, size.h)+0)
-		#define G(n) *(pixel_ptr(loaded_data, n, false, size.w, size.h)+1)
-		#define B(n) *(pixel_ptr(loaded_data, n, false, size.w, size.h)+2)
-
-		if (save_rle) {
-			for (int i = 0; i < size.w * size.h;) {
-				int j, count;
-				int next_line = i - (i % size.w) + size.w - 1;
-				for (j = i, count = 0; j < size.w * size.h - 1 && j < next_line && count < 127; j++, count++) {
-					if (R(j) != R(j+1) || G(j) != G(j+1) || B(j) != B(j+1)) {
-						break;
-					}
-				}
-				int run_length = j - i + 1;
-				if (run_length > 1) {
-					util::SDL_fputc((run_length-1) | 0x80, file);
-					util::SDL_fputc(find_colour_in_palette(&R(i)), file);
-				}
-				else {
-					for (j = i, count = 0; j < size.w * size.h - 1 && j < next_line && count < 127; j++, count++) {
-						if (R(j) == R(j+1) && G(j) == G(j+1) && B(j) == B(j+1)) {
-							break;
-						}
-					}
-					run_length = j - i + 1;
-					// I noticed PSP never stores a non-run of 2 pixels, and this saves some space usually, so we do the same
-					if (run_length == 2) {
-						run_length--;
-					}
-					util::SDL_fputc((run_length-1), file);
-					util::SDL_fputc(find_colour_in_palette(&R(i)), file);
-					for (j = 0; j < run_length-1; j++) {
-						util::SDL_fputc(find_colour_in_palette(&R(i+j+1)), file);
-					}
-				}
-				i += run_length;
-			}
-		}
-		else {
-			for (int i = 0; i < size.w * size.h; i++) {
-				util::SDL_fputc(find_colour_in_palette(&R(i)), file);
-			}
-		}
-	}
-	else {
-		unsigned char *tmp = new unsigned char[size.w * size.h * 4];
-		unsigned char *p = tmp;
-		unsigned char *p2 = loaded_data;
-		for (int i = 0; i < size.w * size.h; i++) {
-			unsigned char r = *p2++;
-			unsigned char g = *p2++;
-			unsigned char b = *p2++;
-			unsigned char a = *p2++;
-			*p++ = b;
-			*p++ = g;
-			*p++ = r;
-			*p++ = a;
-		}
-		SDL_WriteIO(file, tmp, size.w * size.h * 4);
-		delete[] tmp;
-	}
-
-	return true;
+	return image_savers[ext](filename, loaded_data, size, _save_rgba);
 }
 
 bool Image::save(std::string filename)

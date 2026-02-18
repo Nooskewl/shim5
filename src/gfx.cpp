@@ -901,9 +901,9 @@ static void set_window_icon()
 #ifdef _WIN32
 		int h = 16;
 		std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".png";
-		pixels = Image::read_png(filename, size);
+		pixels = Image::load_image(filename, size);
 #else
-		pixels = Image::read_png("gfx/images/misc/icon256.png", size);
+		pixels = Image::load_image("gfx/images/misc/icon256.png", size);
 #endif
 	}
 	catch (util::Error &e) {
@@ -958,7 +958,7 @@ static void set_window_icon()
 			}
 			//util::debugmsg("workarea_h=%d taskbar_h=%d o=%d biggest=%d dwMajorVersion=%d\n", workarea_h, taskbar_h, o, biggest, vi.dwMajorVersion);
 			std::string filename = std::string("gfx/images/misc/icon") + util::itos(biggest) + ".png";
-			pixels = Image::read_png(filename, size);
+			pixels = Image::load_image(filename, size);
 		}
 		else {
 			throw util::Error("SystemParametersInfo failed!");
@@ -969,7 +969,7 @@ static void set_window_icon()
 		try {
 			int h = 24;
 			std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".png";
-			pixels = Image::read_png(filename, size);
+			pixels = Image::load_image(filename, size);
 		}
 		catch (util::Error &e) {
 			util::infomsg(e.error_message + "\n");
@@ -1015,7 +1015,7 @@ void create_mouse_cursors()
 	}
 	else {
 		try {
-			pixels = Image::read_png("gfx/images/ui/mouse_cursor.png", size);
+			pixels = Image::load_image("gfx/images/ui/mouse_cursor.png", size);
 		}
 		catch (util::Error &e) {
 			util::infomsg(e.error_message + "\n");
@@ -1786,7 +1786,7 @@ void flip()
 				int w, h;
 				unsigned char *data = gfx::Image::read_backbuffer(true, &w, &h);
 				if (data != nullptr) {
-					if (gfx::Image::save_png(fn, data, util::Size<int>(w, h))) {
+					if (gfx::Image::save_image(fn, data, util::Size<int>(w, h), true)) {
 						gfx::add_notification("Screenshot saved in home directory!");
 					}
 					delete[] data;

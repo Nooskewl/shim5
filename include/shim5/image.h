@@ -9,6 +9,25 @@ namespace gfx {
 
 class Shader;
 
+typedef unsigned char *(*image_loader)(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem);
+typedef bool (*image_saver)(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba);
+
+struct TGA_Header {
+	char idlength;
+	char colourmaptype;
+	char datatypecode;
+	Uint16 colourmaporigin;
+	Uint16 colourmaplength;
+	char colourmapdepth;
+	Uint16 x_origin;
+	Uint16 y_origin;
+	Uint16 width;
+	Uint16 height;
+	char bitsperpixel;
+	char imagedescriptor;
+	SDL_Color palette[256];
+};
+
 class Image {
 public:
 	friend class Shader;
@@ -24,13 +43,20 @@ public:
 	static void reload_all(bool include_managed = false);
 	static int get_unfreed_count();
 	static void audit();
-	SHIM5_EXPORT static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
-	SHIM5_EXPORT static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
 	SHIM5_EXPORT static unsigned char *read_backbuffer(bool include_black_bars = true, int *out_w = nullptr, int *out_h = nullptr);
 	SHIM5_EXPORT static unsigned char *read_texture(gfx::Image *image);
-	SHIM5_EXPORT static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
-	SHIM5_EXPORT static bool save_png(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
 	static unsigned char find_colour_in_palette(unsigned char *p);
+
+	static unsigned char *read_png(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem);
+	static unsigned char *read_tga(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette, util::Point<int> *opaque_topleft, util::Point<int> *opaque_bottomright, bool *has_alpha, bool load_from_filesystem);
+	static bool save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba);
+	static bool save_tga(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba);
+
+	SHIM5_EXPORT static unsigned char *load_image(std::string filename, util::Size<int> &out_size, SDL_Color *out_palette = 0, util::Point<int> *opaque_topleft = 0, util::Point<int> *opaque_bottomright = 0, bool *has_alpha = 0, bool load_from_filesystem = false);
+	SHIM5_EXPORT static bool save_image(std::string filename, unsigned char *loaded_data, util::Size<int> size, bool _save_rgba = true);
+
+	SHIM5_EXPORT static void register_image_loader(std::string ext, image_loader func);
+	SHIM5_EXPORT static void register_image_saver(std::string ext, image_saver func);
 
 	// These parameters affect newly created images
 	SHIM5_EXPORT static bool dumping_colours;
@@ -106,23 +132,6 @@ public:
 	SHIM5_EXPORT void update(unsigned char *pixels);
 
 protected:
-	struct TGA_Header {
-		char idlength;
-		char colourmaptype;
-		char datatypecode;
-		Uint16 colourmaporigin;
-		Uint16 colourmaplength;
-		char colourmapdepth;
-		Uint16 x_origin;
-		Uint16 y_origin;
-		Uint16 width;
-		Uint16 height;
-		char bitsperpixel;
-		char imagedescriptor;
-		SDL_Color palette[256];
-	};
-
-	// returns true if pixel is transparent
 	static bool merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha);
 
 	SHIM5_EXPORT struct Internal {
