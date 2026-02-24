@@ -1147,6 +1147,7 @@ unsigned char *Image::load_image(std::string filename, util::Size<int> &out_size
 		return nullptr;
 	}
 	std::string ext = filename.substr(loc+1);
+	ext = util::lowercase(ext);
 	it = image_loaders.find(ext);
 	if (it == image_loaders.end()) {
 		return nullptr;
@@ -1163,6 +1164,7 @@ bool Image::save_image(std::string filename, unsigned char *loaded_data, util::S
 		return false;
 	}
 	std::string ext = filename.substr(loc+1);
+	ext = util::lowercase(ext);
 	it = image_savers.find(ext);
 	if (it == image_savers.end()) {
 		return false;
