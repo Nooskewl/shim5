@@ -136,6 +136,7 @@
 #define glBindTexture_ptr glBindTexture
 #define glTexImage2D_ptr glTexImage2D
 #define glTexParameteri_ptr glTexParameteri
+#define glTextureParameteri_ptr glTextureParameteri
 #define glGetError_ptr glGetError
 #define glDrawArrays_ptr glDrawArrays
 #define glReadPixels_ptr glReadPixels
@@ -146,6 +147,7 @@
 #define glBindBuffer_ptr glBindBuffer
 #define glBufferData_ptr glBufferData
 #define glDeleteBuffers_ptr glDeleteBuffers
+#define glGenerateMipmap_ptr glGenerateMipmap
 #endif
 
 #ifdef IOS
@@ -262,6 +264,7 @@ typedef void (APIENTRY * glGenTextures_func)(GLsizei, GLuint *);
 typedef void (APIENTRY * glBindTexture_func)(GLenum, GLuint);
 typedef void (APIENTRY * glTexImage2D_func)(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid *);
 typedef void (APIENTRY * glTexParameteri_func)(GLenum, GLenum, GLint);
+typedef void (APIENTRY * glTextureParameteri_func)(GLuint, GLenum, GLint);
 typedef void (APIENTRY * glDrawArrays_func)(GLenum, GLint, GLsizei);
 typedef GLenum (APIENTRY * glGetError_func)(void);
 typedef void (APIENTRY * glReadPixels_func)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *);
@@ -272,6 +275,7 @@ typedef void (APIENTRY * glGenBuffers_func)(GLsizei, GLuint *);
 typedef void (APIENTRY * glBindBuffer_func)(GLenum, GLuint);
 typedef void (APIENTRY * glBufferData_func)(GLenum, GLsizei *, const void *, GLenum);
 typedef void (APIENTRY * glDeleteBuffers_func)(GLsizei, const GLuint *);
+typedef void (APIENTRY * glGenerateMipmap_func)(GLenum);
 extern SHIM5_EXPORT glStencilFuncSeparate_func glStencilFuncSeparate_ptr;
 extern SHIM5_EXPORT glStencilOpSeparate_func glStencilOpSeparate_ptr;
 extern SHIM5_EXPORT glBindFramebuffer_func glBindFramebuffer_ptr;
@@ -346,6 +350,7 @@ extern SHIM5_EXPORT glGenTextures_func glGenTextures_ptr;
 extern SHIM5_EXPORT glBindTexture_func glBindTexture_ptr;
 extern SHIM5_EXPORT glTexImage2D_func glTexImage2D_ptr;
 extern SHIM5_EXPORT glTexParameteri_func glTexParameteri_ptr;
+extern SHIM5_EXPORT glTextureParameteri_func glTextureParameteri_ptr;
 extern SHIM5_EXPORT glGetError_func glGetError_ptr;
 extern SHIM5_EXPORT glDrawArrays_func glDrawArrays_ptr;
 extern SHIM5_EXPORT glReadPixels_func glReadPixels_ptr;
@@ -356,6 +361,7 @@ extern SHIM5_EXPORT glGenBuffers_func glGenBuffers_ptr;
 extern SHIM5_EXPORT glBindBuffer_func glBindBuffer_ptr;
 extern SHIM5_EXPORT glBufferData_func glBufferData_ptr;
 extern SHIM5_EXPORT glDeleteBuffers_func glDeleteBuffers_ptr;
+extern SHIM5_EXPORT glGenerateMipmap_func glGenerateMipmap_ptr;
 #endif
 
 #define GLM_FORCE_RADIANS

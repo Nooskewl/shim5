@@ -106,6 +106,7 @@ glGenTextures_func glGenTextures_ptr;
 glBindTexture_func glBindTexture_ptr;
 glTexImage2D_func glTexImage2D_ptr;
 glTexParameteri_func glTexParameteri_ptr;
+glTextureParameteri_func glTextureParameteri_ptr;
 glGetError_func glGetError_ptr;
 glDrawArrays_func glDrawArrays_ptr;
 glReadPixels_func glReadPixels_ptr;
@@ -116,6 +117,7 @@ glGenBuffers_func glGenBuffers_ptr;
 glBindBuffer_func glBindBuffer_ptr;
 glBufferData_func glBufferData_ptr;
 glDeleteBuffers_func glDeleteBuffers_ptr;
+glGenerateMipmap_func glGenerateMipmap_ptr;
 #endif
 
 #if defined SDL_PLATFORM_APPLE && !defined IOS
@@ -648,6 +650,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glBindTexture_ptr = (glBindTexture_func)SDL_GL_GetProcAddress("glBindTexture");
 	glTexImage2D_ptr = (glTexImage2D_func)SDL_GL_GetProcAddress("glTexImage2D");
 	glTexParameteri_ptr = (glTexParameteri_func)SDL_GL_GetProcAddress("glTexParameteri");
+	glTextureParameteri_ptr = (glTextureParameteri_func)SDL_GL_GetProcAddress("glTextureParameteri");
 	glGetError_ptr = (glGetError_func)SDL_GL_GetProcAddress("glGetError");
 	glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
 	glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
@@ -658,6 +661,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glBindBuffer_ptr = (glBindBuffer_func)SDL_GL_GetProcAddress("glBindBuffer");
 	glBufferData_ptr = (glBufferData_func)SDL_GL_GetProcAddress("glBufferData");
 	glDeleteBuffers_ptr = (glDeleteBuffers_func)SDL_GL_GetProcAddress("glDeleteBuffers");
+	glGenerateMipmap_ptr = (glGenerateMipmap_func)SDL_GL_GetProcAddress("glGenerateMipmap");
 
 	if (glStencilFuncSeparate_ptr == 0) { util::debugmsg("glStencilFuncSeparate_ptr=%p\n", glStencilFuncSeparate_ptr); }
 	if (glStencilOpSeparate_ptr == 0) { util::debugmsg("glStencilOpSeparate_ptr=%p\n", glStencilOpSeparate_ptr); }
@@ -733,6 +737,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glBindTexture_ptr == 0) { util::debugmsg("glBindTexture_ptr=%p\n", glBindTexture_ptr); }
 	if (glTexImage2D_ptr == 0) { util::debugmsg("glTexImage2D_ptr=%p\n", glTexImage2D_ptr); }
 	if (glTexParameteri_ptr == 0) { util::debugmsg("glTexParameteri_ptr=%p\n", glTexParameteri_ptr); }
+	if (glTextureParameteri_ptr == 0) { util::debugmsg("glTextureParameteri_ptr=%p\n", glTextureParameteri_ptr); }
 	if (glGetError_ptr == 0) { util::debugmsg("glGetError_ptr=%p\n", glGetError_ptr); }
 	if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
 	if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
@@ -743,6 +748,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glBindBuffer_ptr == 0) { util::debugmsg("glBindBuffer_ptr=%p\n", glBindBuffer_ptr); }
 	if (glBufferData_ptr == 0) { util::debugmsg("glBufferData_ptr=%p\n", glBufferData_ptr); }
 	if (glDeleteBuffers_ptr == 0) { util::debugmsg("glDeleteBuffers_ptr=%p\n", glDeleteBuffers_ptr); }
+	if (glGenerateMipmap_ptr == 0) { util::debugmsg("glGenerateMipmap_ptr=%p\n", glGenerateMipmap_ptr); }
 #endif
 
 	gfx::clear(shim::black);
