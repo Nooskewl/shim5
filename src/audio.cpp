@@ -219,15 +219,15 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 			max = MAX(max, length);
 
 			for (int i = 0; i < length; i++) {
-				float sample_offset_f = (i + s->offset) / p * s->channels;
-				int sample_offset = int((i + s->offset) / p) * s->channels;
+				float sample_offset_f = (i + s->offset) / p * s->spec->channels;
+				int sample_offset = int((i + s->offset) / p) * s->spec->channels;
 				if (sample_offset <= 1 || sample_offset >= (int)s->length) {
 					// special case because we can't access the previous sample below (segfault)
 					interpolate = false;
 				}
 
 				int loops;
-				if (s->channels == 2 && audio::internal::audio_context.device_spec.channels == 2) {
+				if (s->spec->channels == 2 && audio::internal::audio_context.device_spec.channels == 2) {
 					loops = 2;
 				}
 				else {
@@ -240,21 +240,21 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 						int samps[4];
 						float values[4];
 						samps[1] = sample_offset;
-						samps[0] = samps[1] - s->channels;
-						samps[2] = samps[1] + s->channels;
-						samps[3] = samps[1] + s->channels*2;
+						samps[0] = samps[1] - s->spec->channels;
+						samps[2] = samps[1] + s->spec->channels;
+						samps[3] = samps[1] + s->spec->channels*2;
 						for (int i = 0; i < 4; i++) {
 							if (samps[i] < 0) {
 								samps[i] = 0;
 							}
-							else if ((Uint32)samps[i] >= s->length*s->channels) {
-								samps[i] = s->length*s->channels - 1;
+							else if ((Uint32)samps[i] >= s->length*s->spec->channels) {
+								samps[i] = s->length*s->spec->channels - 1;
 							}
 							values[i] = read_float_sample(s, samps[i]);
 						}
 						hermite->start(values[0], values[1], values[2], values[3], 1000000);
-						float f = fmodf(sample_offset_f, s->channels);
-						f /= s->channels;
+						float f = fmodf(sample_offset_f, s->spec->channels);
+						f /= s->spec->channels;
 						hermite->interpolate(f * 1000000);
 						v = hermite->get_value();
 					}
@@ -268,7 +268,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 					int dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + k;
 
-					if (audio::internal::audio_context.device_spec.channels == 2 && s->channels == 1) {
+					if (audio::internal::audio_context.device_spec.channels == 2 && s->spec->channels == 1) {
 						*((float *)sfx_buf + dest_offset) += v;
 						*((float *)sfx_buf + dest_offset+1) += v;
 					}

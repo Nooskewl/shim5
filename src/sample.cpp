@@ -256,7 +256,6 @@ void Sample::play(float volume, bool loop, int type)
 
 	s->type = type;
 	s->master_volume = 1.0f;
-	s->channels = spec->channels;
 
 	audio::lock_mutex();
 	delete_instances();
@@ -311,7 +310,6 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 
 	s->type = type;
 	s->master_volume = 1.0f;
-	s->channels = spec->channels;
 	
 	audio::lock_mutex();
 	internal::audio_context.playing_samples.push_back(s);

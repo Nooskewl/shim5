@@ -32,7 +32,6 @@ struct Sample_Instance {
 	float max_sample;
 	int type; // default 0 (sfx), can set different types
 	float master_volume; // different for sfx/MML samples
-	int channels;
 };
 
 class SHIM5_EXPORT Sample : public Sound {
