@@ -183,10 +183,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 	std::vector<audio::Sample_Instance *>::iterator it;
 	for (it = audio::internal::audio_context.playing_samples.begin(); it != audio::internal::audio_context.playing_samples.end();) {
 		audio::Sample_Instance *s = *it;
-		if (s->type == audio::SAMPLE_TYPE_SFX && sfx_paused) {
-			it++;
-			continue;
-		}
 		int count = s->silence;
 		s->silence -= MIN((int)s->silence, samples);
 		while (count < samples) {
@@ -262,9 +258,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 						v = read_float_sample(s, sample_offset);
 					}
 					v = v * s->volume * s->master_volume;
-					if (s->type != audio::SAMPLE_TYPE_MML) {
-						v = v * shim::sfx_volume;
-					}
 
 					int dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + k;
 
@@ -387,8 +380,6 @@ bool static_start()
 
 bool start()
 {
-	shim::music = 0;
-
 	util::JSON::Node *root = shim::shim_json->get_root();
 
 	internal::audio_context.mute = root->get_nested_bool("shim>audio>mute", &internal::audio_context.mute, false, true, true);

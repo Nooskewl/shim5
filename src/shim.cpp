@@ -89,10 +89,7 @@ util::Point<int> cursor_hotspot;
 bool scale_mouse_cursor;
 bool multisampling;
 int aa_samples;
-audio::MML *music;
 audio::MML *widget_sfx;
-double music_volume;
-double sfx_volume;
 int samplerate;
 int key_l;
 int key_r;
@@ -236,10 +233,6 @@ static void load_mml()
 	catch (util::Error &e) {
 		util::infomsg(e.error_message + "\n");
 	}
-
-	if (widget_sfx != nullptr) {
-		widget_sfx->set_pause_with_sfx(false);
-	}
 }
 
 static void destroy_mml()
@@ -319,7 +312,6 @@ bool static_start(int sdl_init_flags)
 	z_add = 0.0f;
 	//user_render = 0;
 	refresh_rate = 0;
-	music = 0;
 	widget_sfx = 0;
 	cpa_extra_bytes_after_exe_data = 0;
 	cpa_pointer_to_data = 0;
@@ -404,8 +396,6 @@ bool static_start(int sdl_init_flags)
 	depth_buffer_size.h = root->get_nested_int("shim>gfx>depth_buffer_size.h", &depth_buffer_size.h, -1);
 	scale_mouse_cursor = root->get_nested_bool("shim>gfx>scale_mouse_cursor", &scale_mouse_cursor, false, true, false);
 	hide_window = root->get_nested_bool("shim>gfx>hide_window", &hide_window, false, true, true);
-	music_volume = root->get_nested_double("shim>audio>music_volume", &music_volume, 1.0f);
-	sfx_volume = root->get_nested_double("shim>audio>sfx_volume", &sfx_volume, 1.0f);
 	samplerate = root->get_nested_int("shim>audio>samplerate", &samplerate, 0, true, true);
 	// these are for devsettings
 	key_l = TGUIK_LEFT;
@@ -547,9 +537,6 @@ void end()
 	}
 
 	destroy_mml();
-
-	delete shim::music;
-	shim::music = 0;
 
 	delete cpa;
 

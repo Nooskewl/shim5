@@ -25,7 +25,7 @@ public:
 
 	static void static_start();
 	static void static_stop();
-	static void pause_all();
+	static void pause_all(bool onoff);
 	static int mix(float *buf, int samples, bool sfx_paused);
 
 	SHIM5_EXPORT MML(SDL_IOStream *f, bool load_from_filesystem = false);
@@ -36,14 +36,11 @@ public:
 	SHIM5_EXPORT void play(bool loop); // plays at SFX volume. This is part of the Sound interface
 	SHIM5_EXPORT bool is_done(); // also Sound interface
 	SHIM5_EXPORT void stop(); // Sound interface
-	SHIM5_EXPORT void pause();
+	SHIM5_EXPORT void pause(bool onoff);
 	SHIM5_EXPORT void set_master_volume(float volume);
 	SHIM5_EXPORT float get_master_volume();
 	SHIM5_EXPORT std::string get_name(); // returns same thing passed to constructor
 	SHIM5_EXPORT bool is_playing();
-
-	SHIM5_EXPORT void set_pause_with_sfx(bool pause_with_sfx);
-	SHIM5_EXPORT bool pause_with_sfx();
 
 private:
 	// Formerly Internal --
@@ -72,7 +69,7 @@ private:
 
 		SHIM5_EXPORT void play(bool loop);
 		SHIM5_EXPORT void stop();
-		SHIM5_EXPORT void pause();
+		SHIM5_EXPORT void pause(bool onoff);
 		SHIM5_EXPORT int update(float *buf, int length);
 
 		SHIM5_EXPORT bool is_playing();
@@ -81,9 +78,6 @@ private:
 		SHIM5_EXPORT void set_master_volume(float master_volume, float master_volume_samples);
 		SHIM5_EXPORT float get_master_volume();
 		SHIM5_EXPORT float get_master_volume_real();
-
-		SHIM5_EXPORT void set_pause_with_sfx(bool pause_with_sfx);
-		SHIM5_EXPORT bool pause_with_sfx();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -99,7 +93,6 @@ private:
 		float get_dutycycle();
 		void start_wavs(Uint32 buffer_offset, Uint32 on_or_after);
 		void stop_wavs();
-		void set_sample_volumes(float volume);
 
 		std::string next_note(const char *text, int *pos);
 		int notelength(const char *tok, const char *text, int *pos);
@@ -155,7 +148,6 @@ private:
 		std::vector<Sample *> wav_samples;
 		std::vector<Wav_Start> wav_starts; // <sample index, sample to start at>
 		int wav_sample;
-		bool _pause_with_sfx;
 
 		math::Interpolator *freq_interp;
 		math::Interpolator *freq_interp_o;
@@ -195,13 +187,7 @@ private:
 	static std::vector<MML *> loaded_mml;
 
 	std::string name;
-	
-	bool _pause_with_sfx;
 };
-
-void SHIM5_EXPORT play_music(std::string name);
-void SHIM5_EXPORT pause_music();
-void SHIM5_EXPORT stop_music();
 
 } // End namespace audio
 

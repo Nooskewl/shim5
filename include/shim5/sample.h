@@ -7,10 +7,6 @@ namespace noo {
 
 namespace audio {
 
-const int SAMPLE_TYPE_SFX = 0;
-const int SAMPLE_TYPE_MML = 1;
-const int SAMPLE_TYPE_USER = 100;
-
 class Sample;
 
 struct Sample_Instance {
@@ -30,7 +26,6 @@ struct Sample_Instance {
 	bool format_should_be_swapped;
 	float min_sample;
 	float max_sample;
-	int type; // default 0 (sfx), can set different types
 	float master_volume; // different for sfx/MML samples
 };
 
@@ -43,7 +38,6 @@ public:
 
 	static void update();
 
-	void play(float volume, bool loop, int type);
 	void play(float volume, bool loop); // Sound interface
 	void play(bool loop); // Sound interface
 	bool is_done(); // Sound interface
@@ -53,7 +47,7 @@ public:
 	// Play length/silence is in samples based on the device frequency (audio::internal::audio_context.device_spec.freq)
 	// If play_length is 0, it plays unstretched
 	// silence is samples until it starts
-	Sample_Instance *play_stretched(float volume, Uint32 silence, Uint32 play_length, int type = 0);
+	Sample_Instance *play_stretched(float volume, Uint32 silence, Uint32 play_length);
 
 	void stop_all();
 

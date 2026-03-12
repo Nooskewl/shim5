@@ -172,16 +172,16 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-void MML::pause_all()
+void MML::pause_all(bool onoff)
 {
 	audio::lock_mutex();
 
 	for (size_t i = 0; i < loaded_mml.size(); i++) {
 		for (size_t j = 0; j < loaded_mml[i]->tracks.size(); j++) {
-			loaded_mml[i]->tracks[j]->pause();
+			loaded_mml[i]->tracks[j]->pause(onoff);
 		}
 		for (size_t j = 0; j < loaded_mml[i]->reverb_tracks.size(); j++) {
-			loaded_mml[i]->reverb_tracks[j]->pause();
+			loaded_mml[i]->reverb_tracks[j]->pause(onoff);
 		}
 	}
 
@@ -204,7 +204,6 @@ MML::Track::Track(Wave_Type type, std::string text, std::vector< std::pair<int, 
 	master_volume_samples(1.0f),
 	wav_samples(wav_samples),
 	wav_starts(wav_starts),
-	_pause_with_sfx(true),
 	mml(mml),
 	beginning_silence(beginning_silence),
 	internal_volume(1.0f),
@@ -253,10 +252,20 @@ void MML::Track::stop()
 	reset(0);
 }
 
-void MML::Track::pause()
+void MML::Track::pause(bool onoff)
 {
-	playing = false;
-	stop_wavs();
+	if (onoff) {
+		playing = false;
+		stop_wavs();
+	}
+	else {
+		playing = true;
+
+		this->loop = loop;
+
+		stop_wavs();
+		start_wavs(0, sample);
+	}
 }
 
 int MML::Track::update(float *buf, int length)
@@ -264,8 +273,6 @@ int MML::Track::update(float *buf, int length)
 	if (done) {
 		return 0;
 	}
-
-	set_sample_volumes(master_volume_samples);
 
 	int buffer_fulfilled = 0;
 
@@ -505,7 +512,6 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			Track *t = new Track(type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types);
 			t->internal_volume = v;
 			mml->reverb_tracks.push_back(t);
-			t->set_pause_with_sfx(mml->_pause_with_sfx);
 			for (size_t i = 0; i < mml->reverb_tracks.size(); i++) {
 				mml->reverb_tracks[i]->set_master_volume(master_volume_samples/mml->reverb_tracks.size(), master_volume_samples);
 			}
@@ -1246,7 +1252,6 @@ void MML::Track::set_master_volume(float master_volume, float master_volume_samp
 	}
 
 	this->master_volume_samples = master_volume_samples;
-	set_sample_volumes(master_volume_samples);
 }
 
 float MML::Track::get_master_volume()
@@ -1259,22 +1264,12 @@ float MML::Track::get_master_volume_real()
 	return master_volume;
 }
 
-void MML::Track::set_pause_with_sfx(bool pause_with_sfx)
-{
-	_pause_with_sfx = pause_with_sfx;
-}
-
-bool MML::Track::pause_with_sfx()
-{
-	return _pause_with_sfx;
-}
-
 void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 {
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		if (w.play_start >= on_or_after) {
-			w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, w.play_start+buffer_offset-on_or_after, w.length, (_pause_with_sfx == false) ? SAMPLE_TYPE_MML : SAMPLE_TYPE_SFX);
+			w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, w.play_start+buffer_offset-on_or_after, w.length);
 			w.instance->master_volume = master_volume_samples;
 		}
 	}
@@ -1290,19 +1285,6 @@ void MML::Track::stop_wavs()
 		}
 	}
 }
-
-void MML::Track::set_sample_volumes(float volume)
-{
-	// Update sample volumes with shim::music volume as they're part of the music (these have type SAMPLE_TYPE_MML so don't get sfx_volume)
-	for (size_t i = 0; i < wav_starts.size(); i++) {
-		Wav_Start &w = wav_starts[i];
-		if (w.instance != 0) {
-			w.instance->master_volume = volume;
-		}
-	}
-}
-
-//--
 
 int MML::mix(float *buf, int samples, bool sfx_paused)
 {
@@ -1323,9 +1305,6 @@ int MML::mix(float *buf, int samples, bool sfx_paused)
 
 		for (size_t track = 0; track < tracks.size(); track++) {
 			if (tracks[track]->is_playing()) {
-				if (tracks[track]->pause_with_sfx() && sfx_paused) {
-					continue;
-				}
 				int fulfilled = tracks[track]->update(tmp, samples);
 				if (fulfilled > 0) {
 					num_playing_tracks++;
@@ -1339,10 +1318,6 @@ int MML::mix(float *buf, int samples, bool sfx_paused)
 		for (std::vector<Track *>::iterator it = reverb_tracks.begin(); it != reverb_tracks.end();) {
 			Track *t = *it;
 			if (t->is_playing()) {
-				if (t->pause_with_sfx() && sfx_paused) {
-					it++;
-					continue;
-				}
 				int fulfilled = t->update(tmp, samples);
 				if (fulfilled > 0) {
 					num_playing_tracks++;
@@ -1407,8 +1382,7 @@ MML::MML(std::string filename, bool load_from_filesystem) :
 	load(f, load_from_filesystem);
 }
 
-MML::MML(SDL_IOStream *f, bool load_from_filesystem) :
-	_pause_with_sfx(true)
+MML::MML(SDL_IOStream *f, bool load_from_filesystem)
 {
 	load(f, load_from_filesystem);
 }
@@ -2104,10 +2078,6 @@ void MML::play(float volume, bool loop)
 
 	set_master_volume(volume);
 
-	if (this == shim::music) {
-		set_pause_with_sfx(false);
-	}
-
 	audio::lock_mutex();
 
 	for (size_t i = 0; i < tracks.size(); i++) {
@@ -2123,19 +2093,19 @@ void MML::play(float volume, bool loop)
 
 void MML::play(bool loop)
 {
-	play(shim::sfx_volume, loop);
+	play(1.0f, loop);
 }
 
-void MML::pause()
+void MML::pause(bool onoff)
 {
 	audio::lock_mutex();
 
 	for (size_t i = 0; i < tracks.size(); i++) {
-		tracks[i]->pause();
+		tracks[i]->pause(onoff);
 	}
 
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
-		reverb_tracks[i]->pause();
+		reverb_tracks[i]->pause(onoff);
 	}
 
 	audio::unlock_mutex();
@@ -2195,17 +2165,6 @@ float MML::get_master_volume()
 	}
 }
 
-void MML::set_pause_with_sfx(bool pause_with_sfx)
-{
-	_pause_with_sfx = pause_with_sfx;
-	for (size_t i = 0; i < tracks.size(); i++) {
-		tracks[i]->set_pause_with_sfx(pause_with_sfx);
-	}
-	for (size_t i = 0; i < reverb_tracks.size(); i++) {
-		reverb_tracks[i]->set_pause_with_sfx(pause_with_sfx);
-	}
-}
-
 bool MML::is_playing()
 {
 	bool playing = false;
@@ -2216,36 +2175,6 @@ bool MML::is_playing()
 		}
 	}
 	return playing;
-}
-
-void play_music(std::string name)
-{
-	if (shim::music && shim::music->get_name() == name) {
-		if (shim::music->is_playing() == false) {
-			shim::music->set_pause_with_sfx(false);
-			shim::music->play(shim::music_volume, true);
-		}
-	}
-	else {
-		delete shim::music;
-		shim::music = new MML(name);
-		shim::music->set_pause_with_sfx(false);
-		shim::music->play(shim::music_volume, true);
-	}
-}
-
-void pause_music()
-{
-	if (shim::music) {
-		shim::music->pause();
-	}
-}
-
-void stop_music()
-{
-	if (shim::music) {
-		shim::music->stop();
-	}
 }
 
 } // End namespace audio

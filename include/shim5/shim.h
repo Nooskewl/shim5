@@ -103,10 +103,7 @@ extern SHIM5_EXPORT bool scale_mouse_cursor;
 extern SHIM5_EXPORT bool multisampling;
 extern SHIM5_EXPORT int aa_samples;
 // audio
-extern SHIM5_EXPORT audio::MML *music;
 extern SHIM5_EXPORT audio::MML *widget_sfx;
-extern SHIM5_EXPORT double music_volume;
-extern SHIM5_EXPORT double sfx_volume;
 extern SHIM5_EXPORT int samplerate;
 // input
 extern SHIM5_EXPORT int xbox_l;

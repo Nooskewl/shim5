@@ -216,7 +216,7 @@ void Sample::play(bool loop)
 }
 
 // FIXME: avoid repetition here with other play method
-void Sample::play(float volume, bool loop, int type)
+void Sample::play(float volume, bool loop)
 {
 	if (internal::audio_context.mute) {
 		return;
@@ -254,7 +254,6 @@ void Sample::play(float volume, bool loop, int type)
 		s->max_sample = powf(2, s->bits_per_sample-1) - 1;
 	}
 
-	s->type = type;
 	s->master_volume = 1.0f;
 
 	audio::lock_mutex();
@@ -263,12 +262,7 @@ void Sample::play(float volume, bool loop, int type)
 	audio::unlock_mutex();
 }
 
-void Sample::play(float volume, bool loop)
-{
-	play(volume, loop, 0);
-}
-
-Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length, int type)
+Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length)
 {
 	if (internal::audio_context.mute) {
 		return 0;
@@ -308,7 +302,6 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 		s->max_sample = powf(2, s->bits_per_sample-1) - 1;
 	}
 
-	s->type = type;
 	s->master_volume = 1.0f;
 	
 	audio::lock_mutex();
