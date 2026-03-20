@@ -13,7 +13,7 @@ struct Audio_Context {
 	std::vector<Sample_Instance *> playing_samples;
 };
 
-extern Audio_Context audio_context;
+extern SHIM5_EXPORT Audio_Context audio_context;
 
 } // End namespace internal
 

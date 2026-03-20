@@ -32,6 +32,7 @@ public:
 	static void stop_instance(Sample_Instance *s);
 	static void set_instance_volume(Sample_Instance *s, float volume);
 	static void pause_instance(Sample_Instance *s, bool onoff);
+	static bool sample_active(Sample_Instance *s);
 
 	Sample(std::string filename, bool load_from_filesystem = false);
 	virtual ~Sample();
@@ -47,7 +48,7 @@ public:
 	// Play length/silence is in samples based on the device frequency (audio::internal::audio_context.device_spec.freq)
 	// If play_length is 0, it plays unstretched
 	// silence is samples until it starts
-	Sample_Instance *play_stretched(float volume, Uint32 silence, Uint32 play_length);
+	Sample_Instance *play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop);
 
 	void stop_all();
 

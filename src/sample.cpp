@@ -49,6 +49,23 @@ void Sample::pause_instance(Sample_Instance *s, bool onoff)
 	audio::unlock_mutex();
 }
 
+bool Sample::sample_active(Sample_Instance *s)
+{
+	audio::lock_mutex();
+
+	for (std::vector<Sample_Instance *>::iterator it = internal::audio_context.playing_samples.begin(); it != internal::audio_context.playing_samples.end(); it++) {
+		Sample_Instance *s2 = *it;
+		if (s2 == s) {
+			audio::unlock_mutex();
+			return true;
+		}
+	}
+
+	audio::unlock_mutex();
+
+	return false;
+}
+
 Sample::Sample(std::string filename, bool load_from_filesystem) :
 	done(false)
 {
@@ -279,7 +296,7 @@ void Sample::play(float volume, bool loop)
 	audio::unlock_mutex();
 }
 
-Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length)
+Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop)
 {
 	if (internal::audio_context.mute) {
 		return 0;
@@ -302,7 +319,7 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 	s->play_length = (play_length == 0 ? length * p : play_length);
 	s->offset = 0;
 	s->silence = silence;
-	s->loop = false;
+	s->loop = loop;
 	s->volume = volume;
 	s->sample = this;
 	s->bits_per_sample = bits_per_sample;

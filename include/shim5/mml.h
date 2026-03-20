@@ -74,21 +74,22 @@ public:
 	SHIM5_EXPORT MML(std::string filename, bool load_from_filesystem = false);
 	SHIM5_EXPORT virtual ~MML();
 
-	SHIM5_EXPORT unsigned int play(float volume, bool loop);
-	SHIM5_EXPORT unsigned int play(bool loop); // plays at 1.0
-	SHIM5_EXPORT void stop(unsigned int id);
-	SHIM5_EXPORT void pause(unsigned int id, bool onoff);
-	SHIM5_EXPORT void set_master_volume(unsigned int id, float volume);
-	SHIM5_EXPORT float get_master_volume(unsigned int id);
-	SHIM5_EXPORT void set_tempo(unsigned int id, int bpm);
+	SHIM5_EXPORT Uint32 play(float volume, bool loop);
+	SHIM5_EXPORT Uint32 play(bool loop); // plays at 1.0
+	SHIM5_EXPORT void stop(Uint32 id);
+	SHIM5_EXPORT void pause(Uint32 id, bool onoff);
+	SHIM5_EXPORT void set_master_volume(Uint32 id, float volume);
+	SHIM5_EXPORT float get_master_volume(Uint32 id);
+	SHIM5_EXPORT void set_tempo(Uint32 id, int bpm);
 	SHIM5_EXPORT std::string get_name(); // returns same thing passed to constructor
+	SHIM5_EXPORT bool track_active(Uint32 id);
 
 private:
 	class Track
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(unsigned int id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
+		SHIM5_EXPORT Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
 		~Track();
 
 		SHIM5_EXPORT void play(bool loop);
@@ -103,7 +104,7 @@ private:
 		SHIM5_EXPORT float get_master_volume();
 		SHIM5_EXPORT float get_master_volume_real();
 
-		SHIM5_EXPORT unsigned int get_id();
+		SHIM5_EXPORT Uint32 get_id();
 
 		SHIM5_EXPORT void real_set_tempo(int bpm);
 		SHIM5_EXPORT void set_tempo(int bpm);
@@ -127,7 +128,7 @@ private:
 		std::string next_note(const char *text, int *pos);
 		int notelength(const char *tok, const char *text, int *pos);
 
-		unsigned int id;
+		Uint32 id;
 
 		Wave_Type type;
 		std::string text;
@@ -222,7 +223,7 @@ private:
 
 	std::string name;
 
-	unsigned int instance;
+	Uint32 instance;
 
 	MML_Data *mml_data;
 };

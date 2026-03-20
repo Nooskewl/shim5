@@ -172,7 +172,7 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-MML::Track::Track(unsigned int id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types) :
+MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types) :
 	id(id),
 	type(type),
 	text(text),
@@ -1291,7 +1291,7 @@ void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 			int length = w.length == 0 ? 0 : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
 			int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
 			if (silence >= 0) {
-				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length);
+				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false);
 				w.instance->volume = master_volume;
 			}
 		}
@@ -1309,7 +1309,7 @@ void MML::Track::stop_wavs()
 	}
 }
 
-unsigned int MML::Track::get_id()
+Uint32 MML::Track::get_id()
 {
 	return id;
 }
@@ -2147,11 +2147,11 @@ MML::~MML()
 #endif
 }
 
-unsigned int MML::play(float volume, bool loop)
+Uint32 MML::play(float volume, bool loop)
 {
 	audio::lock_mutex();
 
-	unsigned int play_id = instance - 1;
+	Uint32 play_id = instance - 1;
 
 	set_master_volume(play_id, volume);
 
@@ -2179,12 +2179,12 @@ unsigned int MML::play(float volume, bool loop)
 	return play_id;
 }
 
-unsigned int MML::play(bool loop)
+Uint32 MML::play(bool loop)
 {
 	return play(1.0f, loop);
 }
 
-void MML::pause(unsigned int id, bool onoff)
+void MML::pause(Uint32 id, bool onoff)
 {
 	audio::lock_mutex();
 
@@ -2203,7 +2203,7 @@ void MML::pause(unsigned int id, bool onoff)
 	audio::unlock_mutex();
 }
 
-void MML::stop(unsigned int id)
+void MML::stop(Uint32 id)
 {
 	audio::lock_mutex();
 
@@ -2232,7 +2232,17 @@ std::string MML::get_name()
 	return name;
 }
 
-void MML::set_master_volume(unsigned int id, float master_volume)
+bool MML::track_active(Uint32 id)
+{
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->get_id() == id) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void MML::set_master_volume(Uint32 id, float master_volume)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == id) {
@@ -2246,7 +2256,7 @@ void MML::set_master_volume(unsigned int id, float master_volume)
 	}
 }
 
-float MML::get_master_volume(unsigned int id)
+float MML::get_master_volume(Uint32 id)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == id) {
@@ -2256,7 +2266,7 @@ float MML::get_master_volume(unsigned int id)
 	return 1.0f;
 }
 
-void MML::set_tempo(unsigned int id, int bpm)
+void MML::set_tempo(Uint32 id, int bpm)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == id) {
