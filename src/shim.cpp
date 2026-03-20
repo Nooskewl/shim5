@@ -11,7 +11,6 @@
 #include "shim5/primitives.h"
 #include "shim5/sample.h"
 #include "shim5/shim.h"
-#include "shim5/sound.h"
 #include "shim5/sprite.h"
 #include "shim5/translation.h"
 #include "shim5/util.h"

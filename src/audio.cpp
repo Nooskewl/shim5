@@ -27,7 +27,6 @@ static bool format_is_signed;
 static bool format_should_be_swapped;
 static float min_sample;
 static float max_sample;
-static bool sfx_paused;
 static math::Interpolator *hermite;
 
 static float swap_float(float f)
@@ -178,11 +177,15 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 		sfx_buf[i] = 0.0f;
 	}
 
-	int max = audio::MML::mix(music_buf, samples, sfx_paused);
+	int max = audio::MML::mix(music_buf, samples);
 
 	std::vector<audio::Sample_Instance *>::iterator it;
 	for (it = audio::internal::audio_context.playing_samples.begin(); it != audio::internal::audio_context.playing_samples.end();) {
 		audio::Sample_Instance *s = *it;
+		if (s->paused) {
+			it++;
+			continue;
+		}
 		int count = s->silence;
 		s->silence -= MIN((int)s->silence, samples);
 		while (count < samples) {
@@ -257,7 +260,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 					else {
 						v = read_float_sample(s, sample_offset);
 					}
-					v = v * s->volume * s->master_volume;
+					v = v * s->volume;
 
 					int dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + k;
 
@@ -373,7 +376,6 @@ namespace audio {
 bool static_start()
 {
 	internal::audio_context.playing_samples.clear();
-	sfx_paused = false;
 
 	return true;
 }
@@ -480,11 +482,6 @@ int millis_to_samples(int millis)
 int samples_to_millis(int samples, int freq)
 {
 	return samples / (freq == -1 ? (float)internal::audio_context.device_spec.freq : freq) * 1000.0f;
-}
-
-void pause_sfx(bool paused)
-{
-	sfx_paused = paused;
 }
 
 void lock_mutex()

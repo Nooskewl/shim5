@@ -3,7 +3,6 @@
 
 #include "shim5/main.h"
 #include "shim5/interp.h"
-#include "shim5/sound.h"
 
 namespace noo {
 
@@ -12,7 +11,7 @@ namespace audio {
 class Sample;
 struct Sample_Instance;
 
-class MML : public Sound {
+class MML {
 public:
 	enum Wave_Type {
 		PULSE = 0,
@@ -23,33 +22,19 @@ public:
 		NOISE_ORIG,
 	};
 
-	static void static_start();
-	static void static_stop();
-	static void pause_all(bool onoff);
-	static int mix(float *buf, int samples, bool sfx_paused);
-
-	SHIM5_EXPORT MML(SDL_IOStream *f, bool load_from_filesystem = false);
-	SHIM5_EXPORT MML(std::string filename, bool load_from_filesystem = false);
-	SHIM5_EXPORT virtual ~MML();
-
-	SHIM5_EXPORT void play(float volume, bool loop); // Sound interface
-	SHIM5_EXPORT void play(bool loop); // plays at SFX volume. This is part of the Sound interface
-	SHIM5_EXPORT bool is_done(); // also Sound interface
-	SHIM5_EXPORT void stop(); // Sound interface
-	SHIM5_EXPORT void pause(bool onoff);
-	SHIM5_EXPORT void set_master_volume(float volume);
-	SHIM5_EXPORT float get_master_volume();
-	SHIM5_EXPORT std::string get_name(); // returns same thing passed to constructor
-	SHIM5_EXPORT bool is_playing();
-
-private:
-	// Formerly Internal --
 	struct Wav_Start {
 		int sample;
+		Uint32 orig_play_start;
 		Uint32 play_start;
-		Uint32 length;
 		Sample_Instance *instance;
 		float volume;
+		std::vector<std::string> toks;
+		int note_length;
+		int orig_tempo;
+		int tempo;
+		int octave;
+		int note;
+		int length;
 	};
 
 	struct Reverb_Type {
@@ -60,11 +45,50 @@ private:
 		int final_volume;
 	};
 
+	struct Track_Data {
+		std::string text;
+		Wave_Type type;
+		std::vector< std::pair<int, float> > volumes;
+		std::vector< std::pair<int, float> > volume_offsets;
+		std::vector<int> pitches;
+		std::vector<int> pitch_offsets;
+		std::vector< std::pair<int, float> > dutycycles;
+		int pad;
+		std::vector<Wav_Start> wav_starts;
+		Uint32 beginning_silence;
+	};
+
+	struct MML_Data {
+		MML *mml;
+		std::vector< std::vector<float> > pitch_envelopes;
+		std::vector< std::vector<float> > pitch_offset_envelopes;
+		std::vector<Reverb_Type> reverb_types;
+		std::vector<Track_Data *> track_data;
+	};
+
+	static void static_start();
+	static void static_stop();
+	static int mix(float *buf, int samples);
+
+	SHIM5_EXPORT MML(SDL_IOStream *f, bool load_from_filesystem = false);
+	SHIM5_EXPORT MML(std::string filename, bool load_from_filesystem = false);
+	SHIM5_EXPORT virtual ~MML();
+
+	SHIM5_EXPORT unsigned int play(float volume, bool loop);
+	SHIM5_EXPORT unsigned int play(bool loop); // plays at 1.0
+	SHIM5_EXPORT void stop(unsigned int id);
+	SHIM5_EXPORT void pause(unsigned int id, bool onoff);
+	SHIM5_EXPORT void set_master_volume(unsigned int id, float volume);
+	SHIM5_EXPORT float get_master_volume(unsigned int id);
+	SHIM5_EXPORT void set_tempo(unsigned int id, int bpm);
+	SHIM5_EXPORT std::string get_name(); // returns same thing passed to constructor
+
+private:
 	class Track
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
+		SHIM5_EXPORT Track(unsigned int id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
 		~Track();
 
 		SHIM5_EXPORT void play(bool loop);
@@ -75,9 +99,15 @@ private:
 		SHIM5_EXPORT bool is_playing();
 		SHIM5_EXPORT bool is_done();
 
-		SHIM5_EXPORT void set_master_volume(float master_volume, float master_volume_samples);
+		SHIM5_EXPORT void set_master_volume(float master_volume);
 		SHIM5_EXPORT float get_master_volume();
 		SHIM5_EXPORT float get_master_volume_real();
+
+		SHIM5_EXPORT unsigned int get_id();
+
+		SHIM5_EXPORT void real_set_tempo(int bpm);
+		SHIM5_EXPORT void set_tempo(int bpm);
+		SHIM5_EXPORT int get_new_tempo();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -96,6 +126,8 @@ private:
 
 		std::string next_note(const char *text, int *pos);
 		int notelength(const char *tok, const char *text, int *pos);
+
+		unsigned int id;
 
 		Wave_Type type;
 		std::string text;
@@ -138,7 +170,6 @@ private:
 		float last_start_o;
 		int same_sections_o;
 		float master_volume;
-		float master_volume_samples;
 		float mix_volume;
 		float last_noise;
 		float last_noise2;
@@ -174,6 +205,10 @@ private:
 		int abs_sample;
 
 		bool no_fade;
+
+		bool ignore_tempo_changes;
+
+		int new_tempo;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
@@ -182,11 +217,14 @@ private:
 	std::vector<Track *> reverb_tracks;
 
 	std::vector<Sample *> wav_samples;
-	//--
 
 	static std::vector<MML *> loaded_mml;
 
 	std::string name;
+
+	unsigned int instance;
+
+	MML_Data *mml_data;
 };
 
 } // End namespace audio

@@ -134,7 +134,7 @@ public:
 protected:
 	static bool merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha);
 
-	SHIM5_EXPORT struct Internal {
+	struct SHIM5_EXPORT Internal {
 		Internal(std::string filename, bool keep_data, bool support_render_to_texture = false, bool load_from_filesystem = false);
 		Internal(unsigned char *pixels, util::Size<int> size, bool support_render_to_texture = false);
 		Internal();

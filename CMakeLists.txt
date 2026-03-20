@@ -48,7 +48,6 @@ set(LIB_SRC
 	src/primitives.cpp
 	src/sample.cpp
 	src/shader.cpp
-	src/sound.cpp
 	src/sprite.cpp
 	src/tilemap.cpp
 	src/translation.cpp

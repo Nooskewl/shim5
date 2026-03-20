@@ -1,8 +1,6 @@
 #ifndef NOO_SAMPLE_H
 #define NOO_SAMPLE_H
 
-#include "shim5/sound.h"
-
 namespace noo {
 
 namespace audio {
@@ -26,22 +24,24 @@ struct Sample_Instance {
 	bool format_should_be_swapped;
 	float min_sample;
 	float max_sample;
-	float master_volume; // different for sfx/MML samples
+	bool paused;
 };
 
-class SHIM5_EXPORT Sample : public Sound {
+class SHIM5_EXPORT Sample {
 public:
 	static void stop_instance(Sample_Instance *s);
+	static void set_instance_volume(Sample_Instance *s, float volume);
+	static void pause_instance(Sample_Instance *s, bool onoff);
 
 	Sample(std::string filename, bool load_from_filesystem = false);
 	virtual ~Sample();
 
 	static void update();
 
-	void play(float volume, bool loop); // Sound interface
-	void play(bool loop); // Sound interface
-	bool is_done(); // Sound interface
-	void stop(); // Sound interface, this does a stop_all
+	void play(float volume, bool loop);
+	void play(bool loop);
+	bool is_done();
+	void stop(); // this does a stop_all
 	bool is_playing();
 
 	// Play length/silence is in samples based on the device frequency (audio::internal::audio_context.device_spec.freq)
