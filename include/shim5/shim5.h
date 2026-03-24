@@ -7,7 +7,6 @@
 #include "shim5/achievements.h"
 #include "shim5/audio.h"
 #include "shim5/cd.h"
-#include "shim5/cloud.h"
 #include "shim5/cpa.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
