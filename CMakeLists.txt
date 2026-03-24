@@ -31,7 +31,6 @@ set(LIB_SRC
 	src/achievements.cpp
 	src/audio.cpp
 	src/cd.cpp
-	src/cloud.cpp
 	src/devsettings.cpp
 	src/font.cpp
 	src/shim.cpp
