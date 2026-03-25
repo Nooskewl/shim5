@@ -430,7 +430,10 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	vsync = util::bool_arg(vsync, shim::argc, shim::argv, "vsync");
 	
 	show_fps = root->get_nested_bool("shim>gfx>show_fps", &show_fps, false);
+<<<<<<< Updated upstream
 	show_fps = util::bool_arg(show_fps, shim::argc, shim::argv, "fps");
+=======
+>>>>>>> Stashed changes
 
 	screen_shake_end = SDL_GetTicks();
 	shim::using_screen_shake = false;
