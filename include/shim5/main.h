@@ -18,9 +18,15 @@
 #endif
 #endif
 
-#define EXPORT_STRUCT_ALIGN(x, n) __declspec(align(n)) struct SHIM5_EXPORT x
-#define EXPORT_CLASS_ALIGN(x, n) __declspec(align(n)) class SHIM5_EXPORT x
-#define ALIGN(n) __declspec(align(n)) class
+#ifdef __GNUC__
+#define EXPORT_STRUCT_ALIGN(x, n) struct SHIM5_EXPORT __attribute__((aligned(n))) x
+#define EXPORT_CLASS_ALIGN(x, n) class SHIM5_EXPORT __attribute__((aligned(n))) x
+#define ALIGN(n) class __attribute__((aligned(n)))
+#else
+#define EXPORT_STRUCT_ALIGN(x, n) struct SHIM5_EXPORT __declspec(align(n)) x
+#define EXPORT_CLASS_ALIGN(x, n) class SHIM5_EXPORT __declspec(align(n)) x
+#define ALIGN(n) class __declspec(align(n))
+#endif
 
 #else // _WIN32
 #ifdef SHIM5_BUILD
