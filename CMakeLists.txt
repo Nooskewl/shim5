@@ -86,10 +86,6 @@ else()
 	add_library(${SHIM_LIB} STATIC ${LIB_SRC})
 endif()
 
-add_custom_command(TARGET ${SHIM_LIB} POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/libshim5.dll.a ${CMAKE_BINARY_DIR}/libshim5.a
-)
-
 if(WANT_EXAMPLES)
 	add_executable(example examples/example.cpp)
 endif()
@@ -123,6 +119,10 @@ else()
 endif()
 
 if(MINGW)
+	add_custom_command(TARGET ${SHIM_LIB} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/libshim5.dll.a ${CMAKE_BINARY_DIR}/libshim5.a
+	)
+
 	set(LFLAGS "${LFLAGS} -static -static-libgcc -static-libstdc++")
 	if(USE_STATIC_LIBS)
 		set(FLAGS "${FLAGS} -DTGUI6_STATIC")
