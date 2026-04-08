@@ -122,7 +122,8 @@ static int onenotelength(const char *tok, int note_length, int tempo, int octave
 		tok++;
 	}
 	int length = atoi(tok);
-	float total = (shim::samplerate / (tempo / 4.0f / 60.0f)) / (length == 0 ? note_length : length);
+	float total = (internal::audio_context.device_spec.freq / (tempo / 4.0f / 60.0f)) / (length == 0 ? note_length : length);
+
 	float dotlength = total / 2.0f;
 	while (*tok != 0) {
 		if (*tok == '.') {
@@ -493,7 +494,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			tinterp->interpolate(1);
 			int delay = tinterp->get_value();
 			// convert from MS to samples
-			delay *= shim::samplerate / 1000.0f;
+			delay *= internal::audio_context.device_spec.freq / 1000.0f;
 			delay += buffer_fulfilled;
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
@@ -633,7 +634,7 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		switch (type) {
 			case TRIANGLE:
 			case SAWTOOTH: {
-				add = shim::samplerate/4.0f;
+				add = internal::audio_context.device_spec.freq/4.0f;
 				break;
 			}
 			default: {
@@ -652,7 +653,7 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 				break;
 			}
 			default: {
-				p = fmodf((time * freq + add) / shim::samplerate, 1.0f);
+				p = fmodf((time * freq + add) / internal::audio_context.device_spec.freq, 1.0f);
 				break;
 			}
 		}
@@ -665,9 +666,9 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		float diff = len - time;
 		if (fading == false) {
 			// this gets number of trailing samples (2 phases plus whatever is dangling)
-			remain = time * freq / shim::samplerate; // number of phases in time
+			remain = time * freq / internal::audio_context.device_spec.freq; // number of phases in time
 			remain = fmodf(remain, 1.0f) + 2.0f; // 2 phases plus dangling
-			remain = remain * shim::samplerate / freq; // dangling samples (2.x phases)
+			remain = remain * internal::audio_context.device_spec.freq / freq; // dangling samples (2.x phases)
 
 			remain = MIN(max_fade, remain);
 

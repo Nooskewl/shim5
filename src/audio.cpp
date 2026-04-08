@@ -413,8 +413,6 @@ bool start()
 			return false;
 		}
 
-		shim::samplerate = internal::audio_context.device_spec.freq;
-
 		// this stuff allows converting between formats
 		format =  internal::audio_context.device_spec.format;
 		format_bits = SDL_AUDIO_BITSIZE(format);
