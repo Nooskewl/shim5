@@ -1082,7 +1082,7 @@ void Model::Node::create_arrays(float *v, int *f, float *n, int *nind, float *t,
 
 	memcpy(animated_vertices, vertices, sizeof(float)*num_vertices*12);
 
-	for (int i = 0; i < num_vertices; i++) {
+	for (unsigned int i = 0; i < num_vertices; i++) {
 		influences[i] = Influence();
 	}
 
@@ -1551,7 +1551,7 @@ Model::Node *Model::read_binary_frame(SDL_IOStream *file)
 	else {
 		n->face_textures = new Uint32[n->num_triangles];
 
-		for (int i = 0; i < n->num_triangles; i++) {
+		for (unsigned int i = 0; i < n->num_triangles; i++) {
 			SDL_ReadU32LE(file, &n->face_textures[i]);
 		}
 	}
@@ -1563,7 +1563,7 @@ Model::Node *Model::read_binary_frame(SDL_IOStream *file)
 		Weights *w = new Weights;
 		w->name = read_string(file);
 		w->weights = new float[n->num_vertices];
-		for (int j = 0; j < n->num_vertices; j++) {
+		for (unsigned int j = 0; j < n->num_vertices; j++) {
 			SDL_ReadU32LE(file, &u.u);
 			w->weights[j] = u.f;
 		}
@@ -1583,7 +1583,7 @@ Model::Node *Model::read_binary_frame(SDL_IOStream *file)
 
 	n->influences = new Influence[n->num_vertices];
 
-	for (int i = 0; i < n->num_vertices; i++) {
+	for (unsigned int i = 0; i < n->num_vertices; i++) {
 		Uint32 num_weights;
 		SDL_ReadU32LE(file, &num_weights);
 		for (size_t j = 0; j < num_weights; j++) {
@@ -1847,7 +1847,7 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 		}
 		Animation *a = get_animation(name);
 		if (a) {
-			for (int i = 0; i < n->num_vertices; i++) {
+			for (unsigned int i = 0; i < n->num_vertices; i++) {
 				n->influences[i].bones.clear();
 				for (size_t j = 0; j < n->influences[i].weights.size(); j++) {
 					n->influences[i].bones.push_back(a->bones[n->influences[i].weights[j]->name]);
@@ -1966,7 +1966,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 		Model::Node *armature = find("Armature");
 		glm::mat4 m;
 		armature->animate(a, frame, &m);
-		for (int v = 0; v < node->num_vertices; v++) {
+		for (unsigned int v = 0; v < node->num_vertices; v++) {
 			Model::Influence *influence = &node->influences[v];
 			vert.x = node->vertices[12 * v + 0];
 			vert.y = node->vertices[12 * v + 1];
@@ -1997,7 +1997,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 		}
 	}
 	else {
-		for (int v = 0; v < node->num_vertices; v++) {
+		for (unsigned int v = 0; v < node->num_vertices; v++) {
 			vert.x = node->vertices[12 * v + 0];
 			vert.y = node->vertices[12 * v + 1];
 			vert.z = node->vertices[12 * v + 2];
@@ -2084,7 +2084,7 @@ void Model::draw(SDL_Color tint, bool textured)
 				int end = -1;
 
 				for (size_t j = 0; j < (size_t)node->num_triangles; j++) {
-					if (node->face_textures[j] == (int)i) {
+					if (node->face_textures[j] == (Uint32)i) {
 						if (start == -1) {
 							start = (int)j;
 						}

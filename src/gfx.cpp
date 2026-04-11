@@ -150,7 +150,6 @@ static int scissor_x;
 static int scissor_y;
 static int scissor_w;
 static int scissor_h;
-static bool scissor_disabled = false;
 static bool force_integer_scaling;
 static gfx::_lost_device_callback lost_device_callback;
 static gfx::_lost_device_callback found_device_callback;
@@ -215,10 +214,6 @@ static SDL_DisplayID to_display_id(int adapter)
 namespace noo {
 
 namespace gfx {
-
-static void audit()
-{
-}
 
 static int shim_compare_to_gl(Compare_Func func)
 {
@@ -478,53 +473,24 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	flags |= internal::gfx_context.fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE;
 	flags |= SDL_WINDOW_OPENGL;
 
-	int centre_y;
 #if defined IOS || defined ANDROID
 	flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-	centre_y = 0;
 #elif defined RASPBERRYPI_NOX
 	flags |= SDL_WINDOW_FULLSCREEN;
 #elif defined __EMSCRIPTEN__
 	flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
-	centre_y = 0;
-#else
-	util::Size<int> desktop_size = get_desktop_resolution();
-	if (window_h <= 0) {
-		centre_y = 0;
-	}
-	else {
-#ifdef __linux__
-		centre_y = int((desktop_size.h-window_h)/2*0.5f); // slightly up
-#else
-		centre_y = int((desktop_size.h-window_h)/2*0.75f); // slightly up
-#endif
-	}
 #endif
 
 	if (shim::hide_window) {
 		flags |= SDL_WINDOW_HIDDEN;
 	}
 
-	int win_x;
-	int win_y;
-
 	if (internal::gfx_context.fullscreen) {
-		// On Windows these MUST be set like this for OpenGL
-		SDL_Rect r;
-		SDL_GetDisplayBounds(0, &r);
-		win_x = r.x;
-		win_y = r.y;
 		if (window_w <= 0 || window_h <= 0) {
 			mode = SDL_GetDesktopDisplayMode(id);
 			window_w = mode->w;
 			window_h = mode->h;
 		}
-	}
-	else {
-		win_x = SDL_WINDOWPOS_CENTERED_DISPLAY(0);
-		SDL_Rect r;
-		SDL_GetDisplayBounds(0, &r);
-		win_y = r.y + centre_y;
 	}
 
 	internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), window_w, window_h, flags);
@@ -542,8 +508,8 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 #if defined _WIN32
 #elif defined __linux__ && !defined ANDROID
-	internal::gfx_context.x_display = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
-	internal::gfx_context.x_window = (Window)SDL_GetNumberProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, NULL);
+	internal::gfx_context.x_display = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, 0);
+	internal::gfx_context.x_window = (Window)SDL_GetNumberProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
 #elif defined SDL_PLATFORM_APPLE && !defined IOS
 	SDL_SysWMinfo wm_info;
 	SDL_VERSION(&wm_info.version);
@@ -1287,7 +1253,7 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 	internal::gfx_context.target_image = 0;
 
 #ifdef USE_TTF
-	if (TTF_Init() == -1) {
+	if (TTF_Init() == false) {
 		return false;
 	}
 #endif

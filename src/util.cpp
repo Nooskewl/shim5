@@ -363,8 +363,8 @@ SDL_IOStream *open_file(std::string filename, int *sz, bool data_only)
 				int count = 0;
 				const int chunk_size = 32768;
 				while (true) {
-					int read;
-					int to_read = MIN(*sz-count, chunk_size);
+					size_t read;
+					size_t to_read = MIN(*sz-count, chunk_size);
 					if ((read = (int)SDL_ReadIO(file, buf+count, to_read)) < to_read) {
 						break;
 					}
@@ -436,7 +436,7 @@ std::string load_text(std::string filename)
 
 	char *buf = new char[size+1];
 
-	if (SDL_ReadIO(file, buf, size) != size) {
+	if (SDL_ReadIO(file, buf, size) != (size_t)size) {
 		close_file(file);
 		throw LoadError(filename);
 	}
@@ -459,7 +459,7 @@ char *slurp_file(std::string filename, int *sz)
 
 	char *buf = new char[_sz];
 
-	if (SDL_ReadIO(file, buf, _sz) != _sz) {
+	if (SDL_ReadIO(file, buf, _sz) != (size_t)_sz) {
 		close_file(file);
 		throw LoadError(filename);
 	}
@@ -485,7 +485,7 @@ char *slurp_file_from_filesystem(std::string filename, int *sz)
 
 	char *buf = new char[_sz];
 
-	if (SDL_ReadIO(file, buf, _sz) != _sz) {
+	if (SDL_ReadIO(file, buf, _sz) != (size_t)_sz) {
 		throw LoadError(filename);
 	}
 

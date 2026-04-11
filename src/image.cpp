@@ -228,7 +228,6 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 	/* Really load the image now. */
 	png_uint_32 width, height, rowbytes;
 	int bit_depth, color_type, interlace_type;
-	int tRNS_to_alpha = false;
 	int number_passes, pass;
 
 	/* The call to png_read_info() gives us all of the information from the
@@ -253,7 +252,6 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 	 * in a tRNS chunk. */
 	if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
 		png_set_tRNS_to_alpha(png_ptr);
-		tRNS_to_alpha = true;
 	}
 
 	/* Convert 16-bits per colour component to 8-bits per colour component. */
@@ -308,7 +306,7 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 				png_read_row(png_ptr, row, NULL);
 				unsigned char *d = bytes+yy*width*4;
 				unsigned char *s = row;
-				for (int i = 0; i < width; i++) {
+				for (unsigned int i = 0; i < width; i++) {
 					int r = *s++;
 					int g = *s++;
 					int b = *s++;
@@ -347,8 +345,8 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 	br.y = -1;
 	bool alpha = false;
 
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
+	for (unsigned int y = 0; y < height; y++) {
+		for (unsigned int x = 0; x < width; x++) {
 			unsigned char *p = bytes + y * width * 4 + x * 4;
 			int r, g, b, a;
 			r = p[0];
@@ -366,16 +364,16 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 				p[2] = b;
 			}
 			if (a != 0) {
-				if (tl.x < 0 || tl.x > x) {
+				if (tl.x < 0 || tl.x > (int)x) {
 					tl.x = x;
 				}
-				if (tl.y < 0 || tl.y > y) {
+				if (tl.y < 0 || tl.y > (int)y) {
 					tl.y = y;
 				}
-				if (br.x < 0 || br.x < x) {
+				if (br.x < 0 || br.x < (int)x) {
 					br.x = x;
 				}
-				if (br.y < 0 || br.y < y) {
+				if (br.y < 0 || br.y < (int)y) {
 					br.y = y;
 				}
 			}
@@ -400,8 +398,6 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 
 bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba)
 {
-	int y;
-
 	FILE *fp = fopen(filename.c_str(), "wb");
 	if (!fp) {
 		return false;
@@ -445,7 +441,7 @@ bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> 
 	}
 
 	unsigned char **row_pointers = new unsigned char *[size.h];
-	for (size_t i = 0; i < size.h; i++) {
+	for (int i = 0; i < size.h; i++) {
 		row_pointers[i] = data + i * (size.w * 4);
 	}
 

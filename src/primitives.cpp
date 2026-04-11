@@ -514,9 +514,6 @@ void draw_ellipse(SDL_Color colour, util::Point<float> centre, float rx, float r
 		int n2 = (n+1) % sections;
 		float a1 = start_angle + (float)n/sections * (float)M_PI * 2.0f;
 		float a2 = start_angle + (float)n2/sections * (float)M_PI * 2.0f;
-		float half = 0.5f/sections * (float)M_PI * 2.0f;
-		//float a3 = a1 + half;
-		//float a4 = (n == sections - 1) ? half : a2 + half;
 		float a3 = a1;
 		float a4 = a2;
 		noo::util::Point<float> a, b, c, d;
