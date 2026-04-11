@@ -15,14 +15,6 @@
 
 using namespace noo;
 
-#if defined SDL_PLATFORM_APPLE && !defined IOS
-#include "shim5/macosx.h"
-#endif
-
-#ifdef __linux__
-#include "shim5/x.h"
-#endif
-		
 namespace noo {
 
 namespace gui {
@@ -337,23 +329,10 @@ bool GUI::transition_done(bool transition_in)
 	return false;
 }
 
-#ifdef _WIN32
-void *GUI::operator new(size_t i)
-{
-	return _mm_malloc(i,16);
-}
-
-void GUI::operator delete(void* p)
-{
-	_mm_free(p);
-}
-#endif
-
 //--
 
 int popup(std::string caption, std::string text, Popup_Type type)
 {
-#ifdef _WIN32
 	UINT native_type;
 	if (type == OK) {
 		native_type = MB_OK;
@@ -381,16 +360,8 @@ int popup(std::string caption, std::string text, Popup_Type type)
 		result = -1;
 	}
 	return result;
-#elif defined SDL_PLATFORM_APPLE && !defined IOS
-	return macosx_popup(caption, text, type);
-#elif !defined ANDROID && !defined IOS && !defined RASPBERRYPI_NOX && !defined __EMSCRIPTEN__
-	return x_popup(caption, text, type);
-#else
-	return -1;
-#endif
 }
 
-#ifdef _WIN32
 static void delete_shim_args()
 {
        for (int i = 0; i < shim::argc; i++) {
@@ -400,11 +371,9 @@ static void delete_shim_args()
        shim::argc = 0;
        shim::argv = NULL;
 }
-#endif
 
 int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_exit)
 {
-#ifdef _WIN32
 	delete_shim_args();
 	shim::argc = 3;
 	shim::argv = new char *[shim::argc];
@@ -423,7 +392,6 @@ int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_e
 	}
 	
 	SDL_Delay(250);
-#endif
 
 	int ret = popup(caption, text, type);
 	if (do_exit) {

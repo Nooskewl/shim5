@@ -15,10 +15,6 @@
 #include <png.h>
 #endif
 
-#if defined ANDROID || defined IOS || defined __EMSCRIPTEN__
-#define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
-#endif
-
 using namespace noo;
 
 static inline unsigned char *pixel_ptr(unsigned char *p, int n, bool flip, int w, int h)
@@ -868,9 +864,6 @@ unsigned char *Image::read_texture(gfx::Image *image)
 {
 	unsigned char *buf = new unsigned char[image->size.w*image->size.h*4];
 
-#if defined ANDROID || defined __EMSCRIPTEN__
-	return buf;
-#else
 	glActiveTexture_ptr(GL_TEXTURE0);
 	PRINT_GL_ERROR("glActiveTexture\n");
 
@@ -880,7 +873,6 @@ unsigned char *Image::read_texture(gfx::Image *image)
 	glGetTexImage_ptr(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
 	return buf;
-#endif
 }
 
 Image::Image(std::string filename, bool is_absolute_path, bool load_from_filesystem) :
@@ -1199,12 +1191,7 @@ void Image::set_target()
 void Image::release_target()
 {
 	bound_fbo = 0;
-#ifdef IOS
-	//glBindRenderbuffer_ptr(GL_RENDERBUFFER, internal::gfx_context.colorbuffer); // don't know if this is needed
-	glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal::gfx_context.framebuffer);
-#else
 	glBindFramebuffer_ptr(GL_FRAMEBUFFER, 0);
-#endif
 	set_screen_size(shim::real_screen_size); // this sets the viewport and scissor, updates projection
 }
 
@@ -1637,45 +1624,6 @@ void Image::Internal::upload(unsigned char *pixels)
 				else {
 					format = GL_DEPTH_COMPONENT16;
 				}
-#if defined ANDROID || defined IOS || defined RASPBERRYPI || defined __EMSCRIPTEN__
-				if (strstr((const char *)glGetString(GL_EXTENSIONS), "GL_OES_packed_depth_stencil") != 0) {
-					glGenRenderbuffers_ptr(1, &depth_buffer); // use a combined depth and stencil as it must be supported
-					PRINT_GL_ERROR("glGenRenderbuffers\n");
-					glBindRenderbuffer_ptr(GL_RENDERBUFFER, depth_buffer);
-					PRINT_GL_ERROR("glBindRenderbuffer\n");
-					glRenderbufferStorage_ptr(GL_RENDERBUFFER, format, size.w, size.h);
-					PRINT_GL_ERROR("glRenderbufferStorage\n");
-					glFramebufferRenderbuffer_ptr(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
-					PRINT_GL_ERROR("glFramebufferRenderbuffer\n");
-					if (this->create_stencil_buffer) {
-						glFramebufferRenderbuffer_ptr(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
-						PRINT_GL_ERROR("glFramebufferRenderbuffer\n");
-					}
-				}
-				else { // there will be no stencil buffer
-					glGenRenderbuffers_ptr(1, &depth_buffer);
-					PRINT_GL_ERROR("glGenRenderbuffers\n");
-					glBindRenderbuffer_ptr(GL_RENDERBUFFER, depth_buffer);
-					PRINT_GL_ERROR("glBindRenderbuffer\n");
-					glRenderbufferStorage_ptr(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, size.w, size.h);
-					PRINT_GL_ERROR("glRenderbufferStorage\n");
-					glFramebufferRenderbuffer_ptr(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
-					PRINT_GL_ERROR("glFramebufferRenderbuffer\n");
-				}
-#else
-				glGenRenderbuffers_ptr(1, &depth_buffer); // use a combined depth and stencil as it must be supported
-				PRINT_GL_ERROR("glGenRenderbuffers\n");
-				glBindRenderbuffer_ptr(GL_RENDERBUFFER, depth_buffer);
-				PRINT_GL_ERROR("glBindRenderbuffer\n");
-				glRenderbufferStorage_ptr(GL_RENDERBUFFER, format, size.w, size.h);
-				PRINT_GL_ERROR("glRenderbufferStorage\n");
-				glFramebufferRenderbuffer_ptr(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
-				PRINT_GL_ERROR("glFramebufferRenderbuffer\n");
-				if (this->create_stencil_buffer) {
-					glFramebufferRenderbuffer_ptr(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
-					PRINT_GL_ERROR("glFramebufferRenderbuffer\n");
-				}
-#endif
 			}
 
 			GLenum result = glCheckFramebufferStatus_ptr(GL_FRAMEBUFFER);
@@ -1684,17 +1632,7 @@ void Image::Internal::upload(unsigned char *pixels)
 			}
 			PRINT_GL_ERROR("glCheckFramebufferStatus\n");
 
-#ifdef IOS
-			if (bound_fbo == 0) {
-				glBindRenderbuffer_ptr(GL_RENDERBUFFER, internal::gfx_context.colorbuffer);
-				glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal::gfx_context.framebuffer);
-			}
-			else {
-#endif
-				glBindFramebuffer_ptr(GL_FRAMEBUFFER, bound_fbo);
-#ifdef IOS
-			}
-#endif
+			glBindFramebuffer_ptr(GL_FRAMEBUFFER, bound_fbo);
 
 			PRINT_GL_ERROR("glBindFramebuffer\n");
 		}

@@ -70,15 +70,10 @@ public:
 	std::string next();
 
 private:
-#ifdef _WIN32
 	bool got_first;
 	bool done;
 	HANDLE handle;
 	WIN32_FIND_DATA ffd;
-#elif !defined ANDROID
-	int i;
-	glob_t gl;
-#endif
 };
 
 std::string SHIM5_EXPORT uppercase(std::string);
@@ -170,15 +165,9 @@ std::string SHIM5_EXPORT load_text(std::string filename);
 char SHIM5_EXPORT *slurp_file(std::string filename, int *sz);
 char SHIM5_EXPORT *slurp_file_from_filesystem(std::string filename, int *sz);
 
-#ifdef ANDROID
-bool SHIM5_EXPORT is_chromebook();
-#endif
-
 Uint64 SHIM5_EXPORT file_date(std::string filename);
 
-#ifndef _WIN32 // FIXME: need this for Windows
 time_t SHIM5_EXPORT utc_secs();
-#endif
 
 void SHIM5_EXPORT printGLerror(const char *fmt, ...);
 #ifdef DEBUG

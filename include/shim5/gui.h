@@ -59,10 +59,6 @@ public:
 	SHIM5_EXPORT void set_transition(bool transition);
 
 	// For 16 byte alignment to make glm::mat4 able to use SIMD
-#ifdef _WIN32
-	void *operator new(size_t i);
-	void operator delete(void* p);
-#endif
 
 protected:
 	static const int MAX_FADE_SCALE = 10;

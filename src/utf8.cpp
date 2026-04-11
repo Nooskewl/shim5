@@ -2,10 +2,6 @@
 
 #include <cstdint>
 
-#ifdef __linux__
-#include <unistd.h>
-#endif
-
 #include "shim5/util.h"
 
 namespace noo {

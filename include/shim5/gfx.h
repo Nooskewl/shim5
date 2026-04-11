@@ -179,10 +179,8 @@ enum Letterbox_Type {
 typedef void (*_letterbox_callback)(Letterbox_Type type, int x, int y, int w, int h);
 void SHIM5_EXPORT register_letterbox_callback(_letterbox_callback);
 
-#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID && !defined RASPBERRYPI) || defined _WIN32 || defined __EMSCRIPTEN__)
 void SHIM5_EXPORT create_mouse_cursors();
 void SHIM5_EXPORT delete_mouse_cursors();
-#endif
 
 } // End namespace gfx
 

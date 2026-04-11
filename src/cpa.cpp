@@ -6,10 +6,6 @@
 #include "shim5/util.h"
 #include "shim5/util.h"
 
-#ifdef IOS
-#include "shim5/ios.h"
-#endif
-
 using namespace noo;
 
 static Uint8 *safe_find_char(Uint8 *haystack, char needle, Uint8 *end)
@@ -31,14 +27,11 @@ namespace util {
 SDL_IOStream *CPA::open(std::string filename, int *sz, bool data_only)
 {
 	if (load_from_filesystem) {
-#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 		if (shim::use_cwd == false) {
 			const char *base = SDL_GetBasePath();
 			filename = std::string(base) + "data/" + filename;
 		}
-		else
-#endif
-		{
+		else {
 			filename = "data/" + filename;
 		}
 		SDL_IOStream *file = SDL_IOFromFile(filename.c_str(), "rb");
@@ -213,7 +206,6 @@ std::vector<std::string> CPA::get_all_filenames()
 {
 	std::vector<std::string> v;
 	
-#if !defined ANDROID && !defined IOS
 	if (load_from_filesystem) {
 		const char *base = SDL_GetBasePath();
 		std::string add = shim::use_cwd ? "" : std::string(base);
@@ -277,13 +269,7 @@ std::vector<std::string> CPA::get_all_filenames()
 			name_stack.erase(name_stack.begin());
 		}
 	}
-	else
-#else
-	if (load_from_filesystem) {
-		// unsupported ATM
-	}
-#endif
-	{
+	else {
 		std::map<std::string, Info>::iterator it;
 
 		for (it = info.begin(); it != info.end(); it++) {
@@ -304,27 +290,13 @@ CPA::CPA(std::string fn) :
 	bool loaded_cpa = false;
 
 	file = 0;
-#if defined ANDROID || defined IOS || defined __EMSCRIPTEN__
-	load_from_filesystem = true;
-#elif defined ANDROID_XXX
-	// Don't use a compressed .cpa on Android -- the APK is already compressed
-	//file = SDL_IOFromFile(fn, "rb");
-#elif defined IOS_XXX 
-	// Don't use a compressed .cpa on iOS -- it's too slow
-	//std::string path = ios_get_resource_path(fn);
-	//file = SDL_IOFromFile(path.c_str(), "rb");
-#elif defined SDL_PLATFORM_APPLE
-	const char *base = SDL_GetBasePath();
-	std::string filename = std::string(base) + fn;
-	file = SDL_IOFromFile(filename.c_str(), "rb");
-#else
+	
 	std::string filename = fn;
 
 	file = SDL_IOFromFile(filename.c_str(), "rb");
 	if (file != 0) {
 		infomsg("Using %s.\n", filename.c_str());
 	}
-#endif
 
 	if (file != 0) {
 		try {
@@ -336,7 +308,6 @@ CPA::CPA(std::string fn) :
 		}
 	}
 
-#if !defined ANDROID && !defined IOS
 	if (loaded_cpa == false) {
 		List_Directory ld("*");
 		std::string filename;
@@ -349,7 +320,6 @@ CPA::CPA(std::string fn) :
 			}
 		}
 	}
-#endif
 	
 	if (loaded_cpa == false && load_from_filesystem == false) {
 		throw Error("No CPA archive or data/ directory found!");

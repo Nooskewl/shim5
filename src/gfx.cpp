@@ -18,21 +18,12 @@
 #include "shim5/internal/gfx.h"
 #include "shim5/internal/shim.h"
 
-#ifdef __linux__
-#include <X11/Xlib.h>
-#endif
-
-#ifdef _WIN32
 #define NOOSKEWL_SHIM_DEFAULT_FVF (D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2 | D3DFVF_TEXCOORDSIZE2(0) | D3DFVF_TEXCOORDSIZE4(1))
-#endif
 
-#ifdef _WIN32
 #define strdup _strdup
-#endif
 
 using namespace noo;
 
-#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 glStencilFuncSeparate_func glStencilFuncSeparate_ptr;
 glStencilOpSeparate_func glStencilOpSeparate_ptr;
 glBindFramebuffer_func glBindFramebuffer_ptr;
@@ -91,9 +82,7 @@ glViewport_func glViewport_ptr;
 glClearColor_func glClearColor_ptr;
 glClear_func glClear_ptr;
 glClearDepthf_func glClearDepthf_ptr;
-#if !defined ANDROID && !defined IOS
 glClearDepth_func glClearDepth_ptr;
-#endif
 glClearStencil_func glClearStencil_ptr;
 glDepthMask_func glDepthMask_ptr;
 glDepthFunc_func glDepthFunc_ptr;
@@ -118,15 +107,6 @@ glBindBuffer_func glBindBuffer_ptr;
 glBufferData_func glBufferData_ptr;
 glDeleteBuffers_func glDeleteBuffers_ptr;
 glGenerateMipmap_func glGenerateMipmap_ptr;
-#endif
-
-#if defined SDL_PLATFORM_APPLE && !defined IOS
-#include "shim5/macosx.h"
-#endif
-
-#if defined __linux__ && !defined ANDROID
-#include "shim5/x.h"
-#endif
 
 #include "shim5/shaders/glsl/default_vertex.h"
 #include "shim5/shaders/glsl/default_fragment.h"
@@ -175,15 +155,11 @@ static glm::mat4 default_modelview;
 static glm::mat4 default_proj;
 static gfx::_letterbox_callback letterbox_callback;
 
-#if defined _WIN32
 static HICON icon_small, icon_big;
-#endif
 
-#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 static bool use_custom_cursor;
 SDL_Surface *mouse_cursor_surface;
 SDL_Cursor *mouse_cursor;
-#endif
 
 static util::Point<int> user_viewport;
 static util::Size<int> user_viewport_size;
@@ -254,15 +230,10 @@ static int shim_stencilop_to_gl(Stencil_Op op)
 			return GL_DECR;
 		case STENCILOP_INVERT:
 			return GL_INVERT;
-#if !defined ANDROID && !defined __EMSCRIPTEN__
 		case STENCILOP_INCR:
 			return GL_INCR_WRAP;
 		case STENCILOP_DECR:
 			return GL_DECR_WRAP;
-#else
-		default:
-			return -1;
-#endif
 	}
 
 	return -1;
@@ -343,15 +314,10 @@ static Stencil_Op gl_stencilop_to_shim(GLenum op)
 			return STENCILOP_DECRSAT;
 		case GL_INVERT:
 			return STENCILOP_INVERT;
-#if !defined ANDROID && !defined __EMSCRIPTEN__
 		case GL_INCR_WRAP:
 			return STENCILOP_INCR;
 		case GL_DECR_WRAP:
 			return STENCILOP_DECR;
-#else
-		default:
-			return STENCILOP_KEEP;
-#endif
 	}
 
 	return STENCILOP_KEEP;
@@ -456,30 +422,16 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	const SDL_DisplayMode *mode;
 	SDL_DisplayID id = to_display_id(0);
 
-#ifdef IOS
-	mode = SDL_GetDesktopDisplayMode(id);
-	window_w = mode->w;
-	window_h = mode->h;
-#else
 	if (internal::gfx_context.fullscreen == true) {
 		mode = SDL_GetDesktopDisplayMode(id);
 		window_w = mode->w;
 		window_h = mode->h;
 	}
-#endif
 
 	int flags = 0;
 
 	flags |= internal::gfx_context.fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE;
 	flags |= SDL_WINDOW_OPENGL;
-
-#if defined IOS || defined ANDROID
-	flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-#elif defined RASPBERRYPI_NOX
-	flags |= SDL_WINDOW_FULLSCREEN;
-#elif defined __EMSCRIPTEN__
-	flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
-#endif
 
 	if (shim::hide_window) {
 		flags |= SDL_WINDOW_HIDDEN;
@@ -496,27 +448,11 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), window_w, window_h, flags);
 	
 	// I guess on Android the window IS 0
-#if !defined ANDROID
 	if (internal::gfx_context.window == 0) {
 		throw util::Error("SDL_CreateWindow failed (" + std::string(SDL_GetError()) + ")");
 	}
-#endif
 
-#if defined _WIN32
 	internal::gfx_context.hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-#endif
-
-#if defined _WIN32
-#elif defined __linux__ && !defined ANDROID
-	internal::gfx_context.x_display = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, 0);
-	internal::gfx_context.x_window = (Window)SDL_GetNumberProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
-#elif defined SDL_PLATFORM_APPLE && !defined IOS
-	SDL_SysWMinfo wm_info;
-	SDL_VERSION(&wm_info.version);
-	SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
-	macosx_centre_window(wm_info.info.cocoa.window);
-	macosx_set_background_colour(wm_info.info.cocoa.window, shim::black);
-#endif
 
 	internal::gfx_context.windowid = SDL_GetWindowID(internal::gfx_context.window);
 
@@ -529,7 +465,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 		util::errormsg("Failed to create OpenGL context! (%s)\n", SDL_GetError());
 	}
 
-#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 	glStencilFuncSeparate_ptr = (glStencilFuncSeparate_func)SDL_GL_GetProcAddress("glStencilFuncSeparate");
 	glStencilOpSeparate_ptr = (glStencilOpSeparate_func)SDL_GL_GetProcAddress("glStencilOpSeparate");
 	glBindFramebuffer_ptr = (glBindFramebuffer_func)SDL_GL_GetProcAddress("glBindFramebuffer");
@@ -587,19 +522,13 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glViewport_ptr = (glViewport_func)SDL_GL_GetProcAddress("glViewport");
 	glClearColor_ptr = (glClearColor_func)SDL_GL_GetProcAddress("glClearColor");
 	glClear_ptr = (glClear_func)SDL_GL_GetProcAddress("glClear");
-#if defined SDL_PLATFORM_APPLE && !defined IOS
-	glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepth");
-#else
 	glClearDepthf_ptr = (glClearDepthf_func)SDL_GL_GetProcAddress("glClearDepthf");
-#endif
-#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 	if (glClearDepthf_ptr == 0) {
 		glClearDepth_ptr = (glClearDepth_func)SDL_GL_GetProcAddress("glClearDepth");
 	}
 	else {
 		glClearDepth_ptr = 0;
 	}
-#endif
 	glClearStencil_ptr = (glClearStencil_func)SDL_GL_GetProcAddress("glClearStencil");
 	glDepthMask_ptr = (glDepthMask_func)SDL_GL_GetProcAddress("glDepthMask");
 	glDepthFunc_ptr = (glDepthFunc_func)SDL_GL_GetProcAddress("glDepthFunc");
@@ -715,22 +644,14 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glBufferData_ptr == 0) { util::debugmsg("glBufferData_ptr=%p\n", glBufferData_ptr); }
 	if (glDeleteBuffers_ptr == 0) { util::debugmsg("glDeleteBuffers_ptr=%p\n", glDeleteBuffers_ptr); }
 	if (glGenerateMipmap_ptr == 0) { util::debugmsg("glGenerateMipmap_ptr=%p\n", glGenerateMipmap_ptr); }
-#endif
 
 	gfx::clear(shim::black);
 	flip();
 
-#ifdef IOS
-	bool v = 1;
-#else
 	bool v = vsync;
-#endif
 
 	SDL_GL_SetSwapInterval(v ? 1 : 0); // vsync, 1 = on
 
-#if defined IOS || defined __EMSCRIPTEN__
-       SDL_GL_GetDrawableSize(internal::gfx_context.window, &w, &h);
-#else
        if (internal::gfx_context.fullscreen) {
 	       w = window_w;
 	       h = window_h;
@@ -738,15 +659,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
        else {
 	       SDL_GetWindowSize(internal::gfx_context.window, &w, &h);
        }
-#endif
-
-#if defined IOS
-	SDL_SysWMinfo wm_info;
-	SDL_VERSION(&wm_info.version);
-	SDL_GetWindowWMInfo(internal::gfx_context.window, &wm_info);
-	internal::gfx_context.framebuffer = wm_info.info.uikit.framebuffer;
-	internal::gfx_context.colorbuffer = wm_info.info.uikit.colorbuffer;
-#endif
 
 	glEnable_ptr(GL_BLEND);
 	PRINT_GL_ERROR("glEnable\n");
@@ -764,7 +676,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 static void destroy_window()
 {
-#ifdef _WIN32
 	if (icon_small != 0) {
 		SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICONSM, (LONG_PTR)nullptr);
 		DestroyIcon(icon_small);
@@ -773,7 +684,6 @@ static void destroy_window()
 		SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICON, (LONG_PTR)nullptr);
 		DestroyIcon(icon_big);
 	}
-#endif
 
 	SDL_GL_DestroyContext(internal::gfx_context.opengl_context);
 	SDL_DestroyWindow(internal::gfx_context.window);
@@ -864,36 +774,20 @@ static void end_video()
 	destroy_window();
 }
 
-#if (defined __linux__ && !defined ANDROID) || defined _WIN32
 static void set_window_icon()
 {
 	util::Size<int> size;
 	unsigned char *pixels;
 	try {
-#ifdef _WIN32
 		int h = 16;
 		std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".png";
 		pixels = Image::load_image(filename, size);
-#else
-		pixels = Image::load_image("gfx/images/misc/icon256.png", size);
-#endif
 	}
 	catch (util::Error &e) {
 		util::infomsg(e.error_message + "\n");
 		return;
 	}
 
-#if (defined __linux__ && !defined ANDROID)
-	unsigned char *flip_buf = new unsigned char[size.w*size.h*4];
-	for (int y = 0; y < size.h; y++) {
-		memcpy(flip_buf+y*size.w*4, pixels+((size.h-1)-y)*size.w*4, size.w*4);
-	}
-	SDL_Surface *surface = SDL_CreateSurfaceFrom(size.w, size.h, SDL_PIXELFORMAT_ABGR8888, flip_buf, size.w * 4);
-	gfx::internal::premultiply_surface(surface);
-	SDL_SetWindowIcon(internal::gfx_context.window, surface);
-	SDL_DestroySurface(surface);
-	delete[] flip_buf;
-#else
 	unsigned char *flip_buf;
 	icon_small = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8 *)pixels, size, 0, 0, false);
 	SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICONSM, (LONG_PTR)icon_small);
@@ -951,13 +845,10 @@ static void set_window_icon()
 
 	icon_big = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8 *)pixels, size, 0, 0, false);
 	SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICON, (LONG_PTR)icon_big);
-#endif
 
 	delete[] pixels;
 }
-#endif
 
-#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 void create_mouse_cursors()
 {
 	// Note: this needs to be a specific size on Windows, 32x32 works for me
@@ -1026,7 +917,6 @@ void delete_mouse_cursors()
 		}
 	}
 }
-#endif
 
 static void load_fonts()
 {
@@ -1091,16 +981,12 @@ void get_scissor(int **x, int **y, int **w, int **h)
 
 void real_set_minimum_window_size(util::Size<int> size)
 {
-#ifndef IOS
 	SDL_SetWindowMinimumSize(internal::gfx_context.window, size.w, size.h);
-#endif
 }
 
 void real_set_maximum_window_size(util::Size<int> size)
 {
-#ifndef IOS
 	SDL_SetWindowMaximumSize(internal::gfx_context.window, size.w, size.h);
-#endif
 }
 
 bool static_start()
@@ -1173,21 +1059,11 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-#if defined IOS || defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#else
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-#endif
 	if (::create_depth_buffer) {
-#if defined ANDROID || defined RASPBERRYPI || defined __EMSCRIPTEN__
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-#else
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-#endif
 	}
 	else {
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
@@ -1237,18 +1113,14 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 		util::infomsg(e.error_message + "\n");
 	}
 
-#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	use_custom_cursor = util::bool_arg(true, shim::argc, shim::argv, "custom-cursor");
 	if (use_custom_cursor) {
 		create_mouse_cursors();
 	}
-#endif
 
-#if (defined __linux__ && !defined ANDROID) || defined _WIN32
 	set_window_icon();
 
 	SDL_PumpEvents(); // without this the icon doesn't appear until the event loop starts
-#endif
 
 	internal::gfx_context.target_image = 0;
 
@@ -1280,11 +1152,7 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 	internal::gfx_context.inited = false;
 	SDL_UnlockMutex(gfx::internal::gfx_context.draw_mutex);
 
-#if defined __linux__ || defined SDL_PLATFORM_APPLE
-	bool is_orientation = false;
-#else
 	bool is_orientation = internal::gfx_context.fullscreen && ((window_w > window_h) != (shim::real_screen_size.w > shim::real_screen_size.h)); // FIXME: maybe this could be only for D3D (needs lots of testing e.g., tablet, multiple computers)
-#endif
 
 	internal::handle_lost_device(true, true);
 
@@ -1316,11 +1184,9 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 
 	internal::handle_found_device(true, true);
 	
-#if (defined __linux__ && !defined ANDROID) || defined _WIN32
 	set_window_icon();
 
 	SDL_PumpEvents(); // without this the icon doesn't appear until the event loop starts
-#endif
 
 	last_screen_mode = {-1, -1};
 
@@ -1341,9 +1207,7 @@ void end()
 
 	Tilemap::release_sheets();
 
-#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	delete_mouse_cursors();
-#endif
 
 	destroy_fonts();
 #ifdef USE_TTF
@@ -1767,7 +1631,6 @@ void flip()
 		}
 	}
 
-#if !defined IOS && !defined ANDROID
 	// Handle screen orientation changes on desktop
 	if (internal::gfx_context.fullscreen && internal::gfx_context.restarting == false) {
 		int flags = SDL_GetWindowFlags(internal::gfx_context.window);
@@ -1833,7 +1696,6 @@ void flip()
 			}
 		}
 	}
-#endif
 
 	if (internal::gfx_context.restarting == false)
 	{
@@ -1932,13 +1794,10 @@ void clear(SDL_Color colour)
 
 void clear_depth_buffer(float value)
 {
-#if !defined ANDROID && !defined IOS && !defined __EMSCRIPTEN__
 	if (glClearDepthf_ptr == 0) {
 		glClearDepth_ptr(value);
 	}
-	else
-#endif
-	{
+	else {
 		glClearDepthf_ptr(value);
 	}
 	PRINT_GL_ERROR("glClearDepthf\n");
@@ -2340,9 +2199,6 @@ bool is_two_sided_stencil_enabled()
 
 void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
 {
-#if defined ANDROID || defined __EMSCRIPTEN__
-	two_sided_stencil = false;
-#endif
 	if (two_sided_stencil == false) {
 		glStencilFunc_ptr(shim_compare_to_gl(func), reference, mask);
 		PRINT_GL_ERROR("glStencilFunc\n");
@@ -2353,7 +2209,6 @@ void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Sten
 		);
 		PRINT_GL_ERROR("glStencilOp\n");
 	}
-#if !defined ANDROID && !defined __EMSCRIPTEN__
 	else {
 		glStencilFuncSeparate_ptr(GL_FRONT, shim_compare_to_gl(func), reference, mask);
 		PRINT_GL_ERROR("glStencilFuncSeparate\n");
@@ -2365,14 +2220,10 @@ void set_stencil_mode(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Sten
 		);
 		PRINT_GL_ERROR("glStencilOpSeparate\n");
 	}
-#endif
 }
 
 void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op zfail, Stencil_Op pass, int reference, int mask)
 {
-#if defined ANDROID || defined __EMSCRIPTEN__
-	two_sided_stencil = false;
-#endif
 	if (two_sided_stencil == false) {
 		glStencilFunc_ptr(shim_compare_to_gl(func), reference, mask);
 		PRINT_GL_ERROR("glStencilFunc\n");
@@ -2383,7 +2234,6 @@ void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op z
 		);
 		PRINT_GL_ERROR("glStencilOp\n");
 	}
-#if !defined ANDROID && !defined __EMSCRIPTEN__
 	else {
 		glStencilFuncSeparate_ptr(GL_BACK, shim_compare_to_gl(func), reference, mask);
 		PRINT_GL_ERROR("glStencilFuncSeparate\n");
@@ -2395,7 +2245,6 @@ void set_stencil_mode_backfaces(Compare_Func func, Stencil_Op fail, Stencil_Op z
 		);
 		PRINT_GL_ERROR("glStencilOpSeparate\n");
 	}
-#endif
 }
 
 void get_stencil_mode(Compare_Func &func, Stencil_Op &fail, Stencil_Op &zfail, Stencil_Op &pass, int &reference, int &mask)
@@ -2564,23 +2413,9 @@ void set_max_aspect_ratio(float max)
 util::Size<int> get_desktop_resolution()
 {
 	util::Size<int> size;
-#if defined IOS
-	int num = SDL_GetNumDisplayModes(0);
-	size = {0, 0};
-	for (int i = 0; i < num; i++) {
-		SDL_DisplayMode mode;
-		SDL_GetDisplayMode(0, i, &mode);
-		if ((mode.w > size.w && mode.h > size.h) || (mode.w == size.w && mode.h > size.h) || (mode.w > size.w && mode.h == size.h)) {
-			size = {mode.w, mode.h};
-		}
-	}
-#elif defined SDL_PLATFORM_APPLE
-	size = macosx_get_desktop_resolution();
-#else
 	SDL_DisplayID id = to_display_id(0);
 	const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(id);
 	size = {mode->w, mode->h};
-#endif
 	return size;
 }
 
@@ -2624,7 +2459,6 @@ std::vector< util::Size<int> > get_supported_video_modes()
 
 void set_custom_mouse_cursor()
 {
-#if ((defined SDL_PLATFORM_APPLE && !defined IOS) || (defined __linux__ && !defined ANDROID) || defined _WIN32)
 	if (internal::gfx_context.inited == false) {
 		return;
 	}
@@ -2642,7 +2476,6 @@ void set_custom_mouse_cursor()
 	else {
 		SDL_HideCursor();
 	}
-#endif
 }
 
 int get_max_comfortable_scale(util::Size<int> scaled_size)
@@ -2663,7 +2496,6 @@ bool enable_press_and_hold(bool enable)
 {
 	press_and_hold_state = enable ? 1 : 0;
 
-#ifdef _WIN32
 	// Toggle the press and hold gesture for the given window
 	// See: https://msdn.microsoft.com/en-us/library/ms812373.aspx
 
@@ -2690,9 +2522,6 @@ bool enable_press_and_hold(bool enable)
 		// setting the window property, return the result
 		return SetProp(internal::gfx_context.hwnd, tabletAtom, (HANDLE)1) != 0;
 	}
-#else
-	return false;
-#endif
 }
 
 bool is_fullscreen()
@@ -2712,31 +2541,23 @@ bool is_fullscreen_window()
 
 void set_minimum_window_size(util::Size<int> size)
 {
-#ifndef IOS
 	if (internal::gfx_context.inited) {
 		real_set_minimum_window_size(size);
 	}
 	minimum_window_size = size;
-#endif
 }
 
 void set_maximum_window_size(util::Size<int> size)
 {
-#ifndef IOS
 	if (internal::gfx_context.inited) {
 		real_set_maximum_window_size(size);
 	}
 	maximum_window_size = size;
-#endif
 }
 
 // This doesn't resize the window, but should be called after the window is resized
 void resize_window(int width, int height)
 {
-#if defined IOS || defined __EMSCRIPTEN__
-	SDL_GL_GetDrawableSize(internal::gfx_context.window, &width, &height);
-#endif
-	
 	util::infomsg("Resizing window (%dx%d)...\n", width, height);
 
 	shim::real_screen_size = {width, height};
@@ -2838,25 +2659,11 @@ bool scale_mouse_event(TGUI_Event *event)
 	if (event->type == TGUI_MOUSE_DOWN || event->type == TGUI_MOUSE_UP || event->type == TGUI_MOUSE_AXIS) {
 		if (event->mouse.normalised) {
 			int window_w, window_h;
-#ifdef IOS
-			SDL_GL_GetDrawableSize(internal::gfx_context.window, &window_w, &window_h);
-#else
 			window_w = shim::real_screen_size.w;
 			window_h = shim::real_screen_size.h;
-#endif
 			event->mouse.x *= window_w;
 			event->mouse.y *= window_h;
 		}
-#ifdef __EMSCRIPTEN__
-		else {
-			int drawable_w, drawable_h;
-			SDL_GL_GetDrawableSize(internal::gfx_context.window, &drawable_w, &drawable_h);
-			int window_w, window_h;
-			SDL_GetWindowSize(internal::gfx_context.window, &window_w, &window_h);
-			event->mouse.x *= drawable_w / window_w;
-			event->mouse.y *= drawable_h / window_h;
-		}
-#endif
 		event->mouse.x = (event->mouse.x - shim::screen_offset.x) / shim::scale;
 		event->mouse.y = (event->mouse.y - shim::screen_offset.y) / shim::scale;
 		event->mouse.normalised = false;
@@ -2940,29 +2747,6 @@ void handle_found_device(bool including_opengl, bool force)
 
 int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 {
-#ifdef _WIN32_XXX
-	DEVMODE m;
-	memset(&m, 0, sizeof(m));
-	m.dmSize = sizeof(m);
-	m.dmDriverExtra = 0;
-	DISPLAY_DEVICE d;
-	memset(&d, 0, sizeof(d));
-	d.cb = sizeof(d);
-	EnumDisplayDevices(0, 0, &d, 0);
-	if (EnumDisplaySettingsEx(d.DeviceName, ENUM_CURRENT_SETTINGS, &m, EDS_ROTATEDMODE) == 0) {
-		return 1;
-	}
-	mode->w = m.dmPelsWidth;
-	mode->h = m.dmPelsHeight;
-	mode->refresh_rate = m.dmDisplayFrequency;
-	return 0;
-#elif defined SDL_PLATFORM_APPLE && !defined IOS && defined XXX
-	util::Size<int> size = macosx_get_desktop_resolution();
-	mode->w = size.w;
-	mode->h = size.h;
-	mode->refresh_rate = 0;
-	return 0;
-#else
 	SDL_DisplayID id = to_display_id(0);
 	const SDL_DisplayMode *m = SDL_GetCurrentDisplayMode(id);
 	if (m != nullptr) {
@@ -2972,10 +2756,8 @@ int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode)
 	else {
 		return 1;
 	}
-#endif
 }
 
-#ifdef _WIN32
 /* The following Windows icon and other mouse cursor creation code comes from Allegro, http://liballeg.org */
 
 #define WINDOWS_RGB(r,g,b)  ((COLORREF)(((BYTE)(r)|((WORD)((BYTE)(g))<<8))|(((DWORD)(BYTE)(b))<<16)))
@@ -3121,7 +2903,6 @@ HICON win_create_icon(HWND wnd, Uint8 *data, util::Size<int> size, int xfocus, i
 
 	return icon;
 }
-#endif
 
 void recreate_work_image()
 {

@@ -1,7 +1,3 @@
-#ifdef TVOS
-#include "shim5/ios.h"
-#endif
-
 #include "shim5/main.h"
 #include "shim5/json.h"
 #include "shim5/trigger.h"
@@ -752,20 +748,8 @@ void JSON::read(std::string filename, bool load_from_filesystem)
 {
 	std::string bytes;
 
-#ifdef TVOS
-	std::string s;
-#endif
-    
 	if (load_from_filesystem) {
-#ifdef TVOS
-		if (tvos_read_file(filename, s) == false) {
-			throw util::FileNotFoundError(filename + " could not be loaded from NSUserDefaults");
-		}
-		sz = (int)s.length();
-		bytes = (char *)s.c_str();
-#else
 		bytes = load_text_from_filesystem(filename);
-#endif
 	}
 	else {
 		bytes = load_text(filename);

@@ -3,30 +3,9 @@
 #include "shim5/shim.h"
 #include "shim5/util.h"
 
-#ifdef STEAM_INPUT
-#include "shim5/steamworks.h"
-ControllerHandle_t all_controllers[STEAM_CONTROLLER_MAX_COUNT];
-#endif
-
-#ifdef SDL_PLATFORM_APPLE
-#define USE_CONSTANT_RUMBLE 1
-#else
 #define USE_CONSTANT_RUMBLE 0
-#endif
-
-#ifdef ANDROID
-#include <jni.h>
-#endif
 
 #define REPEAT_VEC std::vector<Joy_Repeat>
-
-#if defined ANDROID || defined TVOS
-const Uint32 JOYSTICK_SUBSYSTEMS = SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC;
-#endif
-
-#ifdef IOS
-#import <AudioToolbox/AudioToolbox.h>
-#endif
 
 using namespace noo;
 
@@ -57,15 +36,9 @@ enum Joystick_Type {
 	NINTENDO,
 	PLAYSTATION,
 	XBONE
-#ifdef IOS
-	,IOS_JOY
-#endif
 };
 
 struct Joystick {
-#ifdef STEAM_INPUT
-	ControllerHandle_t handle;
-#endif
 	SDL_Haptic *haptic;
 #if USE_CONSTANT_RUMBLE
 	SDL_HapticEffect haptic_effect;
@@ -177,43 +150,6 @@ static bool check_mouse_button_repeat(Mouse_Button_Repeat &mr)
 	return false;
 }
 
-#if 0
-void SDL_GetJoystickGUIDInfo(SDL_GUID guid, Uint16 *vendor, Uint16 *product, Uint16 *version)
-{
-    Uint16 *guid16 = (Uint16 *)guid.data;
-
-    /* If the GUID fits the form of BUS 0000 VENDOR 0000 PRODUCT 0000, return the data */
-    if (/* guid16[0] is device bus type */
-        guid16[1] == 0x0000 &&
-        /* guid16[2] is vendor ID */
-        guid16[3] == 0x0000 &&
-        /* guid16[4] is product ID */
-        guid16[5] == 0x0000
-        /* guid16[6] is product version */
-   ) {
-        if (vendor) {
-            *vendor = guid16[2];
-        }
-        if (product) {
-            *product = guid16[4];
-        }
-        if (version) {
-            *version = guid16[6];
-        }
-    } else {
-        if (vendor) {
-            *vendor = 0;
-        }
-        if (product) {
-            *product = 0;
-        }
-        if (version) {
-            *version = 0;
-        }
-    }
-}
-#endif
-
 static void add_haptics(Joystick *j)
 {
 	if (SDL_IsJoystickHaptic(j->joy)) {
@@ -252,158 +188,74 @@ static void check_joysticks()
 {
 	Joystick j;
 
-#ifdef STEAM_INPUT
-	if (shim::steam_init_failed == false) {
-		ControllerHandle_t controllers[STEAM_CONTROLLER_MAX_COUNT];
-		int nj = SteamController()->GetConnectedControllers(controllers);
-		bool same = nj == num_joysticks;
-		if (same) {
-			for (int i = 0; i < nj; i++) {
-				if (controllers[i] != all_controllers[i]) {
-					same = false;
-					break;
-				}
+	int nj;
+	SDL_JoystickID *ids = SDL_GetGamepads(&nj);
+	if (nj != num_joysticks) {
+		if (nj == 0 && num_joysticks != 0) {
+			if (shim::joystick_disconnect_callback) {
+				shim::joystick_disconnect_callback();
 			}
 		}
-		if (same == false) {
-			if (nj == 0 && num_joysticks != 0) {
-				if (shim::joystick_disconnect_callback) {
-					shim::joystick_disconnect_callback();
-				}
+		num_joysticks = nj;
+		for (size_t i = 0; i < joysticks.size(); i++) {
+			if (joysticks[i].haptic) {
+				SDL_CloseHaptic(joysticks[i].haptic);
 			}
-			num_joysticks = nj;
-			for (int i = 0; i < nj; i++) {
-				all_controllers[i] = controllers[i];
-			}
-			for (size_t i = 0; i < joysticks.size(); i++) {
-				SDL_CloseGamepad(joysticks[i].gc);
-			}
-			joysticks.clear();
-			for (int i = 0; i < num_joysticks; i++) {
+			SDL_CloseGamepad(joysticks[i].gc);
+		}
+		joysticks.clear();
+		for (int i = 0; i < num_joysticks; i++) {
+			j.gc = SDL_OpenGamepad(ids[i]);
+			if (j.gc == NULL) {
+				util::infomsg("Error opening game controller: %s\n", SDL_GetError());
+
 				/*
-				j.joy = SDL_OpenJoystick(i);
-				if (j.joy == NULL) {
-					util::debugmsg("Couldn't open joystick: %s\n", SDL_GetError());
-					continue;
+				SDL_Joystick *joy = SDL_OpenJoystick(i);
+				SDL_GUID guid;
+				Uint16 vendor;
+				Uint16 product;
+				guid = SDL_GetJoystickGUID(joy);
+				SDL_GetJoystickGUIDInfo(guid, &vendor, &product, NULL);
+				char *c = (char *)&guid;
+				printf("guid=");
+				for (int j = 0; j < 16; j++) {
+					printf("%02x", c[j]);
 				}
-				j.id = SDL_GetJoystickID(j.joy);
+				printf("\n");
+				printf("vendor=%x product=%x\n", guid, vendor, product);
+				SDL_CloseJoystick(joy);
 				*/
-				j.handle = controllers[i];
-				j.gc = SDL_OpenGamepad(i);
-				j.joy = SDL_GetGamepadJoystick(j.gc);
+
+				continue;
+			}
+			std::string name = SDL_GetGamepadName(j.gc);
+			name = util::uppercase(name);
+			if (name.find("PS2") != std::string::npos || name.find("PS3") != std::string::npos || name.find("PS4") != std::string::npos || name.find("PLAYSTATION") != std::string::npos || name.find("DUALSHOCK") != std::string::npos) {
+				j.type = PLAYSTATION;
+			}
+			else if (name.find("NINTENDO") != std::string::npos || name.find("SWITCH") != std::string::npos) {
+				j.type = NINTENDO;
+			}
+			else if (name.find("XBOX ONE") != std::string::npos || name.find("X-BOX ONE") != std::string::npos) {
+				j.type = XBONE;
+			}
+			else {
+				j.type = XBOX;
+			}
+			j.joy = SDL_GetGamepadJoystick(j.gc);
+			if (SDL_GetNumJoystickButtons(j.joy) < 5) {
+				SDL_CloseGamepad(j.gc);
+				continue;
+			}
+			else {
 				j.id = SDL_GetJoystickID(j.joy);
-				/*
-				j.id = (SDL_JoystickID)j.handle;
-				j.joy = SDL_GetJoystickFromID(j.id);
-				*/
-				ESteamInputType inputType = SteamController()->GetInputTypeForHandle(j.handle);
-				switch ((int)inputType) {
-					case k_ESteamInputType_XBoxOneController:
-						j.type = XBONE;
-						break;
-					case k_ESteamInputType_PS3Controller:
-					case k_ESteamInputType_PS4Controller:
-						j.type = PLAYSTATION;
-						break;
-					case k_ESteamInputType_SwitchJoyConPair:
-					case k_ESteamInputType_SwitchJoyConSingle:
-					case k_ESteamInputType_SwitchProController:
-						j.type = NINTENDO;
-						break;
-					default:
-						j.type = XBOX;
-						break;	
-				}
-				//add_haptics(&j);
+				add_haptics(&j);
 				joysticks.push_back(j);
-				// FIXME: support multiple joysticks
-				break;
 			}
-			//gfx::show_mouse_cursor(joysticks.size() == 0);
+			// FIXME: support multiple joysticks
+			//break;
 		}
-	}
-	else
-#endif
-	{
-		int nj;
-		SDL_JoystickID *ids = SDL_GetGamepads(&nj);
-		if (nj != num_joysticks) {
-			if (nj == 0 && num_joysticks != 0) {
-				if (shim::joystick_disconnect_callback) {
-					shim::joystick_disconnect_callback();
-				}
-			}
-			num_joysticks = nj;
-			for (size_t i = 0; i < joysticks.size(); i++) {
-				if (joysticks[i].haptic) {
-					SDL_CloseHaptic(joysticks[i].haptic);
-				}
-				SDL_CloseGamepad(joysticks[i].gc);
-			}
-			joysticks.clear();
-			for (int i = 0; i < num_joysticks; i++) {
-				j.gc = SDL_OpenGamepad(ids[i]);
-				if (j.gc == NULL) {
-					util::infomsg("Error opening game controller: %s\n", SDL_GetError());
-
-					/*
-					SDL_Joystick *joy = SDL_OpenJoystick(i);
-					SDL_GUID guid;
-					Uint16 vendor;
-					Uint16 product;
-					guid = SDL_GetJoystickGUID(joy);
-					SDL_GetJoystickGUIDInfo(guid, &vendor, &product, NULL);
-					char *c = (char *)&guid;
-					printf("guid=");
-					for (int j = 0; j < 16; j++) {
-						printf("%02x", c[j]);
-					}
-					printf("\n");
-					printf("vendor=%x product=%x\n", guid, vendor, product);
-					SDL_CloseJoystick(joy);
-					*/
-
-					continue;
-				}
-				std::string name = SDL_GetGamepadName(j.gc);
-				name = util::uppercase(name);
-				if (name.find("PS2") != std::string::npos || name.find("PS3") != std::string::npos || name.find("PS4") != std::string::npos || name.find("PLAYSTATION") != std::string::npos || name.find("DUALSHOCK") != std::string::npos) {
-					j.type = PLAYSTATION;
-				}
-				else if (name.find("NINTENDO") != std::string::npos || name.find("SWITCH") != std::string::npos) {
-					j.type = NINTENDO;
-				}
-#ifdef IOS
-				else if (name.find("XBOX") != std::string::npos) {
-#else
-				else if (name.find("XBOX ONE") != std::string::npos || name.find("X-BOX ONE") != std::string::npos) {
-#endif
-					j.type = XBONE;
-				}
-#ifdef IOS
-				else {
-					j.type = IOS_JOY;
-				}
-#else
-				else {
-					j.type = XBOX;
-				}
-#endif
-				j.joy = SDL_GetGamepadJoystick(j.gc);
-				if (SDL_GetNumJoystickButtons(j.joy) < 5) {
-					SDL_CloseGamepad(j.gc);
-					continue;
-				}
-				else {
-					j.id = SDL_GetJoystickID(j.joy);
-					add_haptics(&j);
-					joysticks.push_back(j);
-				}
-				// FIXME: support multiple joysticks
-				//break;
-			}
-			//gfx::show_mouse_cursor(joysticks.size() == 0);
-		}
+		//gfx::show_mouse_cursor(joysticks.size() == 0);
 	}
 }
 
@@ -430,18 +282,6 @@ bool start()
 	joysticks.clear();
 	num_joysticks = 0;
 
-#ifdef TVOS
-	SDL_SetHint("SDL_HINT_TV_REMOTE_AS_JOYSTICK", "0");
-	SDL_SetHint("SDL_HINT_ACCELEROMETER_AS_JOYSTICK", "0");
-	SDL_SetHint("SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION", "0");
-#endif
-
-
-#if defined ANDROID || defined TVOS
-	SDL_InitSubSystem(JOYSTICK_SUBSYSTEMS);
-	SDL_GamepadEventState(SDL_ENABLE);
-#endif
-
  	check_joysticks();
 
 	return true;
@@ -451,9 +291,6 @@ void reset()
 {
 	for (size_t i = 0; i < joysticks.size(); i++) {
 		Joystick &j = joysticks[i];
-#ifdef STEAM_INPUT
-		if (shim::steam_init_failed)
-#endif
 			if (j.haptic) {
 			       SDL_CloseHaptic(j.haptic);
 			}
@@ -470,9 +307,6 @@ void reset()
 void end()
 {
 	reset();
-#if defined ANDROID || defined TVOS
-	SDL_QuitSubSystem(JOYSTICK_SUBSYSTEMS);
-#endif
 }
 
 void update()
@@ -618,14 +452,7 @@ bool convert_to_focus_event(TGUI_Event *event, Focus_Event *focus)
 
 		int axis = event->joystick.axis;
 		int index = find_joy_repeat(false, axis, js);
-#ifndef STEAM_INPUT // On Steam builds, we can't use JoystickGetAxis/etc because sometimes it's the dpad generating axis events
-		Sint16 other_s = SDL_GetJoystickAxis(js->joy, 1-axis);
-		float other = TGUI6_NORMALISE_JOY_AXIS(other_s);
-
-		if (fabsf(event->joystick.value) > shim::joystick_activate_threshold && fabsf(other) < shim::joystick_deactivate_threshold) {
-#else
 		if (fabsf(event->joystick.value) > shim::joystick_activate_threshold) {
-#endif
 			bool go = true;
 			if (index < 0) {
 				if (event->joystick.is_repeat == false) {
@@ -759,91 +586,18 @@ void convert_focus_to_original(TGUI_Event *event)
 	}
 }
 
-#ifdef STEAM_INPUT
-static int steam_rumble(void *data)
-{
-	Uint32 length = *((Uint32 *)&data);
-
-	int freq = 50000;
-
-	SteamController()->TriggerVibration(get_controller_handle(), freq, freq);
-
-	SDL_Delay(length);
-
-	SteamController()->TriggerVibration(get_controller_handle(), 0, 0);
-
-	return 0;
-}
-#endif
-
 void rumble(Uint32 length, int num)
 {
-#ifdef STEAM_INPUT
-	if (shim::steam_init_failed == false) {
-		SDL_Thread *thread = SDL_CreateThread(steam_rumble, "", (void *)(intptr_t)length);
-		SDL_DetachThread(thread);
-	}
-	else
-#endif
-#ifdef ANDROID
-	if (is_joystick_connected() == false) {
-		JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
-		jobject activity = (jobject)SDL_GetAndroidActivity();
-		jclass clazz(env->GetObjectClass(activity));
+	for (size_t i = 0; i < joysticks.size(); i++) {
 
-		jmethodID method_id = env->GetMethodID(clazz, "rumble", "(I)V");
-
-		if (method_id != 0) {
-			env->CallVoidMethod(activity, method_id, length);
+		if (num >= 0 && (int)i != num) {
+			continue;
 		}
 
-		env->DeleteLocalRef(activity);
-		env->DeleteLocalRef(clazz);
-	}
-	else
-#elif defined IOS && !defined TVOS
-	if (length >= 500) {
-		AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-	}
-	else
-#endif
-	{
-		for (size_t i = 0; i < joysticks.size(); i++) {
+		Joystick &j = joysticks[i];
 
-			if (num >= 0 && (int)i != num) {
-				continue;
-			}
-
-			Joystick &j = joysticks[i];
-
-#if 0
-			if (j.haptic) {
-#if USE_CONSTANT_RUMBLE
-				if (j.haptic_effect_id < 0) {
-					util::infomsg("Haptic effect was not supported and not created.\n");
-				}
-				else {
-					j.haptic_effect.constant.level = 0x7fff * strength;
-					j.haptic_effect.constant.length = length;
-					SDL_UpdateHapticEffect(j.haptic, j.haptic_effect_id, &j.haptic_effect);
-					SDL_RunHapticEffect(j.haptic, j.haptic_effect_id, 1);
-				}
-#else
-				if (SDL_HapticRumbleSupported(j.haptic)) {
-					if (SDL_PlayHapticRumble(j.haptic, strength, length) != 0) {
-						util::infomsg("Error playing rumble effect!\n");
-						return;
-					}
-				}
-				else {
-					util::infomsg("Rumble not supported by haptic device\n");
-				}
-#endif
-			}
-#endif
-			if (j.gc) {
-				SDL_RumbleGamepad(j.gc, 0x7777, 0x7777, length);
-			}
+		if (j.gc) {
+			SDL_RumbleGamepad(j.gc, 0x7777, 0x7777, length);
 		}
 	}
 }
@@ -853,180 +607,8 @@ bool is_joystick_connected()
 	return joysticks.size() != 0;
 }
 
-#ifdef STEAM_INPUT
-std::string get_joystick_button_name_steam(int button)
-{
-	switch (button) {
-		case k_EControllerActionOrigin_A:
-		case k_EControllerActionOrigin_XBoxOne_A:
-		case k_EControllerActionOrigin_XBox360_A:
-		case k_EControllerActionOrigin_SteamV2_A:
-		case k_EControllerActionOrigin_Switch_A:
-			return "@F0";
-		case k_EControllerActionOrigin_B:
-		case k_EControllerActionOrigin_XBoxOne_B:
-		case k_EControllerActionOrigin_XBox360_B:
-		case k_EControllerActionOrigin_SteamV2_B:
-		case k_EControllerActionOrigin_Switch_B:
-			return "@F1";
-		case k_EControllerActionOrigin_X:
-		case k_EControllerActionOrigin_XBox360_X:
-		case k_EControllerActionOrigin_XBoxOne_X:
-		case k_EControllerActionOrigin_SteamV2_X:
-		case k_EControllerActionOrigin_Switch_X:
-			return "@F2";
-		case k_EControllerActionOrigin_Y:
-		case k_EControllerActionOrigin_XBoxOne_Y:
-		case k_EControllerActionOrigin_XBox360_Y:
-		case k_EControllerActionOrigin_SteamV2_Y:
-		case k_EControllerActionOrigin_Switch_Y:
-			return "@F3";
-		case k_EControllerActionOrigin_PS4_X:
-			return "@F4";
-		case k_EControllerActionOrigin_PS4_Circle:
-			return "@F5";
-		case k_EControllerActionOrigin_PS4_Triangle:
-			return "@F7";
-		case k_EControllerActionOrigin_PS4_Square:
-			return "@F6";
-		case k_EControllerActionOrigin_LeftBumper:
-		case k_EControllerActionOrigin_PS4_LeftBumper:
-		case k_EControllerActionOrigin_XBoxOne_LeftBumper:
-		case k_EControllerActionOrigin_XBox360_LeftBumper:
-		case k_EControllerActionOrigin_SteamV2_LeftBumper:
-		case k_EControllerActionOrigin_Switch_LeftBumper:
-			return "LB";
-		case k_EControllerActionOrigin_RightBumper:
-		case k_EControllerActionOrigin_PS4_RightBumper:
-		case k_EControllerActionOrigin_XBoxOne_RightBumper:
-		case k_EControllerActionOrigin_XBox360_RightBumper:
-		case k_EControllerActionOrigin_SteamV2_RightBumper:
-		case k_EControllerActionOrigin_Switch_RightBumper:
-			return "RB";
-		case k_EControllerActionOrigin_LeftStick_Click:
-		case k_EControllerActionOrigin_PS4_LeftStick_Click:
-		case k_EControllerActionOrigin_XBoxOne_LeftStick_Click:
-		case k_EControllerActionOrigin_SteamV2_LeftStick_Click:
-		case k_EControllerActionOrigin_XBox360_LeftStick_Click:
-		case k_EControllerActionOrigin_Switch_LeftStick_Click:
-			return "LS";
-		case k_EControllerActionOrigin_PS4_RightStick_Click:
-		case k_EControllerActionOrigin_XBoxOne_RightStick_Click:
-		case k_EControllerActionOrigin_XBox360_RightStick_Click:
-		case k_EControllerActionOrigin_Switch_RightStick_Click:
-			return "RS";
-		case k_EControllerActionOrigin_Start:
-		case k_EControllerActionOrigin_XBox360_Start:
-		case k_EControllerActionOrigin_SteamV2_Start:
-			return "START";
-		case k_EControllerActionOrigin_Back:
-		case k_EControllerActionOrigin_XBox360_Back:
-		case k_EControllerActionOrigin_SteamV2_Back:
-			return "BACK";
-		case k_EControllerActionOrigin_XBoxOne_Menu:
-			return "MENU";
-		case k_EControllerActionOrigin_XBoxOne_View:
-			return "VIEW";
-		case k_EControllerActionOrigin_PS4_Options:
-			return "OPTIONS";
-		case k_EControllerActionOrigin_PS4_Share:
-			return "SHARE";
-		case k_EControllerActionOrigin_Switch_Minus:
-			return "-";
-		case k_EControllerActionOrigin_Switch_Plus:
-			return "+";
-		case k_EControllerActionOrigin_Switch_Capture:
-			return "CAPTURE";
-	}
-
-	const char *s = SteamController()->GetStringForActionOrigin((EControllerActionOrigin)button);
-
-	return util::uppercase(s);
-}
-
-std::string get_joystick_button_colour_code_steam(int button)
-{
-	switch (button) {
-		case k_EControllerActionOrigin_A:
-		case k_EControllerActionOrigin_XBoxOne_A:
-		case k_EControllerActionOrigin_XBox360_A:
-		case k_EControllerActionOrigin_SteamV2_A:
-			return "#32c832";
-		case k_EControllerActionOrigin_B:
-		case k_EControllerActionOrigin_XBoxOne_B:
-		case k_EControllerActionOrigin_XBox360_B:
-		case k_EControllerActionOrigin_SteamV2_B:
-			return "#c83232";
-		case k_EControllerActionOrigin_X:
-		case k_EControllerActionOrigin_XBox360_X:
-		case k_EControllerActionOrigin_XBoxOne_X:
-		case k_EControllerActionOrigin_SteamV2_X:
-			return "#3296c8";
-		case k_EControllerActionOrigin_Y:
-		case k_EControllerActionOrigin_XBoxOne_Y:
-		case k_EControllerActionOrigin_XBox360_Y:
-		case k_EControllerActionOrigin_SteamV2_Y:
-			return "#c8c832";
-		case k_EControllerActionOrigin_PS4_X:
-			return "#7cb2e8";
-		case k_EControllerActionOrigin_PS4_Circle:
-			return "#ff6666";
-		case k_EControllerActionOrigin_PS4_Triangle:
-			return "#40e2a0";
-		case k_EControllerActionOrigin_PS4_Square:
-			return "#ff69f8";
-		case k_EControllerActionOrigin_LeftBumper:
-		case k_EControllerActionOrigin_PS4_LeftBumper:
-		case k_EControllerActionOrigin_XBoxOne_LeftBumper:
-		case k_EControllerActionOrigin_XBox360_LeftBumper:
-		case k_EControllerActionOrigin_SteamV2_LeftBumper:
-			return "";
-		case k_EControllerActionOrigin_RightBumper:
-		case k_EControllerActionOrigin_PS4_RightBumper:
-		case k_EControllerActionOrigin_XBoxOne_RightBumper:
-		case k_EControllerActionOrigin_XBox360_RightBumper:
-		case k_EControllerActionOrigin_SteamV2_RightBumper:
-			return "";
-		case k_EControllerActionOrigin_LeftStick_Click:
-		case k_EControllerActionOrigin_PS4_LeftStick_Click:
-		case k_EControllerActionOrigin_XBoxOne_LeftStick_Click:
-		case k_EControllerActionOrigin_SteamV2_LeftStick_Click:
-		case k_EControllerActionOrigin_XBox360_LeftStick_Click:
-			return "";
-		case k_EControllerActionOrigin_PS4_RightStick_Click:
-		case k_EControllerActionOrigin_XBoxOne_RightStick_Click:
-		case k_EControllerActionOrigin_XBox360_RightStick_Click:
-			return "";
-		case k_EControllerActionOrigin_Start:
-		case k_EControllerActionOrigin_XBox360_Start:
-		case k_EControllerActionOrigin_SteamV2_Start:
-			return "";
-		case k_EControllerActionOrigin_Back:
-		case k_EControllerActionOrigin_XBox360_Back:
-		case k_EControllerActionOrigin_SteamV2_Back:
-			return "";
-		case k_EControllerActionOrigin_XBoxOne_Menu:
-			return "";
-		case k_EControllerActionOrigin_XBoxOne_View:
-			return "";
-		case k_EControllerActionOrigin_PS4_Options:
-			return "";
-		case k_EControllerActionOrigin_PS4_Share:
-			return "";
-	}
-
-	return "";
-}
-#endif
-
 std::string get_joystick_button_colour_code(int button)
 {
-#ifdef STEAM_INPUT
-	if (shim::steam_init_failed == false) {
-		return get_joystick_button_colour_code_steam(button);
-	}
-#endif
-
 	Joystick_Type type;
 
 	if (joysticks.size() > 0) {
@@ -1054,36 +636,17 @@ std::string get_joystick_button_colour_code(int button)
 		return "";
 	}
 	else {
-#ifdef IOS
-		if (type == IOS_JOY) {
-			switch (button) {
-				case TGUI_B_A:
-					return "#c83232";
-				case TGUI_B_B:
-					return "#32c832";
-				case TGUI_B_X:
-					return "#c8c832";
-				case TGUI_B_Y:
-					return "#3296c8";
-				default:
-					return "";
-			}
-		}
-		else
-#endif
-		{
-			switch (button) {
-				case TGUI_B_A:
-					return "#32c832";
-				case TGUI_B_B:
-					return "#c83232";
-				case TGUI_B_X:
-					return "#3296c8";
-				case TGUI_B_Y:
-					return "#c8c832";
-				default:
-					return "";
-			}
+		switch (button) {
+			case TGUI_B_A:
+				return "#32c832";
+			case TGUI_B_B:
+				return "#c83232";
+			case TGUI_B_X:
+				return "#3296c8";
+			case TGUI_B_Y:
+				return "#c8c832";
+			default:
+				return "";
 		}
 	}
 
@@ -1092,12 +655,6 @@ std::string get_joystick_button_colour_code(int button)
 
 std::string get_joystick_button_name(int button)
 {
-#ifdef STEAM_INPUT
-	if (shim::steam_init_failed == false) {
-		return get_joystick_button_name_steam(button);
-	}
-#endif
-
 	Joystick_Type type;
 
 	if (joysticks.size() > 0) {
@@ -1265,16 +822,6 @@ SDL_Gamepad *get_sdl_gamepad(SDL_JoystickID id)
 	}
 }
 
-#ifdef STEAM_INPUT
-ControllerHandle_t get_controller_handle()
-{
-	if (joysticks.size() == 0) {
-		return 0;
-	}
-	return joysticks[0].handle;
-}
-#endif
-
 Focus_Event::~Focus_Event()
 {
 }
@@ -1288,62 +835,7 @@ bool system_has_touchscreen()
 		return result;
 	}
 
-#ifdef _WIN32
 	result = GetSystemMetrics(/*SM_MAXIMUMTOUCHES*/95) > 0; // SM_MAXIMUMTOUCHES is only available on Windows 7+
-#elif defined ANDROID
-	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
-	jobject activity = (jobject)SDL_GetAndroidActivity();
-	jclass clazz(env->GetObjectClass(activity));
-
-	jmethodID method_id = env->GetMethodID(clazz, "has_touchscreen", "()Z");
-
-	result = (bool)env->CallBooleanMethod(activity, method_id);
-
-	env->DeleteLocalRef(activity);
-	env->DeleteLocalRef(clazz);
-#elif defined __linux__
-	// hack for Chromebook where code below this if doesn't work
-	if (shim::force_tablet) {
-		return true;
-	}
-
-	// slurp_file_from_filesystem doesn't work here because these special files return 0 for size
-
-	SDL_IOStream *file = SDL_IOFromFile("/proc/bus/input/devices", "r");
-
-	if (file == 0) {
-		return false;
-	}
-
-	char *buf = new char[1024*100];
-	int c = 0;
-
-	while (SDL_ReadIO(file, buf+c, 1) == 1 && c < 1024*100-2) {
-		c++;
-	}
-
-	buf[c] = 0;
-
-	SDL_CloseIO(file);
-
-	std::string s = buf;
-
-	s = util::lowercase(s);
-	if (s.find("touchscreen") != std::string::npos) {
-		result = true;
-	}
-	else {
-		result = false;
-	}
-
-	delete[] buf;
-#elif defined TVOS
-	result = false;
-#elif defined IOS
-	result = true;
-#else	
-	result = false;
-#endif
 	
 	cached = true;
 
@@ -1352,11 +844,6 @@ bool system_has_touchscreen()
 
 bool system_has_keyboard()
 {
-#ifdef ANDROID
-	return util::is_chromebook();
-#elif defined IOS
-	return false;
-#elif defined _WIN32
 	// Kind of a hack. If it's a tablet we want non-keyboard behaviour...
 	if (shim::force_tablet) {
 		return GetSystemMetrics(SM_TABLETPC) == 0;
@@ -1364,16 +851,6 @@ bool system_has_keyboard()
 	else {
 		return true;
 	}
-#elif defined __linux__
-	if (shim::force_tablet) {
-		return false;
-	}
-	else {
-		return true;
-	}
-#else
-	return true;
-#endif
 }
 
 

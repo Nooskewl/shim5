@@ -444,34 +444,7 @@ GLuint Shader::compile_opengl_fragment_shader(std::string source)
 
 std::string Shader::add_opengl_header(bool is_vertex, Precision precision, std::string source)
 {
-#if defined ANDROID || defined IOS || defined RASPBERRYPI || defined __EMSCRIPTEN__
-	std::string p;
-	if (is_vertex) {
-		if (precision == LOW) {
-			p = "lowp";
-		}
-		else if (precision == MEDIUM) {
-			p = "mediump";
-		}
-		else {
-			p = "highp"; // default
-		}
-	}
-	else if (is_vertex == false) {
-		if (precision == MEDIUM) {
-			p = "mediump";
-		}
-		else if (precision == HIGH) {
-			p = "highp";
-		}
-		else {
-			p = "lowp"; // default
-		}
-	}
-	source = "precision " + p + " float;\n" + source;
-#else
 	source = std::string("#version 120\n") + source;
-#endif
 	return source;
 }
 

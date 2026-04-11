@@ -27,15 +27,7 @@ struct GFX_Context {
 	bool mouse_in_window;
 	Shader *textured_shader;
 	Shader *untextured_shader;
-#ifdef _WIN32
 	HWND hwnd;
-#elif defined __linux__ && !defined ANDROID
-	Display *x_display;
-	Window x_window;
-#elif defined IOS
-	GLuint framebuffer; // must be bound when drawing to screen
-	GLuint colorbuffer; // must be bound when flipping
-#endif
 };
 
 extern SHIM5_EXPORT GFX_Context gfx_context;
@@ -46,11 +38,7 @@ void handle_found_device(bool including_opengl, bool force = false);
 int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode);
 void recreate_work_image();
 
-#if defined _WIN32
 HICON win_create_icon(HWND wnd, Uint8 *data, util::Size<int> size, int xfocus, int yfocus, bool is_cursor);
-#elif defined __linux__ && !defined ANDROID
-Cursor x_create_cursor(Display *display, Uint8 *data, util::Size<int> size, int xfocus, int yfocus);
-#endif
 
 void premultiply_surface(SDL_Surface *surface);
 

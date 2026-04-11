@@ -133,15 +133,8 @@ extern SHIM5_EXPORT Uint32 timer_event_id;
 // game should always set this to logic ticks per second (default is 60)
 // Note that this doesn't control execution speed (that is up to your main loop) but it tells some things how fast your main loop is running
 extern SHIM5_EXPORT int logic_rate;
-#ifdef TVOS
-extern SHIM5_EXPORT bool pass_menu_to_os;
-#endif
 extern SHIM5_EXPORT int devsettings_num_rows; // in rows
 extern SHIM5_EXPORT int devsettings_max_width; // in pixels
-#ifdef STEAMWORKS
-extern SHIM5_EXPORT bool steam_init_failed;
-extern SHIM5_EXPORT void (*steam_overlay_activated_callback)();
-#endif
 
 extern SHIM5_EXPORT std::vector<util::A_Star::Way_Point> (*get_way_points)(util::Point<int> start);
 

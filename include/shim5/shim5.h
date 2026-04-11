@@ -34,8 +34,4 @@
 #include "shim5/vorbis.h"
 //#include "shim5/xml.h"
 
-#ifdef STEAMWORKS
-#include "shim5/steamworks.h"
-#endif
-
 #endif // SHIM5_H

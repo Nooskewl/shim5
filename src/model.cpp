@@ -126,46 +126,6 @@ Model::Node::~Node()
 	}
 }
 
-#ifdef _WIN32
-void *Model::Node::operator new(size_t i)
-{
-	return _mm_malloc(i,16);
-}
-
-void Model::Node::operator delete(void* p)
-{
-	_mm_free(p);
-}
-#endif
-
-//--
-
-#ifdef _WIN32
-void *Model::Weights::operator new(size_t i)
-{
-	return _mm_malloc(i,16);
-}
-
-void Model::Weights::operator delete(void* p)
-{
-	_mm_free(p);
-}
-#endif
-
-//--
-
-#ifdef _WIN32
-void *Model::Bone::operator new(size_t i)
-{
-	return _mm_malloc(i,16);
-}
-
-void Model::Bone::operator delete(void* p)
-{
-	_mm_free(p);
-}
-#endif
-
 //--
 
 Model::Model()

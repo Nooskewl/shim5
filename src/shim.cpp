@@ -22,19 +22,7 @@
 #include "shim5/internal/shim.h"
 #include "shim5/internal/util.h"
 
-#ifdef STEAMWORKS
-#include "shim5/steamworks.h"
-#endif
-
 using namespace noo;
-
-#if defined IOS || defined ANDROID
-static bool app_in_background;
-#endif
-
-#if defined IOS || defined ANDROID
-static bool adjust_screen_size;
-#endif
 
 namespace noo {
 
@@ -110,15 +98,8 @@ int notification_duration;
 int notification_fade_duration;
 Uint32 timer_event_id;
 int logic_rate;
-#ifdef TVOS
-bool pass_menu_to_os;
-#endif
 int devsettings_num_rows;
 int devsettings_max_width;
-#ifdef STEAMWORKS
-bool steam_init_failed;
-void (*steam_overlay_activated_callback)();
-#endif
 std::vector<util::A_Star::Way_Point> (*get_way_points)(util::Point<int> start);
 util::Point<float> screen_shake_save;
 bool using_screen_shake;
@@ -137,8 +118,6 @@ bool use_cwd;
 bool log_tags;
 #ifdef DEBUG
 int error_level = 9999;
-#elif defined IOS
-int error_level = 3; // let debugmsg hit Xcode console
 #else
 int error_level = 1;
 #endif
@@ -151,13 +130,9 @@ static void handle_resize(SDL_Event *event)
 		return;
 	}
 
-#if !defined IOS && !defined ANDROID && !defined __EMSCRIPTEN__
 	if (gfx::internal::gfx_context.fullscreen == false) {
-#endif
 		gfx::resize_window(event->window.data1, event->window.data2);
-#if !defined IOS && !defined ANDROID && !defined __EMSCRIPTEN__
 	}
-#endif
 }
 
 // this may run in a different thread :/
@@ -165,45 +140,6 @@ static bool event_filter(void *userdata, SDL_Event *event)
 {
 	switch (event->type)
 	{
-#ifdef IOS
-		case SDL_EVENT_TERMINATING:
-			event->type = SDL_EVENT_QUIT;
-			return 1;
-		case SDL_EVENT_LOW_MEMORY:
-			return 0;
-		case SDL_EVENT_WILL_ENTER_BACKGROUND:
-			return 0;
-		case SDL_EVENT_DID_ENTER_BACKGROUND:
-			app_in_background = true;
-			return 0;
-		case SDL_EVENT_WILL_ENTER_FOREGROUND:
-			adjust_screen_size = true;
-			return 0;
-		case SDL_EVENT_DID_ENTER_FOREGROUND:
-			app_in_background = false;
-			SDL_SetHint(SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS, "0");
-			return 0;
-#ifdef TVOS
-		case SDL_EVENT_KEY_DOWN:
-		case SDL_EVENT_KEY_UP:
-			if (event->key.keysym.sym == SDLK_MENU && pass_menu_to_os) {
-				SDL_SetHint(SDL_HINT_APPLE_TV_CONTROLLER_UI_EVENTS, "1");
-			}
-			return 1;
-#endif
-#elif defined ANDROID
-		case SDL_EVENT_WILL_ENTER_BACKGROUND:
-			util::internal::flush_log_file();
-			return 0;
-		case SDL_EVENT_WILL_ENTER_FOREGROUND:
-			return 0;
-		case SDL_EVENT_DID_ENTER_BACKGROUND:
-			app_in_background = true;
-			return 0;
-		case SDL_EVENT_DID_ENTER_FOREGROUND:
-			app_in_background = false;
-			return 0;
-#endif
 		default:
 			return 1;
 	}
@@ -245,13 +181,7 @@ bool static_start(int sdl_init_flags)
 	}
 
 	if (sdl_init_flags == 0) {
-#if defined ANDROID || defined TVOS
-		sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO; // we need to be able to shutdown/bring up the joystick system on Android
-#elif defined __EMSCRIPTEN__
-		sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK;
-#else
 		sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC;
-#endif
 	}
 
 
@@ -259,7 +189,7 @@ bool static_start(int sdl_init_flags)
 		return false;
 	}
 
-#if !defined ANDROID && IFDEFED_OUT_FOR_NOW
+#if 0
 	try {
 		if (cpa_pointer_to_data != 0) {
 			cpa = new util::CPA(cpa_pointer_to_data, cpa_data_size);
@@ -281,21 +211,8 @@ bool static_start(int sdl_init_flags)
 		catch (util::Error &e) {
 			util::infomsg(e.error_message + "\n");
 		}
-#if !defined ANDROID && IFDEFED_OUT_FOR_NOW
-	}
-#endif
 
 	default_cpa = cpa;
-
-#if defined IOS || defined ANDROID
-	app_in_background = false;
-#endif
-
-#if defined IOS
-	adjust_screen_size = false;
-#elif defined ANDROID
-	adjust_screen_size = true;
-#endif
 
 	// argc/argv should be set before static_start in shim5 (util::static_start uses them)
 	//argc = 0;
@@ -414,9 +331,6 @@ bool static_start(int sdl_init_flags)
 	use_cwd = root->get_nested_bool("shim>misc>use_cwd", &use_cwd, false);
 	log_tags = root->get_nested_bool("shim>misc>log_tags", &log_tags, true);
 	error_level = root->get_nested_int("shim>misc>error_level", &error_level, error_level);
-#ifdef TVOS
-	pass_menu_to_os = root->get_nested_bool("shim>tvos>pass_menu_to_os", &pass_menu_to_os, false);
-#endif
 	tile_size = root->get_nested_int("shim>gfx>tile_size", &tile_size, 16);
 	devsettings_num_rows = root->get_nested_int("shim>misc>devsettings_num_rows", &devsettings_num_rows, 6);
 	devsettings_max_width = root->get_nested_int("shim>misc>devsettings_max_width", &devsettings_max_width, 100);
@@ -439,11 +353,6 @@ bool static_start_all(int sdl_init_flags)
 	if (util::static_start() == false) {
 		return false;
 	}
-
-#ifdef STEAMWORKS
-	steam_overlay_activated_callback = nullptr;
-	util::start_steamworks();
-#endif
 
 	if (audio::static_start() == false) {
 		return false;
@@ -681,13 +590,7 @@ static TGUI_Event *real_handle_tgui_event(TGUI_Event *tgui_event)
 
 TGUI_Event *handle_event(SDL_Event *sdl_event)
 {
-#ifdef IOS
-	if (sdl_event->type == SDL_EVENT_WINDOW_RESIZED) {
-#elif defined ANDROID
-	if (sdl_event->type == SDL_EVENT_WINDOW_RESIZED || sdl_event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
-#else
 	if (sdl_event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
-#endif
 		waiting_for_fullscreen_change = false;
 		handle_resize(sdl_event);
 	}
@@ -705,33 +608,7 @@ TGUI_Event *handle_event(SDL_Event *sdl_event)
 		tgui_event->type = TGUI_TICK;
 	}
 	else {
-#ifdef STEAM_INPUT
-		bool go;
-		if (shim::steam_init_failed == false) {
-			switch (sdl_event->type) {
-				case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-				case SDL_EVENT_GAMEPAD_BUTTON_UP:
-				case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-				{
-					go = false;
-					TGUI_Event e;
-					e.type = TGUI_UNKNOWN;
-					*tgui_event = e;
-					break;
-				}
-				default:
-					go = true;
-					break;
-			}
-		}
-		else {
-			go = true;
-		}
-		if (go)
-#endif
-		{
-			*tgui_event = tgui_sdl_convert_event(sdl_event);
-		}
+		*tgui_event = tgui_sdl_convert_event(sdl_event);
 	}
 
 	TGUI_Event *event = real_handle_tgui_event(tgui_event);
@@ -860,18 +737,6 @@ bool event_in_queue(TGUI_Event e)
 
 bool update()
 {
-#if defined STEAMWORKS
-	if (steam_init_failed == false) {
-		SteamAPI_RunCallbacks();
-	}
-#endif
-
-#if defined IOS || defined ANDROID
-	if (app_in_background) {
-		return false;
-	}
-#endif
-
 	if (waiting_for_fullscreen_change) {
 		return false;
 	}
@@ -883,21 +748,6 @@ bool update()
 	if (quitting) {
 		return false;
 	}
-
-#if defined IOS || defined ANDROID
-	if (adjust_screen_size) {
-		adjust_screen_size = false;
-		int width, height;
-		SDL_GL_GetDrawableSize(gfx::internal::gfx_context.window, &width, &height);
-		shim::real_screen_size.w = width;
-		shim::real_screen_size.h = height;
-		gfx::set_screen_size(shim::real_screen_size);
-	}
-#endif
-
-	//if (gfx::internal::gfx_context.work_image != 0 && gfx::internal::gfx_context.work_image->size != shim::real_screen_size) {
-		//gfx::internal::recreate_work_image();
-	//}
 
 	input::update();
 

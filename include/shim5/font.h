@@ -44,10 +44,6 @@ public:
 	SHIM5_EXPORT void disable_shadow();
 
 	// For 16 byte alignment to make glm::mat4 able to use SIMD
-#ifdef _WIN32
-	SHIM5_EXPORT void *operator new(size_t i);
-	SHIM5_EXPORT void operator delete(void* p);
-#endif
 	
 protected:
 	static std::vector<Font *> loaded_fonts;

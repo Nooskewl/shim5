@@ -25,10 +25,6 @@ public:
 		~Weights();
 
 		// For 16 byte alignment to make glm::mat4 able to use SIMD
-#ifdef _WIN32
-		void *operator new(size_t i);
-		void operator delete(void* p);
-#endif
 	};
 
 	EXPORT_STRUCT_ALIGN(Bone, 16) {
@@ -37,10 +33,6 @@ public:
 		glm::mat4 combined_transform;
 
 		// For 16 byte alignment to make glm::mat4 able to use SIMD
-#ifdef _WIN32
-		void *operator new(size_t i);
-		void operator delete(void* p);
-#endif
 	};
 
 	struct Animation {
@@ -81,10 +73,6 @@ public:
 		void animate(Animation *animation, int frame, glm::mat4 *transform);
 
 		// For 16 byte alignment to make glm::mat4 able to use SIMD
-#ifdef _WIN32
-		void *operator new(size_t i);
-		void operator delete(void* p);
-#endif
 	};
 
 	SHIM5_EXPORT Model();

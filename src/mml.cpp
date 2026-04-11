@@ -503,7 +503,8 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			t->internal_volume = v;
 			mml->reverb_tracks.push_back(t);
 			for (size_t i = 0; i < mml->reverb_tracks.size(); i++) {
-				mml->reverb_tracks[i]->set_master_volume(master_volume/mml->reverb_tracks.size());
+				//mml->reverb_tracks[i]->set_master_volume(master_volume/mml->reverb_tracks.size());
+				mml->reverb_tracks[i]->set_master_volume(master_volume/(float)rt.reverberations);
 			}
 			if (playing) {
 				t->play(false);

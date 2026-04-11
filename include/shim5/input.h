@@ -2,7 +2,6 @@
 #define NOO_INPUT_H
 
 #include "shim5/main.h"
-#include "shim5/steamworks.h"
 
 namespace noo {
 
@@ -36,10 +35,6 @@ int SHIM5_EXPORT get_controller_index(SDL_JoystickID id);
 SDL_JoystickID SHIM5_EXPORT get_controller_id(int index);
 SDL_Joystick SHIM5_EXPORT *get_sdl_joystick(SDL_JoystickID id);
 SDL_Gamepad SHIM5_EXPORT *get_sdl_gamepad(SDL_JoystickID id);
-
-#ifdef STEAMWORKS
-ControllerHandle_t SHIM5_EXPORT get_controller_handle();
-#endif
 
 bool SHIM5_EXPORT system_has_touchscreen();
 bool SHIM5_EXPORT system_has_keyboard();

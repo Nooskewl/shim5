@@ -1,13 +1,6 @@
 #ifndef NOO_MAIN_H
 #define NOO_MAIN_H
 
-#ifdef _WIN32
-// Disable warnings about dll-interface. Even Microsoft admits they're superfluous
-#pragma warning(disable : 4251)
-#pragma warning(disable : 4275)
-#endif
-
-#ifdef _WIN32
 #ifdef SHIM5_STATIC
 #define SHIM5_EXPORT
 #else
@@ -28,17 +21,6 @@
 #define ALIGN(n) class __declspec(align(n))
 #endif
 
-#else // _WIN32
-#ifdef SHIM5_BUILD
-#define SHIM5_EXPORT __attribute__((visibility("default")))
-#else
-#define SHIM5_EXPORT
-#endif
-#define EXPORT_STRUCT_ALIGN(x, n) struct __attribute__((visibility("default"))) __attribute__((aligned(n))) x
-#define EXPORT_CLASS_ALIGN(x, n) class __attribute__((visibility("default"))) __attribute__((aligned(n))) x
-#define ALIGN(n) class __attribute__((aligned(n)))
-#endif
-
 #include <cctype>
 #include <cmath>
 #include <cstdarg>
@@ -53,149 +35,13 @@
 #include <string>
 #include <vector>
 
-#ifndef _WIN32
 #include <sys/types.h>
 #include <utime.h>
-#else
-#include <sys/utime.h>
-#define utime _utime
-#define utimbuf _utimbuf
-#endif
-#if !defined _WIN32
-#include <sys/time.h>
-#endif
 
-#if defined SDL_PLATFORM_APPLE || defined __linux__
-#define _strdup strdup
-#endif
-
-#if defined IOS || defined ANDROID || defined __EMSCRIPTEN__
-#define glStencilFuncSeparate_ptr glStencilFuncSeparate
-#define glStencilOpSeparate_ptr glStencilOpSeparate
-#define glBindFramebuffer_ptr glBindFramebuffer
-#define glDeleteRenderbuffers_ptr glDeleteRenderbuffers
-#define glGenFramebuffers_ptr glGenFramebuffers
-#define glGenRenderbuffers_ptr glGenRenderbuffers
-#define glBindRenderbuffer_ptr glBindRenderbuffer
-#define glFramebufferTexture2D_ptr glFramebufferTexture2D
-#define glRenderbufferStorage_ptr glRenderbufferStorage
-#define glCheckFramebufferStatus_ptr glCheckFramebufferStatus
-#define glDeleteFramebuffers_ptr glDeleteFramebuffers
-#define glFramebufferRenderbuffer_ptr glFramebufferRenderbuffer
-#define glUseProgram_ptr glUseProgram
-#define glUniform1f_ptr glUniform1f
-#define glUniform2f_ptr glUniform2f
-#define glUniform3f_ptr glUniform3f
-#define glUniform4f_ptr glUniform4f
-#define glUniform1i_ptr glUniform1i
-#define glUniform2i_ptr glUniform2i
-#define glUniform3i_ptr glUniform3i
-#define glUniform4i_ptr glUniform4i
-#define glUniform1fv_ptr glUniform1fv
-#define glUniform2fv_ptr glUniform2fv
-#define glUniform3fv_ptr glUniform3fv
-#define glUniform4fv_ptr glUniform4fv
-#define glUniform1iv_ptr glUniform1iv
-#define glUniform2iv_ptr glUniform2iv
-#define glUniform3iv_ptr glUniform3iv
-#define glUniform4iv_ptr glUniform4iv
-#define glUniformMatrix2fv_ptr glUniformMatrix2fv
-#define glUniformMatrix3fv_ptr glUniformMatrix3fv
-#define glUniformMatrix4fv_ptr glUniformMatrix4fv
-#define glDeleteShader_ptr glDeleteShader
-#define glCreateProgram_ptr glCreateProgram
-#define glDeleteProgram_ptr glDeleteProgram
-#define glAttachShader_ptr glAttachShader
-#define glLinkProgram_ptr glLinkProgram
-#define glGetAttribLocation_ptr glGetAttribLocation
-#define glGetTexImage_ptr glGetTexImage
-#define glEnableVertexAttribArray_ptr glEnableVertexAttribArray
-#define glVertexAttribPointer_ptr glVertexAttribPointer
-#define glGetUniformLocation_ptr glGetUniformLocation
-#define glShaderSource_ptr glShaderSource
-#define glCompileShader_ptr glCompileShader
-#define glGetShaderiv_ptr glGetShaderiv
-#define glGetShaderInfoLog_ptr glGetShaderInfoLog
-#define glCreateShader_ptr glCreateShader
-#define glBlendFunc_ptr glBlendFunc
-#define glBlendFuncSeparate_ptr glBlendFuncSeparate
-#define glEnable_ptr glEnable
-#define glDisable_ptr glDisable
-#define glFrontFace_ptr glFrontFace
-#define glCullFace_ptr glCullFace
-#define glScissor_ptr glScissor
-#define glViewport_ptr glViewport
-#define glClearColor_ptr glClearColor
-#define glClear_ptr glClear
-#define glClearDepthf_ptr glClearDepthf
-#define glClearDepth_ptr glClearDepth
-#define glClearStencil_ptr glClearStencil
-#define glDepthMask_ptr glDepthMask
-#define glDepthFunc_ptr glDepthFunc
-#define glStencilFunc_ptr glStencilFunc
-#define glStencilOp_ptr glStencilOp
-#define glStencilFuncSeparate_ptr glStencilFuncSeparate
-#define glActiveTexture_ptr glActiveTexture
-#define glColorMask_ptr glColorMask
-#define glDeleteTextures_ptr glDeleteTextures
-#define glGenTextures_ptr glGenTextures
-#define glBindTexture_ptr glBindTexture
-#define glTexImage2D_ptr glTexImage2D
-#define glTexParameteri_ptr glTexParameteri
-#define glTextureParameteri_ptr glTextureParameteri
-#define glGetError_ptr glGetError
-#define glDrawArrays_ptr glDrawArrays
-#define glReadPixels_ptr glReadPixels
-#define glGetIntegerv_ptr glGetIntegerv
-#define glGetBooleanv_ptr glGetBooleanv
-#define glIsEnabled_ptr glIsEnabled
-#define glGenBuffers_ptr glGenBuffers
-#define glBindBuffer_ptr glBindBuffer
-#define glBufferData_ptr glBufferData
-#define glDeleteBuffers_ptr glDeleteBuffers
-#define glGenerateMipmap_ptr glGenerateMipmap
-#endif
-
-#ifdef IOS
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
-#elif defined ANDROID || defined __EMSCRIPTEN__
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-#else
-#ifdef SDL_PLATFORM_APPLE
-#include <OpenGL/gl.h>
-#else
-#ifdef _WIN32
 #include <windows.h>
-/*
-#define GL_FRAMEBUFFER                    0x8D40
-#define GL_RENDERBUFFER                   0x8D41
-#define GL_INCR_WRAP                      0x8507
-#define GL_DECR_WRAP                      0x8508
-#define GL_TEXTURE0                       0x84C0
-#define GL_CLAMP_TO_EDGE                  0x812F
-#define GL_DEPTH24_STENCIL8               0x88F0
-#define GL_DEPTH_COMPONENT16              0x81A5
-#define GL_COLOR_ATTACHMENT0              0x8CE0
-#define GL_STENCIL_ATTACHMENT             0x8D20
-#define GL_FRAMEBUFFER_COMPLETE           0x8CD5
-#define GL_DEPTH_ATTACHMENT               0x8D00
-#define GL_VERTEX_SHADER                  0x8B31
-#define GL_FRAGMENT_SHADER                0x8B30
-#define GL_COMPILE_STATUS                 0x8B81
-#define GL_ARRAY_BUFFER                   0x8892
-#define GL_ARRAY_BUFFER_BINDING           0x8894
-#define GL_STATIC_DRAW                    0x88E4
-*/
-#endif
 #include <GL/gl.h>
 #include <GL/glext.h>
-#endif
-// OpenGL extensions (ES already has these)
-#ifdef SDL_PLATFORM_APPLE
-#define APIENTRY
-#endif
+
 typedef char GLchar;
 typedef void (APIENTRY * glStencilFuncSeparate_func)(GLenum face, GLenum func, GLint ref, GLuint mask);
 typedef void (APIENTRY * glStencilOpSeparate_func)(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
@@ -255,9 +101,7 @@ typedef void (APIENTRY * glViewport_func)(GLint, GLint, GLsizei, GLsizei);
 typedef void (APIENTRY * glClearColor_func)(GLclampf, GLclampf, GLclampf, GLclampf);
 typedef void (APIENTRY * glClear_func)(GLbitfield);
 typedef void (APIENTRY * glClearDepthf_func)(GLclampf);
-#if !defined ANDROID && !defined IOS
 typedef void (APIENTRY * glClearDepth_func)(GLclampd);
-#endif
 typedef void (APIENTRY * glClearStencil_func)(GLint);
 typedef void (APIENTRY * glDepthMask_func)(GLboolean);
 typedef void (APIENTRY * glDepthFunc_func)(GLenum);
@@ -340,9 +184,7 @@ extern SHIM5_EXPORT glViewport_func glViewport_ptr;
 extern SHIM5_EXPORT glClearColor_func glClearColor_ptr;
 extern SHIM5_EXPORT glClear_func glClear_ptr;
 extern SHIM5_EXPORT glClearDepthf_func glClearDepthf_ptr;
-#if !defined ANDROID && !defined IOS
 extern SHIM5_EXPORT glClearDepth_func glClearDepth_ptr;
-#endif
 extern SHIM5_EXPORT glClearStencil_func glClearStencil_ptr;
 extern SHIM5_EXPORT glDepthMask_func glDepthMask_ptr;
 extern SHIM5_EXPORT glDepthFunc_func glDepthFunc_ptr;
@@ -368,7 +210,6 @@ extern SHIM5_EXPORT glBindBuffer_func glBindBuffer_ptr;
 extern SHIM5_EXPORT glBufferData_func glBufferData_ptr;
 extern SHIM5_EXPORT glDeleteBuffers_func glDeleteBuffers_ptr;
 extern SHIM5_EXPORT glGenerateMipmap_func glGenerateMipmap_ptr;
-#endif
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -377,39 +218,10 @@ extern SHIM5_EXPORT glGenerateMipmap_func glGenerateMipmap_ptr;
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#if defined _WIN32
 #include <direct.h>
-#else
-#ifndef ANDROID
-#include <glob.h>
-#endif
-#include <dlfcn.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#if defined __linux__ && !defined ANDROID
-#include <X11/Xcursor/Xcursor.h>
-#endif
-#endif
 
-#ifdef SDL2
-#if __linux__ || (defined SDL_PLATFORM_APPLE) || defined __EMSCRIPTEN__
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
-#else
-#include <SDL.h>
-#include <SDL_syswm.h>
-#endif
-#ifdef USE_TTF
-#ifdef __EMSCRIPTEN__
-#include <SDL2/SDL_ttf.h>
-#else
-#include <SDL_ttf.h>
-#endif
-#endif
-#else
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#endif
 
 #include <tgui6/tgui6.h>
 #include <tgui6/tgui6_sdl3.h>
