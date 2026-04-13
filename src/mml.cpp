@@ -501,11 +501,8 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			std::vector<Wav_Start> w; // dummy
 			Track *t = new Track(id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types);
 			t->internal_volume = v;
+			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
-			for (size_t i = 0; i < mml->reverb_tracks.size(); i++) {
-				//mml->reverb_tracks[i]->set_master_volume(master_volume/mml->reverb_tracks.size());
-				mml->reverb_tracks[i]->set_master_volume(master_volume/(float)rt.reverberations);
-			}
 			if (playing) {
 				t->play(false);
 			}
