@@ -481,15 +481,15 @@ void end()
 	MML::static_stop();
 }
 
-int millis_to_samples(int millis)
+int millis_to_samples(int millis, int freq)
 {
 	float f = millis / 1000.0f;
-	return internal::audio_context.device_spec.freq * f;
+	return (freq == -1 ? internal::audio_context.device_spec.freq : freq) * f;
 }
 
 int samples_to_millis(int samples, int freq)
 {
-	return samples / (freq == -1 ? (float)internal::audio_context.device_spec.freq : freq) * 1000.0f;
+	return samples / (freq == -1 ? internal::audio_context.device_spec.freq : freq) * 1000.0f;
 }
 
 void lock_mutex()

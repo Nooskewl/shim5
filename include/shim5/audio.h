@@ -12,7 +12,7 @@ namespace audio {
 bool SHIM5_EXPORT static_start();
 bool SHIM5_EXPORT start();
 void SHIM5_EXPORT end();
-int SHIM5_EXPORT millis_to_samples(int millis);
+int SHIM5_EXPORT millis_to_samples(int millis, int freq = -1);
 int SHIM5_EXPORT samples_to_millis(int samples, int freq = -1);
 void SHIM5_EXPORT stop_all_samples();
 void SHIM5_EXPORT lock_mutex();
