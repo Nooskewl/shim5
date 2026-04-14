@@ -15,6 +15,13 @@ namespace noo {
 
 namespace audio {
 
+static std::map<std::string, sample_loader> sample_loaders;
+
+void Sample::register_sample_loader(std::string ext, sample_loader func)
+{
+	sample_loaders[ext] = func;
+}
+
 void Sample::stop_instance(Sample_Instance *s)
 {
 	audio::lock_mutex();
@@ -65,7 +72,7 @@ bool Sample::sample_active(Sample_Instance *s)
 
 	return false;
 }
-
+		
 Sample::Sample(std::string filename, bool load_from_filesystem) :
 	done(false)
 {
@@ -76,142 +83,51 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		return;
 	}
 
-	do_free = false;
+	if (load_from_filesystem) {
+		file = SDL_IOFromFile(filename.c_str(), "r");
+	}
+	else {
+		filename = "audio/samples/" + filename;
+		file = util::open_file(filename, 0);
+	}
 
-#if defined USE_VORBIS
-	if (filename.find(".ogg") != std::string::npos) {
-		if (load_from_filesystem) {
-			file = SDL_IOFromFile(filename.c_str(), "r");
+	char errmsg[1000];
+
+	spec = new SDL_AudioSpec;
+	Uint32 size;
+
+	std::pair<std::string, sample_loader> p;
+	std::map<std::string, sample_loader>::iterator it;
+	size_t loc = filename.rfind('.');
+	std::string ext;
+	if (loc != std::string::npos) {
+		ext = filename.substr(loc+1);
+		ext = util::lowercase(ext);
+		it = sample_loaders.find(ext);
+		if (it == sample_loaders.end()) {
+			ext = "wav";
 		}
-		else {
-			filename = "audio/samples/" + filename;
-			file = util::open_file(filename, 0);
-		}
-
-		char errmsg[1000];
-
-		spec = new SDL_AudioSpec;
-		Uint32 size;
-
-		data = audio::decode_vorbis(file, errmsg, spec, &size);
+	}
+	else {
+		ext = "wav";
+	}
+	data = sample_loaders[ext](file, errmsg, spec, &size);
 		
-		if (load_from_filesystem) {
-			SDL_CloseIO(file);
-		}
-		else {
-			util::close_file(file);
-		}
-
-		file = nullptr;
-
-		if (data == 0) {
-			delete spec;
-			throw util::Error(errmsg);
-		}
-
-		length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
-
-		file = 0;
+	if (load_from_filesystem) {
+		SDL_CloseIO(file);
 	}
-	else
-#endif
-#if defined USE_FLAC
-	if (filename.find(".flac") != std::string::npos) {
-		if (load_from_filesystem) {
-			file = SDL_IOFromFile(filename.c_str(), "r");
-			if (file == nullptr) {
-				throw util::LoadError("Error loading " + filename);
-			}
-		}
-		else {
-			filename = "audio/samples/" + filename;
-			file = util::open_file(filename, 0);
-		}
-
-		char errmsg[1000];
-
-		spec = new SDL_AudioSpec;
-		Uint32 size;
-
-		data = audio::decode_flac(file, errmsg, spec, &size);
-		
-		if (load_from_filesystem) {
-			SDL_CloseIO(file);
-		}
-		else {
-			util::close_file(file);
-		}
-
-		file = nullptr;
-
-		if (data == 0) {
-			delete spec;
-			util::debugmsg(errmsg);
-			throw util::Error(errmsg);
-		}
-
-		length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
-
-		file = 0;
+	else {
+		util::close_file(file);
 	}
-	else
-#endif
-	{
-		if (load_from_filesystem) {
-			file = SDL_IOFromFile(filename.c_str(), "r");
-		}
-		else {
-			filename = "audio/samples/" + filename;
-			file = util::open_file(filename, 0);
-		}
 
-		spec = new SDL_AudioSpec;
+	file = nullptr;
 
-		Uint8 *buf;
-
-		if (SDL_LoadWAV_IO(file, false, spec, &buf, &length) == 0) {
-			util::close_file(file);
-			throw util::LoadError("SDL_LoadWAV_IO failed");
-		}
-
-		int orig_len = length;
-		length = length / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
-
-		SDL_AudioFormat out_format;
-		bool _16bit_samples = true;
-		util::JSON::Node *root = shim::shim_json->get_root();
-		_16bit_samples = root->get_nested_bool("shim>audio>16bit_samples", nullptr, false, true, true);
-		if (util::bool_arg(_16bit_samples, shim::argc, shim::argv, "16bit-samples")) {
-			out_format = SDL_AUDIO_S16LE;
-		}
-		else {
-			out_format = SDL_AUDIO_F32LE;
-		}
-
-		int out_len = length*spec->channels*(SDL_AUDIO_BITSIZE(out_format)/8);
-		data = new Uint8[out_len];
-
-		SDL_AudioSpec out_spec;
-		out_spec.format = out_format;
-		out_spec.freq = internal::audio_context.device_spec.freq;
-		out_spec.channels = 2;
-
-		SDL_ConvertAudioSamples(spec, buf, orig_len, &out_spec, &data, &out_len);
-
-		if (load_from_filesystem) {
-			SDL_CloseIO(file);
-		}
-		else {
-			util::close_file(file);
-		}
-		file = nullptr;
-
-		spec->format = out_format;
-		spec->channels = 2;
-		spec->freq = internal::audio_context.device_spec.freq;
-
-		do_free = true;
+	if (data == 0) {
+		delete spec;
+		throw util::Error(errmsg);
 	}
+
+	length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
 }
 
 void Sample::delete_instances()
@@ -236,12 +152,7 @@ void Sample::delete_instances()
 Sample::~Sample()
 {
 	delete_instances();
-	if (do_free) {
-		SDL_free(data);
-	}
-	else {
-		delete[] data;
-	}
+	delete[] data;
 	delete spec;
 }
 
@@ -411,6 +322,46 @@ Uint32 Sample::get_length()
 int Sample::get_frequency()
 {
 	return spec->freq;
+}
+
+Uint8 *decode_wav(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size)
+{
+	Uint8 *buf;
+
+	if (SDL_LoadWAV_IO(file, false, spec, &buf, size) == 0) {
+		util::close_file(file);
+		throw util::LoadError("SDL_LoadWAV_IO failed");
+	}
+
+	SDL_AudioFormat out_format;
+	bool _16bit_samples = true;
+	util::JSON::Node *root = shim::shim_json->get_root();
+	_16bit_samples = root->get_nested_bool("shim>audio>16bit_samples", nullptr, false, true, true);
+	if (util::bool_arg(_16bit_samples, shim::argc, shim::argv, "16bit-samples")) {
+		out_format = SDL_AUDIO_S16LE;
+	}
+	else {
+		out_format = SDL_AUDIO_F32LE;
+	}
+
+	Uint8 *data = new Uint8[*size];
+
+	SDL_AudioSpec out_spec;
+	out_spec.format = out_format;
+	out_spec.freq = internal::audio_context.device_spec.freq;
+	out_spec.channels = 2;
+
+	int out_len;
+
+	SDL_ConvertAudioSamples(spec, buf, *size, &out_spec, &data, &out_len);
+
+	spec->format = out_format;
+	spec->channels = 2;
+	spec->freq = internal::audio_context.device_spec.freq;
+
+	*size = out_len;
+
+	return data;
 }
 
 } // End namespace audio

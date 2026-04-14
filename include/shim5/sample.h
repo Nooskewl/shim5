@@ -7,6 +7,10 @@ namespace audio {
 
 class Sample;
 
+typedef Uint8 *(*sample_loader)(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size);
+
+Uint8 *decode_wav(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size);
+
 struct Sample_Instance {
 	SDL_AudioSpec *spec;
 	Uint8 *data;
@@ -29,10 +33,13 @@ struct Sample_Instance {
 
 class SHIM5_EXPORT Sample {
 public:
+	static void static_start();
 	static void stop_instance(Sample_Instance *s);
 	static void set_instance_volume(Sample_Instance *s, float volume);
 	static void pause_instance(Sample_Instance *s, bool onoff);
 	static bool sample_active(Sample_Instance *s);
+
+	SHIM5_EXPORT static void register_sample_loader(std::string ext, sample_loader func);
 
 	Sample(std::string filename, bool load_from_filesystem = false);
 	virtual ~Sample();
@@ -65,8 +72,6 @@ private:
 	Uint8 *data;
 	Uint32 length;
 	bool done;
-
-	bool do_free;
 };
 
 } // End namespace audio

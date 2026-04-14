@@ -5,6 +5,8 @@
 #include "shim5/shim.h"
 #include "shim5/util.h"
 #include "shim5/util.h"
+#include "shim5/flac.h"
+#include "shim5/vorbis.h"
 
 #include "shim5/internal/audio.h"
 
@@ -376,6 +378,10 @@ namespace audio {
 bool static_start()
 {
 	internal::audio_context.playing_samples.clear();
+
+	Sample::register_sample_loader("wav", decode_wav);
+	Sample::register_sample_loader("flac", decode_flac);
+	Sample::register_sample_loader("ogg", decode_vorbis);
 
 	return true;
 }
