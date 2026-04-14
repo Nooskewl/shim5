@@ -73,7 +73,7 @@ private:
 	bool got_first;
 	bool done;
 	HANDLE handle;
-	WIN32_FIND_DATA ffd;
+	WIN32_FIND_DATAW ffd;
 };
 
 std::string SHIM5_EXPORT uppercase(std::string);

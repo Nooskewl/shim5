@@ -750,8 +750,16 @@ List_Directory::List_Directory(std::string filespec) :
 	got_first(false),
 	done(false)
 {
-	handle = FindFirstFile(filespec.c_str(), &ffd);
-	if (handle == INVALID_HANDLE_VALUE) {
+	int result = MultiByteToWideChar(CP_UTF8, 0, filespec.c_str(), -1, NULL, 0);
+	if (result > 0) {
+		std::wstring str(result, 0);
+		MultiByteToWideChar(CP_UTF8, 0, filespec.c_str(), -1, &str[0], result);
+		handle = FindFirstFileW(const_cast<LPWSTR>(str.c_str()), &ffd);
+		if (handle == INVALID_HANDLE_VALUE) {
+			done = true;
+		}
+	}
+	else {
 		done = true;
 	}
 }
@@ -768,7 +776,7 @@ std::string List_Directory::next()
 	}
 
 	if (got_first == true) {
-		if (FindNextFile(handle, &ffd) == 0) {
+		if (FindNextFileW(handle, &ffd) == 0) {
 			done = true;
 			return "";
 		}
@@ -777,7 +785,17 @@ std::string List_Directory::next()
 		got_first = true;
 	}
 
-	return ffd.cFileName;
+	int result = WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, NULL, 0, NULL, NULL);
+
+	char *buf = new char[result];
+
+	WideCharToMultiByte(CP_UTF8, 0, ffd.cFileName, -1, buf, result, NULL, NULL);
+
+	std::string ret = buf;
+
+	delete[] buf;
+	
+	return ret;
 }
 
 std::string uppercase(std::string s)
