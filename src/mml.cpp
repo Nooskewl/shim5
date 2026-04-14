@@ -193,7 +193,9 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	beginning_silence(beginning_silence),
 	internal_volume(1.0f),
 	reverb_types(reverb_types),
-	new_tempo(-1)
+	new_tempo(-1),
+	finished_callback(nullptr),
+	finished_callback_data(nullptr)
 {
 	freq_interp = nullptr;
 	freq_interp_o = nullptr;
@@ -303,6 +305,9 @@ int MML::Track::update(float *buf, int length)
 						int save = buffer_fulfilled;
 						reset(buffer_fulfilled);
 						buffer_fulfilled = save;
+						if (finished_callback) {
+							finished_callback(finished_callback_data);
+						}
 					}
 					else {
 						// Silence at the end, don't need to do anything
@@ -315,6 +320,10 @@ int MML::Track::update(float *buf, int length)
 						}
 						// reset (stop?) above sets done to false
 						done = true;
+
+						if (finished_callback) {
+							finished_callback(finished_callback_data);
+						}
 
 						return buffer_fulfilled;
 					}
@@ -1313,6 +1322,12 @@ Uint32 MML::Track::get_id()
 	return id;
 }
 
+void MML::Track::set_callbacks(util::Callback finished_callback, void *finished_callback_data)
+{
+	this->finished_callback = finished_callback;
+	this->finished_callback_data = finished_callback_data;
+}
+
 int MML::mix(float *buf, int samples)
 {
 	size_t i;
@@ -2146,9 +2161,11 @@ MML::~MML()
 #endif
 }
 
-Uint32 MML::play(float volume, bool loop)
+Uint32 MML::play(float volume, bool loop, util::Callback finished_callback, void *finished_callback_data)
 {
 	audio::lock_mutex();
+
+	tracks[0]->set_callbacks(finished_callback, finished_callback_data);
 
 	Uint32 play_id = instance - 1;
 

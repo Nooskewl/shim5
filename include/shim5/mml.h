@@ -74,7 +74,7 @@ public:
 	SHIM5_EXPORT MML(std::string filename, bool load_from_filesystem = false);
 	SHIM5_EXPORT virtual ~MML();
 
-	SHIM5_EXPORT Uint32 play(float volume, bool loop);
+	SHIM5_EXPORT Uint32 play(float volume, bool loop, util::Callback finished_callback = 0, void *finished_callback_data = 0);
 	SHIM5_EXPORT Uint32 play(bool loop); // plays at 1.0
 	SHIM5_EXPORT void stop(Uint32 id);
 	SHIM5_EXPORT void pause(Uint32 id, bool onoff);
@@ -109,6 +109,8 @@ private:
 		SHIM5_EXPORT void real_set_tempo(int bpm);
 		SHIM5_EXPORT void set_tempo(int bpm);
 		SHIM5_EXPORT int get_new_tempo();
+
+		SHIM5_EXPORT void set_callbacks(util::Callback finished_callback, void *finished_callback_data);
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -210,6 +212,9 @@ private:
 		bool ignore_tempo_changes;
 
 		int new_tempo;
+
+		util::Callback finished_callback;
+	       	void *finished_callback_data;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);

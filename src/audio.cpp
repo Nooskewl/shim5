@@ -282,6 +282,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 			if (s->loop && s->offset >= s->play_length) {
 				s->offset = 0;
+				if (s->finished_callback) {
+					s->finished_callback(s->finished_callback_data);
+				}
 			}
 
 			if (s->loop) {
@@ -293,6 +296,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 		}
 		if (s->loop == false && s->offset >= s->play_length) {
 			s->sample->set_done(true);
+			if (s->finished_callback) {
+				s->finished_callback(s->finished_callback_data);
+			}
 			// erasing causes a memory leak
 			it++;// = audio::internal::audio_context.playing_samples.erase(it);
 		}
@@ -489,7 +495,7 @@ int millis_to_samples(int millis, int freq)
 
 int samples_to_millis(int samples, int freq)
 {
-	return samples / (freq == -1 ? internal::audio_context.device_spec.freq : freq) * 1000.0f;
+	return (float)samples / (freq == -1 ? internal::audio_context.device_spec.freq : freq) * 1000.0f;
 }
 
 void lock_mutex()

@@ -177,6 +177,9 @@ void Sample::play(float volume, bool loop)
 
 	float p = (float)internal::audio_context.device_spec.freq / spec->freq;
 
+	s->finished_callback = nullptr;
+	s->finished_callback_data = nullptr;
+
 	s->spec = spec;
 	s->data = data;
 	s->length = length;
@@ -207,7 +210,7 @@ void Sample::play(float volume, bool loop)
 	audio::unlock_mutex();
 }
 
-Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop)
+Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop, util::Callback finished_callback, void *finished_callback_data)
 {
 	if (internal::audio_context.mute) {
 		return 0;
@@ -223,6 +226,9 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 	int bits_per_sample = SDL_AUDIO_BITSIZE(spec->format);
 	int bytes_per_sample = bits_per_sample / 8;
 	float p = (float)internal::audio_context.device_spec.freq / spec->freq;
+
+	s->finished_callback = finished_callback;
+	s->finished_callback_data = finished_callback_data;
 
 	s->spec = spec;
 	s->data = data;
