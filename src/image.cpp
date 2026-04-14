@@ -83,9 +83,11 @@ void Image::register_image_saver(std::string ext, image_saver func)
 
 void Image::static_start()
 {
+#ifdef USE_PNG
 	register_image_loader("png", read_png);
-	register_image_loader("tga", read_tga);
 	register_image_saver("png", save_png);
+#endif
+	register_image_loader("tga", read_tga);
 	register_image_saver("tga", save_tga);
 
 	bound_fbo = 0;
