@@ -380,8 +380,12 @@ bool static_start()
 	internal::audio_context.playing_samples.clear();
 
 	Sample::register_sample_loader("wav", decode_wav);
+#ifdef USE_FLAC
 	Sample::register_sample_loader("flac", decode_flac);
+#endif
+#ifdef USE_VORBIS
 	Sample::register_sample_loader("ogg", decode_vorbis);
+#endif
 
 	return true;
 }
