@@ -195,7 +195,8 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	reverb_types(reverb_types),
 	new_tempo(-1),
 	finished_callback(nullptr),
-	finished_callback_data(nullptr)
+	finished_callback_data(nullptr),
+	_call_callbacks(false)
 {
 	freq_interp = nullptr;
 	freq_interp_o = nullptr;
@@ -306,7 +307,7 @@ int MML::Track::update(float *buf, int length)
 						reset(buffer_fulfilled);
 						buffer_fulfilled = save;
 						if (finished_callback) {
-							finished_callback(finished_callback_data);
+							_call_callbacks = true;
 						}
 					}
 					else {
@@ -322,7 +323,7 @@ int MML::Track::update(float *buf, int length)
 						done = true;
 
 						if (finished_callback) {
-							finished_callback(finished_callback_data);
+							_call_callbacks = true;
 						}
 
 						return buffer_fulfilled;
@@ -1328,6 +1329,15 @@ void MML::Track::set_callbacks(util::Callback finished_callback, void *finished_
 	this->finished_callback_data = finished_callback_data;
 }
 
+void MML::Track::call_callbacks()
+{
+	if (_call_callbacks == false) {
+		return;
+	}
+	_call_callbacks = false;
+	finished_callback(finished_callback_data);
+}
+
 int MML::mix(float *buf, int samples)
 {
 	size_t i;
@@ -1409,6 +1419,13 @@ int MML::mix(float *buf, int samples)
 		util::errormsg("MML failure (%s, %s).\n", e.error_message.c_str(), loaded_mml[i]->get_name().c_str());
 		throw;
 	}
+
+	audio::unlock_mutex();	
+	for (i = 0; i < loaded_mml.size(); i++) {
+		std::vector<Track *> &tracks = loaded_mml[i]->tracks;
+		tracks[0]->call_callbacks();
+	}
+	audio::lock_mutex();
 
 	return max;
 }

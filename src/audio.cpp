@@ -30,6 +30,7 @@ static bool format_should_be_swapped;
 static float min_sample;
 static float max_sample;
 static math::Interpolator *hermite;
+static SDL_Mutex *mutex;
 
 static float swap_float(float f)
 {
@@ -168,7 +169,10 @@ static float read_float_sample(audio::Sample_Instance *s, int sample)
 // Mixes samples and MML into the audio device buffer
 static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int additional_amount, int total_amount)
 {
-	SDL_LockAudioStream(audio_stream);
+	std::vector<util::Callback> cbs;
+	std::vector<void *> cbds;
+
+	audio::lock_mutex();
 
 	Uint8 *stream = SDL_stack_alloc(Uint8, additional_amount);
 
@@ -282,8 +286,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 			if (s->loop && s->offset >= s->play_length) {
 				s->offset = 0;
-				if (s->finished_callback) {
-					s->finished_callback(s->finished_callback_data);
+				if (s->finished_callback && std::find(cbds.begin(), cbds.end(), s->finished_callback_data) == cbds.end()) {
+					cbs.push_back(s->finished_callback);
+					cbds.push_back(s->finished_callback_data);
 				}
 			}
 
@@ -296,8 +301,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 		}
 		if (s->loop == false && s->offset >= s->play_length) {
 			s->sample->set_done(true);
-			if (s->finished_callback) {
-				s->finished_callback(s->finished_callback_data);
+			if (s->finished_callback && std::find(cbds.begin(), cbds.end(), s->finished_callback_data) == cbds.end()) {
+				cbs.push_back(s->finished_callback);
+				cbds.push_back(s->finished_callback_data);
 			}
 			// erasing causes a memory leak
 			it++;// = audio::internal::audio_context.playing_samples.erase(it);
@@ -374,7 +380,11 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 	SDL_stack_free(stream);
 
-	SDL_UnlockAudioStream(audio_stream);
+	audio::unlock_mutex();
+
+	for (size_t i = 0; i < cbs.size(); i++) {
+		cbs[i](cbds[i]);
+	}
 }
 
 namespace noo {
@@ -392,6 +402,8 @@ bool static_start()
 #ifdef USE_VORBIS
 	Sample::register_sample_loader("ogg", decode_vorbis);
 #endif
+
+	mutex = SDL_CreateMutex();
 
 	return true;
 }
@@ -484,6 +496,8 @@ void end()
 	delete hermite;
 	hermite = nullptr;
 
+	SDL_DestroyMutex(mutex);
+
 	MML::static_stop();
 }
 
@@ -500,12 +514,12 @@ int samples_to_millis(int samples, int freq)
 
 void lock_mutex()
 {
-	SDL_LockAudioStream(audio_stream);
+	SDL_LockMutex(mutex);
 }
 
 void unlock_mutex()
 {
-	SDL_UnlockAudioStream(audio_stream);
+	SDL_UnlockMutex(mutex);
 }
 
 namespace internal {

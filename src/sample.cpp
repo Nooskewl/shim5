@@ -151,7 +151,9 @@ void Sample::delete_instances()
 
 Sample::~Sample()
 {
+	audio::lock_mutex();
 	delete_instances();
+	audio::unlock_mutex();
 	delete[] data;
 	delete spec;
 }

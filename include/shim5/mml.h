@@ -111,6 +111,7 @@ private:
 		SHIM5_EXPORT int get_new_tempo();
 
 		SHIM5_EXPORT void set_callbacks(util::Callback finished_callback, void *finished_callback_data);
+		SHIM5_EXPORT void call_callbacks();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -215,6 +216,7 @@ private:
 
 		util::Callback finished_callback;
 	       	void *finished_callback_data;
+		bool _call_callbacks;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
