@@ -33,7 +33,6 @@ struct Sample_Instance {
 
 class SHIM5_EXPORT Sample {
 public:
-	static void static_start();
 	static void stop_instance(Sample_Instance *s);
 	static void set_instance_volume(Sample_Instance *s, float volume);
 	static void pause_instance(Sample_Instance *s, bool onoff);
