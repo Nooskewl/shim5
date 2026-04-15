@@ -153,7 +153,7 @@ char SHIM5_EXPORT *SDL_fgets(SDL_IOStream *file, char * const buf, size_t max);
 int SHIM5_EXPORT SDL_fputs(const char *string, SDL_IOStream *file);
 void SHIM5_EXPORT SDL_fprintf(SDL_IOStream *file, const char *fmt, ...);
 
-SDL_IOStream SHIM5_EXPORT *open_file(std::string filename, int *sz, bool data_only = false);
+SDL_IOStream SHIM5_EXPORT *open_file(std::string filename, int *sz, bool data_only = false, bool load_from_filesystem = false);
 void SHIM5_EXPORT close_file(SDL_IOStream *file);
 void SHIM5_EXPORT free_data(SDL_IOStream *file);
 

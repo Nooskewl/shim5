@@ -284,10 +284,13 @@ void SDL_fprintf(SDL_IOStream *file, const char *fmt, ...)
 	SDL_fputs(buf, file);
 }
 
-SDL_IOStream *open_file(std::string filename, int *sz, bool data_only)
+SDL_IOStream *open_file(std::string filename, int *sz, bool data_only, bool load_from_filesystem)
 {
 	SDL_IOStream *file;
-	if (shim::cpa) {
+	if (load_from_filesystem) {
+		file = SDL_IOFromFile(filename.c_str(), "rb");
+	}
+	else if (shim::cpa) {
 		file = shim::cpa->open(filename, sz, data_only);
 	}
 	else {

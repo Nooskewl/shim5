@@ -20,11 +20,13 @@ namespace gfx {
 TTF::TTF(std::string filename, int size, int sheet_size, bool load_from_filesystem) :
 	sheet_size(sheet_size)
 {
-	filename = "gfx/fonts/" + filename;
+	if (load_from_filesystem == false) {
+		filename = "gfx/fonts/" + filename;
+	}
 
 	int sz;
 
-	file = util::open_file(filename, &sz, load_from_filesystem); // FIXME: does this get automatically closed? (I think yes)
+	file = util::open_file(filename, &sz, false, load_from_filesystem); // FIXME: does this get automatically closed? (I think yes)
 
 	font = TTF_OpenFontIO(file, true, size);
 
