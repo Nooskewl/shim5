@@ -15,6 +15,9 @@ struct Audio_Context {
 
 extern SHIM5_EXPORT Audio_Context audio_context;
 
+extern std::vector<util::Callback> audio_callbacks;
+extern std::vector<void *> audio_callback_data;
+
 } // End namespace internal
 
 } // End namespace audio

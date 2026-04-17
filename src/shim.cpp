@@ -800,6 +800,17 @@ bool update()
 		}
 	}
 
+	audio::lock_mutex();
+	int sz = audio::internal::audio_callbacks.size();
+	for (int i = 0; i < sz; i++) {
+		util::Callback cb = audio::internal::audio_callbacks.back();
+		void *d = audio::internal::audio_callback_data.back();
+		cb(d);
+		audio::internal::audio_callbacks.pop_back();
+		audio::internal::audio_callback_data.pop_back();
+	}
+	audio::unlock_mutex();
+
 	return true;
 }
 

@@ -169,9 +169,6 @@ static float read_float_sample(audio::Sample_Instance *s, int sample)
 // Mixes samples and MML into the audio device buffer
 static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int additional_amount, int total_amount)
 {
-	std::vector<util::Callback> cbs;
-	std::vector<void *> cbds;
-
 	audio::lock_mutex();
 
 	Uint8 *stream = SDL_stack_alloc(Uint8, additional_amount);
@@ -286,9 +283,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 			if (s->loop && s->offset >= s->play_length) {
 				s->offset = 0;
-				if (s->finished_callback && std::find(cbds.begin(), cbds.end(), s->finished_callback_data) == cbds.end()) {
-					cbs.push_back(s->finished_callback);
-					cbds.push_back(s->finished_callback_data);
+				if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
+					audio::internal::audio_callbacks.push_back(s->finished_callback);
+					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
 				}
 			}
 
@@ -301,9 +298,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 		}
 		if (s->loop == false && s->offset >= s->play_length) {
 			s->sample->set_done(true);
-			if (s->finished_callback && std::find(cbds.begin(), cbds.end(), s->finished_callback_data) == cbds.end()) {
-				cbs.push_back(s->finished_callback);
-				cbds.push_back(s->finished_callback_data);
+			if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
+				audio::internal::audio_callbacks.push_back(s->finished_callback);
+				audio::internal::audio_callback_data.push_back(s->finished_callback_data);
 			}
 			// erasing causes a memory leak
 			it++;// = audio::internal::audio_context.playing_samples.erase(it);
@@ -381,10 +378,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 	SDL_stack_free(stream);
 
 	audio::unlock_mutex();
-
-	for (size_t i = 0; i < cbs.size(); i++) {
-		cbs[i](cbds[i]);
-	}
 }
 
 namespace noo {
@@ -525,6 +518,8 @@ void unlock_mutex()
 namespace internal {
 
 Audio_Context audio_context;
+std::vector<util::Callback> audio_callbacks;
+std::vector<void *> audio_callback_data;
 
 } // End namespace internal
 
