@@ -112,7 +112,7 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 		ext = "wav";
 	}
 	data = sample_loaders[ext](file, errmsg, spec, &size);
-		
+	
 	if (load_from_filesystem) {
 		SDL_CloseIO(file);
 	}
@@ -341,18 +341,7 @@ Uint8 *decode_wav(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 
 		throw util::LoadError("SDL_LoadWAV_IO failed");
 	}
 
-	SDL_AudioFormat out_format;
-	bool _16bit_samples = true;
-	util::JSON::Node *root = shim::shim_json->get_root();
-	_16bit_samples = root->get_nested_bool("shim>audio>16bit_samples", nullptr, false, true, true);
-	if (util::bool_arg(_16bit_samples, shim::argc, shim::argv, "16bit-samples")) {
-		out_format = SDL_AUDIO_S16LE;
-	}
-	else {
-		out_format = SDL_AUDIO_F32LE;
-	}
-
-	Uint8 *data = new Uint8[*size];
+	SDL_AudioFormat out_format = SDL_AUDIO_S16LE;
 
 	SDL_AudioSpec out_spec;
 	out_spec.format = out_format;
@@ -360,14 +349,22 @@ Uint8 *decode_wav(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 
 	out_spec.channels = 2;
 
 	int out_len;
+	Uint8 *d;
 
-	SDL_ConvertAudioSamples(spec, buf, *size, &out_spec, &data, &out_len);
+	SDL_ConvertAudioSamples(spec, buf, *size, &out_spec, &d, &out_len);
 
 	spec->format = out_format;
 	spec->channels = 2;
 	spec->freq = internal::audio_context.device_spec.freq;
 
 	*size = out_len;
+
+	Uint8 *data = new Uint8[out_len];
+
+	memcpy(data, d, out_len);
+
+	SDL_free(buf);
+	SDL_free(d);
 
 	return data;
 }
