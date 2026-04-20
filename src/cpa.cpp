@@ -326,6 +326,8 @@ CPA::CPA(std::string fn) :
 	}
 }
 
+// This loads from a cpa appended to EXE
+
 #if 0
 CPA::CPA(std::string argv0) :
 	load_from_filesystem(false),

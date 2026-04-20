@@ -28,7 +28,7 @@ public:
 	void free_data(SDL_IOStream *file); // special case where something already closed the file. same as close() except doesn't close the file
 
 	CPA(std::string fn = "data.cpa"); // tries CPA archive then data/ directory
-	//CPA(std::string argv0); // tries EXE
+	//CPA(std::string argv0); // tries CPA appended to EXE
 	CPA(Uint8 *buf, int sz); // tries buffer
 	~CPA();
 
