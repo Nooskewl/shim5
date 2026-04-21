@@ -43,6 +43,8 @@ public:
 	SHIM5_EXPORT static void register_sample_loader(std::string ext, sample_loader func);
 
 	Sample(std::string filename, bool load_from_filesystem = false);
+	// S16LE constructor
+	Sample(Uint8 *data, int size, int freq, int channels);
 	virtual ~Sample();
 
 	static void update();

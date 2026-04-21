@@ -130,6 +130,28 @@ Sample::Sample(std::string filename, bool load_from_filesystem) :
 	length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
 }
 
+Sample::Sample(Uint8 *data, int size, int freq, int channels) :
+	done(false)
+{
+	if (internal::audio_context.mute) {
+		spec = NULL;
+		file = NULL;
+		data = NULL;
+		return;
+	}
+
+	spec = new SDL_AudioSpec;
+
+	spec->format = SDL_AUDIO_S16LE;
+	spec->channels = channels;
+	spec->freq = freq;
+
+	file = nullptr;
+	this->data = data;
+
+	length = size / spec->channels / (SDL_AUDIO_BITSIZE(spec->format)/8);
+}
+
 void Sample::delete_instances()
 {
 	while (true) {
