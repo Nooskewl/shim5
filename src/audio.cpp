@@ -450,7 +450,7 @@ bool start()
 			max_sample = powf(2, format_bits-1) - 1;
 		}
 
-		util::infomsg("Audio format=0x%x, frequency=%d Hz\n", format, internal::audio_context.device_spec.freq);
+		//util::infomsg("Audio format=0x%x, frequency=%d Hz\n", format, internal::audio_context.device_spec.freq);
 
 		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio_stream));
 	}
