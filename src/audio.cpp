@@ -221,8 +221,13 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 			max = MAX(max, length);
 
 			for (int i = 0; i < length; i++) {
-				float sample_offset_f = (i + s->offset) / p * s->spec->channels;
+				int prev_sample_offset = int((i - 1 + s->offset) / p) * s->spec->channels;
 				int sample_offset = int((i + s->offset) / p) * s->spec->channels;
+				int next_sample_offset = int((i + 1 + s->offset) / p) * s->spec->channels;
+				int next_next_sample_offset = int((i + 2 + s->offset) / p) * s->spec->channels;
+				prev_sample_offset = MAX(0, prev_sample_offset);
+				next_sample_offset = MIN(s->length*s->spec->channels-1, next_sample_offset);
+				next_next_sample_offset = MIN(s->length*s->spec->channels-1, next_sample_offset);
 				if (sample_offset <= 1 || sample_offset >= (int)s->length) {
 					// special case because we can't access the previous sample below (segfault)
 					interpolate = false;
@@ -241,10 +246,10 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 					if (interpolate) {
 						int samps[4];
 						float values[4];
-						samps[1] = sample_offset;
-						samps[0] = samps[1] - s->spec->channels;
-						samps[2] = samps[1] + s->spec->channels;
-						samps[3] = samps[1] + s->spec->channels*2;
+						samps[0] = prev_sample_offset+k;
+						samps[1] = sample_offset+k;
+						samps[2] = next_sample_offset+k;
+						samps[3] = next_next_sample_offset+k;
 						for (int i = 0; i < 4; i++) {
 							if (samps[i] < 0) {
 								samps[i] = 0;
@@ -254,10 +259,8 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 							}
 							values[i] = read_float_sample(s, samps[i]);
 						}
-						hermite->start(values[0], values[1], values[2], values[3], 1000000);
-						float f = fmodf(sample_offset_f, s->spec->channels);
-						f /= s->spec->channels;
-						hermite->interpolate(f * 1000000);
+						hermite->start(values[0], values[1], values[2], values[3], 1);
+						hermite->interpolate(0.5);
 						v = hermite->get_value();
 					}
 					else {
