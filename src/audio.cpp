@@ -283,10 +283,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 			if (s->loop && s->offset >= s->play_length) {
 				s->offset = 0;
-				if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
-					audio::internal::audio_callbacks.push_back(s->finished_callback);
-					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
-				}
 			}
 
 			if (s->loop) {
@@ -297,10 +293,12 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 			}
 		}
 		if (s->loop == false && s->offset >= s->play_length) {
-			s->sample->set_done(true);
-			if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
-				audio::internal::audio_callbacks.push_back(s->finished_callback);
-				audio::internal::audio_callback_data.push_back(s->finished_callback_data);
+			if (s->sample->is_done() == false) {
+				s->sample->set_done(true);
+				if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
+					audio::internal::audio_callbacks.push_back(s->finished_callback);
+					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
+				}
 			}
 			// erasing causes a memory leak
 			it++;// = audio::internal::audio_context.playing_samples.erase(it);
