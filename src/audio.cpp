@@ -29,7 +29,6 @@ static bool format_is_signed;
 static bool format_should_be_swapped;
 static float min_sample;
 static float max_sample;
-static math::Interpolator *hermite;
 static SDL_Mutex *mutex;
 
 static float swap_float(float f)
@@ -195,8 +194,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 			int length;
 			float p;
 
-			bool interpolate;
-
 			if (s->play_length != s->length) {
 				length = s->play_length - s->offset;
 				if (length > samples-count) {
@@ -204,8 +201,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				}
 
 				p = (float)s->play_length / s->length;
-
-				interpolate = true;
 			}
 			else {
 				length = s->length - s->offset;
@@ -214,24 +209,12 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				}
 
 				p = 1.0f;
-
-				interpolate = false;
 			}
 
 			max = MAX(max, length);
 
 			for (int i = 0; i < length; i++) {
-				int prev_sample_offset = int((i - 1 + s->offset) / p) * s->spec->channels;
 				int sample_offset = int((i + s->offset) / p) * s->spec->channels;
-				int next_sample_offset = int((i + 1 + s->offset) / p) * s->spec->channels;
-				int next_next_sample_offset = int((i + 2 + s->offset) / p) * s->spec->channels;
-				prev_sample_offset = MAX(0, prev_sample_offset);
-				next_sample_offset = MIN(s->length*s->spec->channels-1, next_sample_offset);
-				next_next_sample_offset = MIN(s->length*s->spec->channels-1, next_sample_offset);
-				if (sample_offset <= 1 || sample_offset >= (int)s->length) {
-					// special case because we can't access the previous sample below (segfault)
-					interpolate = false;
-				}
 
 				int loops;
 				if (s->spec->channels == 2 && audio::internal::audio_context.device_spec.channels == 2) {
@@ -243,29 +226,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 				for (int k = 0; k < loops; k++) {
 					float v;
-					if (interpolate) {
-						int samps[4];
-						float values[4];
-						samps[0] = prev_sample_offset+k;
-						samps[1] = sample_offset+k;
-						samps[2] = next_sample_offset+k;
-						samps[3] = next_next_sample_offset+k;
-						for (int i = 0; i < 4; i++) {
-							if (samps[i] < 0) {
-								samps[i] = 0;
-							}
-							else if ((Uint32)samps[i] >= s->length*s->spec->channels) {
-								samps[i] = s->length*s->spec->channels - 1;
-							}
-							values[i] = read_float_sample(s, samps[i]);
-						}
-						hermite->start(values[0], values[1], values[2], values[3], 1);
-						hermite->interpolate(0.5);
-						v = hermite->get_value();
-					}
-					else {
-						v = read_float_sample(s, sample_offset);
-					}
+					v = read_float_sample(s, sample_offset);
 					v = v * s->volume;
 
 					int dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + k;
@@ -459,8 +420,6 @@ bool start()
 	music_buf = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
 	sfx_buf = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
 
-	hermite = new math::I_Hermite();
-	
 	MML::static_start(); // this can't go in audio::static_start because it needs some device info
 
 	return true;
@@ -486,9 +445,6 @@ void end()
 	delete[] sfx_buf;
 	music_buf = nullptr;
 	sfx_buf = nullptr;
-
-	delete hermite;
-	hermite = nullptr;
 
 	SDL_DestroyMutex(mutex);
 
