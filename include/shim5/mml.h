@@ -53,6 +53,7 @@ public:
 		std::vector<int> pitches;
 		std::vector<int> pitch_offsets;
 		std::vector< std::pair<int, float> > dutycycles;
+		std::vector< std::pair<int, float> > pans;
 		int pad;
 		std::vector<Wav_Start> wav_starts;
 		Uint32 beginning_silence;
@@ -83,13 +84,15 @@ public:
 	SHIM5_EXPORT void set_tempo(Uint32 id, int bpm);
 	SHIM5_EXPORT std::string get_name(); // returns same thing passed to constructor
 	SHIM5_EXPORT bool track_active(Uint32 id);
+	SHIM5_EXPORT float get_pan();
+	SHIM5_EXPORT void set_pan(float pan);
 
 private:
 	class Track
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types);
+		SHIM5_EXPORT Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans);
 		~Track();
 
 		SHIM5_EXPORT void play(bool loop);
@@ -112,6 +115,8 @@ private:
 
 		SHIM5_EXPORT void set_callbacks(util::Callback finished_callback, void *finished_callback_data);
 		SHIM5_EXPORT void call_callbacks();
+
+		SHIM5_EXPORT float get_pan();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -142,6 +147,7 @@ private:
 		std::vector< std::vector<float> > pitch_envelopes;
 		std::vector< std::vector<float> > pitch_offset_envelopes;
 		std::vector< std::pair<int, float> > dutycycles;
+		std::vector< std::pair<int, float> > pans;
 
 		int pad;
 		int sample;
@@ -149,6 +155,7 @@ private:
 		int curve_volume;
 		int curve_pitch;
 		int curve_duty;
+		int curve_pan;
 		float dutycycle;
 		int octave;
 		int note_length;
@@ -158,6 +165,7 @@ private:
 		int volume_section;
 		int volume_offset_section;
 		int dutycycle_section;
+		int pan_section;
 		int pos;
 		std::string tok;
 		int length_in_samples;
@@ -193,6 +201,7 @@ private:
 		math::Interpolator *vol_interp;
 		math::Interpolator *vol_interp_o;
 		math::Interpolator *duty_interp;
+		math::Interpolator *pan_interp;
 
 		MML *mml;
 
@@ -217,6 +226,8 @@ private:
 		util::Callback finished_callback;
 	       	void *finished_callback_data;
 		bool _call_callbacks;
+
+		float pan;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
@@ -233,6 +244,8 @@ private:
 	Uint32 instance;
 
 	MML_Data *mml_data;
+
+	float pan;
 };
 
 } // End namespace audio

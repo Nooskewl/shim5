@@ -491,6 +491,22 @@ int samples_to_millis(int samples, int freq)
 	return (float)samples / (freq == -1 ? internal::audio_context.device_spec.freq : freq) * 1000.0f;
 }
 
+float calc_pan_left(float pan)
+{
+	if (pan <= 0) {
+		return 1.0f;
+	}
+	return 1.0f - pan;
+}
+
+float calc_pan_right(float pan)
+{
+	if (pan >= 0) {
+		return 1.0f;
+	}
+	return 1.0f + pan;
+}
+
 void lock_mutex()
 {
 	SDL_LockMutex(mutex);

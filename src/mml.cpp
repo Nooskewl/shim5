@@ -173,7 +173,7 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types) :
+MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans) :
 	id(id),
 	type(type),
 	text(text),
@@ -184,6 +184,7 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	pitch_envelopes(pitch_envelopes),
 	pitch_offset_envelopes(pitch_offset_envelopes),
 	dutycycles(dutycycles),
+	pans(pans),
 	pad(pad),
 	playing(false),
 	master_volume(1.0f),
@@ -202,6 +203,7 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	vol_interp = nullptr;
 	vol_interp_o = nullptr;
 	duty_interp = nullptr;
+	pan_interp = nullptr;
 
 	abs_sample = 0;
 
@@ -218,6 +220,7 @@ MML::Track::~Track()
 	delete vol_interp;
 	delete vol_interp_o;
 	delete duty_interp;
+	delete pan_interp;
 }
 
 void MML::Track::play(bool loop)
@@ -380,6 +383,8 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	curve_pitch = 0;
 	curve_duty = 0;
 	dutycycle = 0.5f;
+	curve_pan = 0;
+	pan = 0.0f;
 	octave = 4;
 	note_length = 4;
 	volume = 1.0f;
@@ -390,6 +395,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	volume_section = 0;
 	volume_offset_section = 0;
 	dutycycle_section = 0;
+	pan_section = 0;
 	t = 0;
 	pos = 0;
 	mix_volume = 1.0f;
@@ -510,7 +516,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
-			Track *t = new Track(id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types);
+			Track *t = new Track(id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans);
 			t->internal_volume = v;
 			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
@@ -747,8 +753,9 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		}
 
 		if (internal::audio_context.device_spec.channels == 2) {
-			buf[i*2] += v_final;
-			buf[i*2+1] += v_final;
+			float the_pan = get_pan();
+			buf[i*2] += v_final * audio::calc_pan_left(the_pan) * audio::calc_pan_left(mml->get_pan());
+			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan) * audio::calc_pan_right(mml->get_pan());
 		}
 		else {
 			buf[i] += v_final;
@@ -1126,6 +1133,93 @@ float MML::Track::get_dutycycle()
 	return duty_interp->get_value();
 }
 
+float MML::Track::get_pan()
+{
+	while (pan_section < int(pans.size())-1 && sample >= pans[pan_section].first) {
+		pan_section++;
+		delete pan_interp;
+		pan_interp = nullptr;
+	}
+	float stride = pans[pan_section].first - pans[pan_section-1].first;
+	float diff = sample - pans[pan_section-1].first;
+	float prev_pan;
+	if (pan_section-2 >= 0) {
+		prev_pan = pans[pan_section-2].second;
+	}
+	else {
+		prev_pan = pans[pan_section-1].second;
+	}
+	float start_pan = pans[pan_section-1].second;
+	float end_pan = pans[pan_section].second;
+	float next_pan;
+	if ((int)pans.size() > pan_section+1) {
+		next_pan = pans[pan_section+1].second;
+	}
+	else {
+		next_pan = end_pan;
+	}
+	bool delete_it = false;
+	switch (curve_pan) {
+		case 1:
+			if (dynamic_cast<math::I_Hermite *>(pan_interp) == nullptr) {
+				delete_it = true;
+			}
+			break;
+		case 2:
+			if (dynamic_cast<math::I_Slow *>(pan_interp) == nullptr) {
+				delete_it = true;
+			}
+			break;
+		case 3:
+			if (dynamic_cast<math::I_Sin *>(pan_interp) == nullptr) {
+				delete_it = true;
+			}
+			break;
+		case 4:
+			if (dynamic_cast<math::I_Pulse *>(pan_interp) == nullptr) {
+				delete_it = true;
+			}
+			break;
+		default:
+			if (dynamic_cast<math::I_Linear *>(pan_interp) == nullptr) {
+				delete_it = true;
+			}
+			break;
+	}
+	if (delete_it ) {
+		delete pan_interp;
+		pan_interp = nullptr;
+	}
+	if (diff == 0 || pan_interp == nullptr) {
+		delete pan_interp;
+		// special case
+		int cd = curve_pan;
+		if (start_pan == end_pan) {
+			cd = 0;
+		}
+		switch (cd) {
+			case 1:
+				pan_interp = new math::I_Hermite();
+				break;
+			case 2:
+				pan_interp = new math::I_Slow();
+				break;
+			case 3:
+				pan_interp = new math::I_Sin();
+				break;
+			case 4:
+				pan_interp = new math::I_Pulse();
+				break;
+			default:
+				pan_interp = new math::I_Linear();
+				break;
+		}
+		pan_interp->start(prev_pan, start_pan, end_pan, next_pan, stride);
+	}
+	pan_interp->interpolate(1);
+	return pan_interp->get_value();
+}
+
 std::string MML::Track::next_note(const char *text, int *pos)
 {
 	std::string result;
@@ -1174,6 +1268,9 @@ std::string MML::Track::next_note(const char *text, int *pos)
 				else if (!strncmp(result.c_str()+1, "CD", 2)) {
 					curve_duty = atoi(result.c_str() + 3);
 				}
+				else if (!strncmp(result.c_str()+1, "CL", 2)) {
+					curve_pan = atoi(result.c_str() + 3);
+				}
 				else if (!strncmp(result.c_str()+1, "RT", 2)) {
 					reset_time = atoi(result.c_str() + 3);
 				}
@@ -1207,6 +1304,9 @@ std::string MML::Track::next_note(const char *text, int *pos)
 				break;
 			case 'y':
 				// doesn't need to do this -- dutycycles set with get_dutycycle
+				break;
+			case 'L':
+				// doesn't need to do this -- pan set with get_pan
 				break;
 			default:
 				if (result[0] == 0 || result[0] == 'r' || (result[0] >= 'a' && result[0] <= 'g')) {
@@ -1417,7 +1517,8 @@ int MML::mix(float *buf, int samples)
 
 MML::MML(std::string filename, bool load_from_filesystem) :
 	name(filename),
-	instance(0)
+	instance(0),
+	pan(0.0f)
 {
 	if (load_from_filesystem == false) {
 		filename = "audio/mml/" + filename;
@@ -1454,6 +1555,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector< std::vector< std::pair<int, float> > > volumes;
 	std::vector< std::vector< std::pair<int, float> > > volume_offsets;
 	std::vector< std::vector< std::pair<int, float> > > dutycycles;
+	std::vector< std::vector< std::pair<int, float> > > pans;
 	std::vector< std::vector<int> > pitches;
 	std::vector< std::vector<int> > pitch_offsets;
 	std::vector<int> note_lengths;
@@ -1466,6 +1568,8 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector<int> curr_vol_o; // current volume offset envelope
 	std::vector<int> duty_start; // dutycycle envelope start sample
 	std::vector<int> curr_duty; // current dutycycle envelope
+	std::vector<int> pan_start; // pan envelope start sample
+	std::vector<int> curr_pan; // current pan envelope
 	std::vector<int> note;
 	std::vector<int> current_pitch;
 	std::vector<int> current_pitch_o;
@@ -1476,8 +1580,10 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector< std::vector<float> > pitch_envelopes;
 	std::vector< std::vector<float> > pitch_offset_envelopes;
 	std::vector< std::vector<float> > dutycycle_envelopes;
+	std::vector< std::vector<float> > pan_envelopes;
 	std::vector<float> prev_volumes; // volume before current volume envelope started
 	std::vector<float> prev_duty;
+	std::vector<float> prev_pan;
 	std::vector<int> prev_note_start;
 	std::vector<int> note_end;
 	std::vector<Wav_Start> wav_starts;
@@ -1522,6 +1628,8 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				volume_offsets[volume_offsets.size()-1].push_back(std::pair<int, float>(0, 0.0f));
 				dutycycles.push_back(std::vector< std::pair<int, float> >());
 				dutycycles[dutycycles.size()-1].push_back(std::pair<int, float>(0, 128.0f/255.0f));
+				pans.push_back(std::vector< std::pair<int, float> >());
+				pans[pans.size()-1].push_back(std::pair<int, float>(0, 0.0f));
 				pitches.push_back(std::vector<int>());
 				pitch_offsets.push_back(std::vector<int>());
 				note_lengths.push_back(4);
@@ -1533,13 +1641,16 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				curr_vol.push_back(-1);
 				curr_vol_o.push_back(-1);
 				duty_start.push_back(0);
+				pan_start.push_back(0);
 				curr_duty.push_back(-1);
+				curr_pan.push_back(-1);
 				note.push_back(0);
 				current_pitch.push_back(-1);
 				current_pitch_o.push_back(-1);
 				prev_ch.push_back('z');
 				prev_volumes.push_back(1.0f);
 				prev_duty.push_back(128.0f/255.0f);
+				prev_pan.push_back(0.0f);
 				prev_note_start.push_back(0);
 				note_end.push_back(0);
 				wav_sample.push_back(-1);
@@ -1671,7 +1782,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 							if ((int)dutycycle_envelopes.size() > curr_duty[track]) {
 								int length = sample[track] - duty_start[track];
 								int sz = (int)dutycycle_envelopes[curr_duty[track]].size();
-								float stride = length / sz;
+								float stride = (float)length / sz;
 								float prev = prev_duty[track];
 								for (int i = 0; i < sz; i++) {
 									float d = dutycycle_envelopes[curr_duty[track]][i];
@@ -1698,6 +1809,44 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 								));
 							}
 							curr_duty[track] = -1;
+						}
+					}
+					else if (tok[1] == 'L') {
+						if (curr_pan[track] == -1) {
+							pan_start[track] = sample[track];
+							curr_pan[track] = atoi(tok.c_str() + 2);
+						}
+						else {
+							if ((int)pan_envelopes.size() > curr_pan[track]) {
+								int length = sample[track] - pan_start[track];
+								int sz = (int)pan_envelopes[curr_pan[track]].size();
+								float stride = (float)length / sz;
+								float prev = prev_pan[track];
+								for (int i = 0; i < sz; i++) {
+									float p = pan_envelopes[curr_pan[track]][i];
+									int s;
+									if (i == sz-1) {
+										// this just makes it accurate
+										s = sample[track];
+									}
+									else {
+										if (i < sz-1 && p == prev && p == pan_envelopes[curr_pan[track]][i+1]) {
+											continue;
+										}
+										prev = p;
+										s = int(pan_start[track] + stride * (i+1));
+									}
+									pans[track].push_back(std::pair<int, float>(
+										s,
+										p
+									));
+								}
+								pans[track].push_back(std::pair<int, float>(
+									sample[track],
+									prev_pan[track]
+								));
+							}
+							curr_pan[track] = -1;
 						}
 					}
 					else if (tok[1] == 'S') {
@@ -1827,6 +1976,19 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 						dutycycles[track].push_back(std::pair<int, float>(
 							sample[track],
 							duty
+						));
+					}
+					else if (tok[0] == 'L') {
+						pans[track].push_back(std::pair<int, float>(
+							sample[track],
+							prev_pan[track]
+						));
+						float p = atoi(tok.c_str() + 1) / 255.0f;
+						p = (p - 0.5f) / 0.5f;
+						prev_pan[track] = p;
+						pans[track].push_back(std::pair<int, float>(
+							sample[track],
+							p
 						));
 					}
 					else if (tok[0] == 'l') {
@@ -1973,6 +2135,21 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				}
 				dutycycle_envelopes[num] = envelope;
 			}
+			else if (tok[1] == 'L') {
+				int num = atoi(tok.c_str() + 2);
+				std::vector<float> envelope;
+				while (tok[0] != 0) {
+					tok = token(buf, &pos);
+					if (isdigit(tok[0])) {
+						float f = ((atoi(tok.c_str())/255.0f)-0.5f)/0.5f;
+						envelope.push_back(f);
+					}
+				}
+				while ((int)pan_envelopes.size() <= num) {
+					pan_envelopes.push_back(std::vector<float>());
+				}
+				pan_envelopes[num] = envelope;
+			}
 			else if (tok[1] == 'S') {
 				int num = atoi(tok.c_str() + 2);
 				std::string sample_name;
@@ -2069,11 +2246,16 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 			sample[i],
 			prev_duty[i]
 		));
+		pans[i].push_back(std::pair<int, float>(
+			sample[i],
+			prev_pan[i]
+		));
 	}
 
 	remove_dups(volumes);
 	remove_dups(volume_offsets);
 	remove_dups(dutycycles);
+	remove_dups(pans);
 
 	mml_data = new MML_Data;
 	mml_data->mml = this;
@@ -2093,11 +2275,12 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		t->pitches = pitches[i];
 		t->pitch_offsets = pitch_offsets[i];
 		t->dutycycles = dutycycles[i];
+		t->pans = pans[i];
 		t->wav_starts = i == 0 ? wav_starts : w;
 		t->beginning_silence = 0;
 		t->pad = longest-sample[i];
 		mml_data->track_data.push_back(t);
-		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types));
+		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans));
 	}
 
 	num_tracks = (int)tracks.size();
@@ -2187,7 +2370,7 @@ Uint32 MML::play(float volume, bool loop, util::Callback finished_callback, void
 
 	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
 		Track_Data *t = mml_data->track_data[i];
-		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types));
+		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans));
 	}
 
 	instance++;
@@ -2296,6 +2479,16 @@ void MML::set_tempo(Uint32 id, int bpm)
 			reverb_tracks[i]->set_tempo(bpm);
 		}
 	}
+}
+
+float MML::get_pan()
+{
+	return pan;
+}
+
+void MML::set_pan(float pan)
+{
+	this->pan = pan;
 }
 
 } // End namespace audio
