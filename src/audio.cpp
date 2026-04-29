@@ -216,31 +216,53 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 			for (int i = 0; i < length; i++) {
 				int sample_offset = int((i + s->offset) / p) * s->spec->channels;
 
-				int loops;
-				if (s->spec->channels == 2 && audio::internal::audio_context.device_spec.channels == 2) {
-					loops = 2;
-				}
-				else {
-					loops = 1;
-				}
+				float v;
+				int dest_offset;
 
-				for (int k = 0; k < loops; k++) {
-					float v;
-					v = read_float_sample(s, sample_offset);
-					v = v * s->volume;
-
-					int dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + k;
-
-					if (audio::internal::audio_context.device_spec.channels == 2 && s->spec->channels == 1) {
+				if (audio::internal::audio_context.device_spec.channels == 2) {
+					if (s->spec->channels == 2) {
+						v = read_float_sample(s, sample_offset);
+						v = v * s->volume;
+						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += v;
-						*((float *)sfx_buf + dest_offset+1) += v;
+						sample_offset++;
+						v = read_float_sample(s, sample_offset);
+						v = v * s->volume;
+						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 1;
+						*((float *)sfx_buf + dest_offset) += v;
+						sample_offset++;
 					}
 					else {
+						v = read_float_sample(s, sample_offset);
+						v = v * s->volume;
+						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += v;
+						sample_offset++;
+						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 1;
+						*((float *)sfx_buf + dest_offset) += v;
+						sample_offset++;
 					}
-
-					sample_offset++;
 				}
+				else {
+					if (s->spec->channels == 2) {
+						v = read_float_sample(s, sample_offset);
+						v = v * s->volume;
+						sample_offset++;
+						float v2 = read_float_sample(s, sample_offset);
+						v2 = v2 * s->volume;
+						sample_offset++;
+						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
+						*((float *)sfx_buf + dest_offset) += (v + v2);
+					}
+					else {
+						v = read_float_sample(s, sample_offset);
+						v = v * s->volume;
+						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
+						*((float *)sfx_buf + dest_offset) += v;
+						sample_offset++;
+					}
+				}
+
 			}
 
 			s->offset += length;
@@ -386,7 +408,14 @@ bool start()
 	}
 
 	if (internal::audio_context.mute == false) {
-		internal::audio_context.device_spec.channels = 2;
+		bool mono_audio = false;
+		mono_audio = root->get_nested_bool("shim>audio>mono_audio", nullptr, false, true, true);
+		if (util::bool_arg(mono_audio, shim::argc, shim::argv, "mono-audio")) {
+			internal::audio_context.device_spec.channels = 1;
+		}
+		else {
+			internal::audio_context.device_spec.channels = 2;
+		}
 
 		audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &internal::audio_context.device_spec, audio_callback, nullptr);
 
