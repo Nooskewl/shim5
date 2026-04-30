@@ -2542,6 +2542,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 						}
 						while ((int)wav_samples.size() <= num) {
 							wav_samples.push_back(0);
+							wav_samples_delete.push_back(true);
 						}
 						wav_samples[num] = sample;
 					}
@@ -2692,7 +2693,9 @@ MML::~MML()
 	}
 	
 	for (size_t i = 0; i < wav_samples.size(); i++) {
-		delete wav_samples[i];
+		if (wav_samples_delete[i]) {
+			delete wav_samples[i];
+		}
 	}
 
 	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
@@ -2881,6 +2884,15 @@ void MML::set_pan(Uint32 id, float pan, int track)
 int MML::get_num_tracks()
 {
 	return mml_data->track_data.size();
+}
+
+void MML::set_sample(int index, audio::Sample *sample)
+{
+	while (wav_samples.size() <= index) {
+		wav_samples.push_back(0);
+		wav_samples_delete.push_back(false);
+	}
+	wav_samples[index] = sample;
 }
 
 void MML::delete_wavs(audio::Sample_Instance *s)

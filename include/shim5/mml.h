@@ -89,6 +89,7 @@ public:
 	SHIM5_EXPORT float get_pan(Uint32 id, int track = -1);
 	SHIM5_EXPORT void set_pan(Uint32 id, float pan, int track = -1);
 	SHIM5_EXPORT int get_num_tracks();
+	SHIM5_EXPORT void set_sample(int index, audio::Sample *sample);
 	SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
 
 private:
@@ -269,6 +270,7 @@ private:
 	std::vector<Track *> reverb_tracks;
 
 	std::vector<Sample *> wav_samples;
+	std::vector<bool> wav_samples_delete;
 
 	static std::vector<MML *> loaded_mml;
 
