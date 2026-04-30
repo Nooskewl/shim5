@@ -101,7 +101,7 @@ private:
 		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs, std::vector< std::pair<int, float> > &tempos);
 		~Track();
 
-		SHIM5_EXPORT void play(bool loop);
+		SHIM5_EXPORT void play(float volume, bool loop);
 		SHIM5_EXPORT void stop();
 		SHIM5_EXPORT void pause(bool onoff);
 		SHIM5_EXPORT int update(float *buf, int length);
@@ -231,8 +231,6 @@ private:
 
 		Uint32 beginning_silence;
 
-		float internal_volume;
-
 		std::vector<Reverb_Type> reverb_types;
 
 		int buzz_freq;
@@ -263,6 +261,8 @@ private:
 		int note_start;
 
 		bool stretch_wavs;
+
+		float play_volume;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);

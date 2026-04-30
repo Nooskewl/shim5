@@ -194,7 +194,6 @@ MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vec
 	wav_starts(wav_starts),
 	mml(mml),
 	beginning_silence(beginning_silence),
-	internal_volume(1.0f),
 	reverb_types(reverb_types),
 	new_tempo(-1),
 	finished_callback(nullptr),
@@ -233,8 +232,10 @@ MML::Track::~Track()
 	delete tempo_interp;
 }
 
-void MML::Track::play(bool loop)
+void MML::Track::play(float volume, bool loop)
 {
+	play_volume = volume;
+
 	if (playing) {
 		stop();
 	}
@@ -381,6 +382,15 @@ bool MML::Track::is_done()
 
 void MML::Track::reset(Uint32 buffer_fulfilled)
 {
+	stop_wavs();
+	for (size_t i = 0; i < wav_starts.size(); i++) {
+		Wav_Start &w = wav_starts[i];
+		w.play_start = w.orig_play_start;
+	}
+	if (playing) {
+		start_wavs(buffer_fulfilled, 0);
+	}
+
 	wav_sample = -1;
 	// some of this stuff must be before the 'next_note' call below
 	sample = beginning_silence > 0 ? -int(beginning_silence) : 0;
@@ -529,28 +539,18 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
 			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan, hybrids, stretch_wavs, tempos);
-			t->internal_volume = v;
-			t->set_master_volume(master_volume/rt.reverberations);
+			t->set_master_volume(v/rt.reverberations);
 			mml->reverb_tracks.push_back(t);
 			if (playing) {
-				t->play(false);
+				t->play(play_volume, false);
 			}
-			_used_reverb++;
 		}
+		_used_reverb = rt.reverberations;
 		delete tinterp;
 		delete vinterp;
 	}
 
 	_used_reverb = MAX(1, _used_reverb);
-	
-	stop_wavs();
-	for (size_t i = 0; i < wav_starts.size(); i++) {
-		Wav_Start &w = wav_starts[i];
-		w.play_start = w.orig_play_start;
-	}
-	if (playing) {
-		start_wavs(buffer_fulfilled, 0);
-	}
 }
 
 float MML::Track::vol_from_phase(float p, MML::Wave_Type type, float freq, float dutycycle)
@@ -758,7 +758,7 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		}
 		float volume = get_volume() * fade_v * master_volume;
 
-		float v_final = MAX(-1.0f, MIN(1.0f, v * volume)) * mix_volume * internal_volume;
+		float v_final = MAX(-1.0f, MIN(1.0f, v * volume)) * mix_volume;
 
 		if (buzz_freq > 0 && fabsf(v_final) >= 0.05f) {
 			bool sub;
@@ -787,13 +787,13 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 			float p2 = fmod(p, f);
 			float p3 = p2 / f;
 			float v = vol_from_phase(p3, buzz_type, freq, duty);
-			v *= buzz_volume * master_volume * mix_volume * internal_volume;
+			v *= buzz_volume * master_volume * mix_volume;
 			if (sub) {
-				v_final -= buzz_volume/2.0f*internal_volume;
+				v_final -= buzz_volume/2.0f;
 				v_final += v;
 			}
 			else {
-				v_final += buzz_volume/2.0f*internal_volume;
+				v_final += buzz_volume/2.0f;
 				v_final += v;
 			}
 		}
@@ -1097,10 +1097,12 @@ float MML::Track::real_get_volume(int &section, std::vector< std::pair<int, floa
 float MML::Track::get_volume()
 {
 	float v = real_get_volume(volume_section, volumes, false) + real_get_volume(volume_offset_section, volume_offsets, true);
+#if 0
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		w.instance->volume = v;
 	}
+#endif
 	return v;
 }
 
@@ -1547,12 +1549,14 @@ int MML::Track::notelength(const char *tok, const char *text, int *pos)
 void MML::Track::set_master_volume(float master_volume)
 {
 	this->master_volume = master_volume;
+#if 0
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		if (w.instance != nullptr) {
 			w.instance->volume = master_volume;
 		}
 	}
+#endif
 }
 
 float MML::Track::get_master_volume()
@@ -1635,7 +1639,7 @@ void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 			//int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
 			int silence = (int)w.play_start - (int)on_or_after;
 			if (silence >= 0) {
-				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false, pan);
+				w.instance = wav_samples[w.sample]->play_stretched(w.volume, silence, length, false, pan);
 				w.instance->mml = mml;
 				w.instance->volume = master_volume;
 			}
@@ -2724,17 +2728,17 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 
 	tracks[0]->set_callbacks(finished_callback, finished_callback_data);
 
-	set_master_volume(play_id, volume);
-
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == play_id) {
-			tracks[i]->play(loop);
+			tracks[i]->set_master_volume(1.0f/(float)tracks.size());
+			tracks[i]->play(volume, loop);
 		}
 	}
 
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
 		if (reverb_tracks[i]->get_id() == play_id) {
-			reverb_tracks[i]->play(false); // never loop!
+			//reverb_tracks[i]->set_master_volume(volume/(float)tracks[i]->used_reverb());
+			reverb_tracks[i]->play(volume, false); // never loop!
 		}
 	}
 
@@ -2805,18 +2809,16 @@ bool MML::track_active(Uint32 id)
 
 void MML::set_master_volume(Uint32 id, float master_volume, int track)
 {
-	int reverbs = 0;
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == id) {
 		       	if (track < 0 || tracks[i]->get_track_number() == track) {
 				tracks[i]->set_master_volume(master_volume/tracks.size());
 			}
-			reverbs += tracks[i]->used_reverb();
 		}
 	}
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
 		if (reverb_tracks[i]->get_id() == id && (track < 0 || reverb_tracks[i]->get_track_number() == track)) {
-			reverb_tracks[i]->set_master_volume(master_volume/reverbs);
+			reverb_tracks[i]->set_master_volume(master_volume/(float)tracks[i]->used_reverb());
 		}
 	}
 }
