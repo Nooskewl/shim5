@@ -521,6 +521,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
 			if (playing) {
+				t->set_pan(global_pan);
 				t->play(false);
 			}
 		}
@@ -753,9 +754,9 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		}
 
 		if (internal::audio_context.device_spec.channels == 2) {
-			float the_pan = get_pan();
-			buf[i*2] += v_final * audio::calc_pan_left(the_pan) * audio::calc_pan_left(mml->get_pan());
-			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan) * audio::calc_pan_right(mml->get_pan());
+			float the_pan = calc_pan();
+			buf[i*2] += v_final * audio::calc_pan_left(the_pan) * audio::calc_pan_left(global_pan);
+			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan) * audio::calc_pan_right(global_pan);
 		}
 		else {
 			buf[i] += v_final;
@@ -1130,10 +1131,11 @@ float MML::Track::get_dutycycle()
 		duty_interp->start(prev_duty, start_duty, end_duty, next_duty, stride);
 	}
 	duty_interp->interpolate(1);
-	return duty_interp->get_value();
+	dutycycle = duty_interp->get_value();
+	return dutycycle;
 }
 
-float MML::Track::get_pan()
+float MML::Track::calc_pan()
 {
 	while (pan_section < int(pans.size())-1 && sample >= pans[pan_section].first) {
 		pan_section++;
@@ -1217,7 +1219,8 @@ float MML::Track::get_pan()
 		pan_interp->start(prev_pan, start_pan, end_pan, next_pan, stride);
 	}
 	pan_interp->interpolate(1);
-	return pan_interp->get_value();
+	pan = pan_interp->get_value();
+	return pan;
 }
 
 std::string MML::Track::next_note(const char *text, int *pos)
@@ -1306,7 +1309,7 @@ std::string MML::Track::next_note(const char *text, int *pos)
 				// doesn't need to do this -- dutycycles set with get_dutycycle
 				break;
 			case 'L':
-				// doesn't need to do this -- pan set with get_pan
+				// doesn't need to do this -- pan set with calc_pan
 				break;
 			default:
 				if (result[0] == 0 || result[0] == 'r' || (result[0] >= 'a' && result[0] <= 'g')) {
@@ -1382,6 +1385,16 @@ int MML::Track::get_new_tempo()
 	return new_tempo;
 }
 
+float MML::Track::get_pan()
+{
+	return global_pan;
+}
+
+void MML::Track::set_pan(float pan)
+{
+	global_pan = pan;
+}
+
 static int wav_len(std::vector<std::string> toks, int note_length, int tempo, int octave, int note)
 {
 	char ch = toks[0][0];
@@ -1401,7 +1414,7 @@ void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 			int length = w.length == 0 ? 0 : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
 			int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
 			if (silence >= 0) {
-				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false);
+				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false, global_pan);
 				w.instance->volume = master_volume;
 			}
 		}
@@ -1517,8 +1530,7 @@ int MML::mix(float *buf, int samples)
 
 MML::MML(std::string filename, bool load_from_filesystem) :
 	name(filename),
-	instance(0),
-	pan(0.0f)
+	instance(0)
 {
 	if (load_from_filesystem == false) {
 		filename = "audio/mml/" + filename;
@@ -2346,7 +2358,7 @@ MML::~MML()
 #endif
 }
 
-Uint32 MML::play(float volume, bool loop, util::Callback finished_callback, void *finished_callback_data)
+Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_callback, void *finished_callback_data)
 {
 	audio::lock_mutex();
 
@@ -2358,12 +2370,14 @@ Uint32 MML::play(float volume, bool loop, util::Callback finished_callback, void
 
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == play_id) {
+			tracks[i]->set_pan(pan);
 			tracks[i]->play(loop);
 		}
 	}
 
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
 		if (reverb_tracks[i]->get_id() == play_id) {
+			reverb_tracks[i]->set_pan(pan);
 			reverb_tracks[i]->play(false); // never loop!
 		}
 	}
@@ -2378,11 +2392,6 @@ Uint32 MML::play(float volume, bool loop, util::Callback finished_callback, void
 	audio::unlock_mutex();
 
 	return play_id;
-}
-
-Uint32 MML::play(bool loop)
-{
-	return play(1.0f, loop);
 }
 
 void MML::pause(Uint32 id, bool onoff)
@@ -2481,14 +2490,23 @@ void MML::set_tempo(Uint32 id, int bpm)
 	}
 }
 
-float MML::get_pan()
+float MML::get_pan(Uint32 id)
 {
-	return pan;
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->get_id() == id) {
+			return tracks[i]->get_pan();
+		}
+	}
+	return 0.0f;
 }
 
-void MML::set_pan(float pan)
+void MML::set_pan(Uint32 id, float pan)
 {
-	this->pan = pan;
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->get_id() == id) {
+			return tracks[i]->set_pan(pan);
+		}
+	}
 }
 
 } // End namespace audio

@@ -51,7 +51,7 @@ void GUI::handle_event(TGUI_Event *event) {
 		gui->handle_event(event);
 		if (event->type == TGUI_FOCUS && focus != gui->get_focus()) {
 			if (shim::widget_sfx != nullptr) {
-				shim::widget_sfx->play(false);
+				shim::widget_sfx->play();
 			}
 		}
 	}

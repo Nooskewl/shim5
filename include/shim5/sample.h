@@ -31,6 +31,7 @@ struct Sample_Instance {
 	bool paused;
 	util::Callback finished_callback;
 	void *finished_callback_data;
+	float pan;
 };
 
 class SHIM5_EXPORT Sample {
@@ -49,8 +50,7 @@ public:
 
 	static void update();
 
-	void play(float volume, bool loop);
-	void play(bool loop);
+	void play(float volume = 1.0f, bool loop = false, float pan = 0.0f);
 	bool is_done();
 	void stop(); // this does a stop_all
 	bool is_playing();
@@ -58,7 +58,7 @@ public:
 	// Play length/silence is in samples based on the device frequency (audio::internal::audio_context.device_spec.freq)
 	// If play_length is 0, it plays unstretched
 	// silence is samples until it starts
-	Sample_Instance *play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop, util::Callback finished_callback = 0, void *finished_callback_data = 0);
+	Sample_Instance *play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop, float pan, util::Callback finished_callback = 0, void *finished_callback_data = 0);
 
 	void stop_all();
 

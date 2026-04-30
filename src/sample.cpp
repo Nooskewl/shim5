@@ -180,13 +180,8 @@ Sample::~Sample()
 	delete spec;
 }
 
-void Sample::play(bool loop)
-{
-	play(1.0f, loop);
-}
-
 // FIXME: avoid repetition here with other play method
-void Sample::play(float volume, bool loop)
+void Sample::play(float volume, bool loop, float pan)
 {
 	if (internal::audio_context.mute) {
 		return;
@@ -212,6 +207,7 @@ void Sample::play(float volume, bool loop)
 	s->silence = 0;
 	s->loop = loop;
 	s->volume = volume;
+	s->pan = pan;
 	s->sample = this;
 	s->bits_per_sample = SDL_AUDIO_BITSIZE(spec->format);
 	s->bytes_per_sample = s->bits_per_sample / 8;
@@ -234,7 +230,7 @@ void Sample::play(float volume, bool loop)
 	audio::unlock_mutex();
 }
 
-Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop, util::Callback finished_callback, void *finished_callback_data)
+Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 play_length, bool loop, float pan, util::Callback finished_callback, void *finished_callback_data)
 {
 	if (internal::audio_context.mute) {
 		return 0;
@@ -262,6 +258,7 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 	s->silence = silence;
 	s->loop = loop;
 	s->volume = volume;
+	s->pan = pan;
 	s->sample = this;
 	s->bits_per_sample = bits_per_sample;
 	s->bytes_per_sample = bytes_per_sample;

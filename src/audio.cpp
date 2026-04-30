@@ -222,12 +222,12 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				if (audio::internal::audio_context.device_spec.channels == 2) {
 					if (s->spec->channels == 2) {
 						v = read_float_sample(s, sample_offset);
-						v = v * s->volume;
+						v = v * s->volume * audio::calc_pan_left(s->pan);
 						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
 						v = read_float_sample(s, sample_offset);
-						v = v * s->volume;
+						v = v * s->volume * audio::calc_pan_right(s->pan);
 						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 1;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
@@ -246,10 +246,10 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				else {
 					if (s->spec->channels == 2) {
 						v = read_float_sample(s, sample_offset);
-						v = v * s->volume;
+						v = v * s->volume * audio::calc_pan_left(s->pan);
 						sample_offset++;
 						float v2 = read_float_sample(s, sample_offset);
-						v2 = v2 * s->volume;
+						v2 = v2 * s->volume * audio::calc_pan_right(s->pan);
 						sample_offset++;
 						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += (v + v2);
