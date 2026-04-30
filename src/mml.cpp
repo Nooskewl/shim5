@@ -173,7 +173,7 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids) :
+MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs) :
 	id(id),
 	type(type),
 	text(text),
@@ -200,7 +200,8 @@ MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vec
 	finished_callback_data(nullptr),
 	pan(pan),
 	num(num),
-	gsvol(0)
+	gsvol(0),
+	stretch_wavs(stretch_wavs)
 {
 	pan_set = pan != 0.0f;
 
@@ -358,6 +359,7 @@ int MML::Track::update(float *buf, int length)
 				length_in_samples = notelength(tok.c_str(), text_cstr, &pos);
 			}
 			note_fulfilled = 0;
+			note_start = sample;
 		}
 	}
 
@@ -414,6 +416,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	tok = next_note(text.c_str(), &pos);
 	length_in_samples = notelength(tok.c_str(), text.c_str(), &pos);
 	note_fulfilled = 0;
+	note_start = 0;
 	padded = false;
 	done = false;
 	last_freq = -1;
@@ -524,7 +527,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
-			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan, hybrids);
+			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan, hybrids, stretch_wavs);
 			t->internal_volume = v;
 			t->set_master_volume(master_volume/rt.reverberations);
 			mml->reverb_tracks.push_back(t);
@@ -1276,7 +1279,13 @@ float MML::Track::get_sample_volume()
 	if (h < 0 || h >= wav_samples.size()) {
 		return 1.0f;
 	}
-	float p = (float)note_fulfilled / length_in_samples;
+	float p;
+	if (stretch_wavs) {
+		p = (float)note_fulfilled / length_in_samples;
+	}
+	else {
+		p = ((float)(sample - note_start)) / wav_samples[h]->get_length();
+	}
 	int length = wav_samples[h]->get_length();
 	int gsv = gsvol;
 	gsvol++;
@@ -2425,6 +2434,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		t->wav_starts = i == 0 ? wav_starts : w;
 		t->beginning_silence = 0;
 		t->pad = longest-sample[i];
+		t->stretch_wavs = stretch_wavs[i];
 		mml_data->track_data.push_back(t);
 	}
 
@@ -2497,7 +2507,7 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 
 	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
 		Track_Data *t = mml_data->track_data[i];
-		tracks.push_back(new Track(i, instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan, t->hybrids));
+		tracks.push_back(new Track(i, instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan, t->hybrids, t->stretch_wavs));
 	}
 
 	tracks[0]->set_callbacks(finished_callback, finished_callback_data);

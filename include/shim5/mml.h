@@ -58,6 +58,7 @@ public:
 		int pad;
 		std::vector<Wav_Start> wav_starts;
 		Uint32 beginning_silence;
+		bool stretch_wavs;
 	};
 
 	struct MML_Data {
@@ -95,7 +96,7 @@ private:
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids);
+		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs);
 		~Track();
 
 		SHIM5_EXPORT void play(bool loop);
@@ -250,6 +251,10 @@ private:
 		int gsvol;
 
 		int _used_reverb;
+
+		int note_start;
+
+		bool stretch_wavs;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
