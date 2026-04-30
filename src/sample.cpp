@@ -360,6 +360,16 @@ int Sample::get_frequency()
 	return spec->freq;
 }
 
+Uint8 *Sample::get_data()
+{
+	return data;
+}
+
+SDL_AudioSpec *Sample::get_spec()
+{
+	return spec;
+}
+
 Uint8 *decode_wav(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size)
 {
 	Uint8 *buf;

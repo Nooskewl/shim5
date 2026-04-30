@@ -173,7 +173,7 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan) :
+MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids) :
 	id(id),
 	type(type),
 	text(text),
@@ -185,6 +185,7 @@ MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vec
 	pitch_offset_envelopes(pitch_offset_envelopes),
 	dutycycles(dutycycles),
 	pans(pans),
+	hybrids(hybrids),
 	pad(pad),
 	playing(false),
 	master_volume(1.0f),
@@ -198,7 +199,8 @@ MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vec
 	finished_callback(nullptr),
 	finished_callback_data(nullptr),
 	pan(pan),
-	num(num)
+	num(num),
+	gsvol(0)
 {
 	pan_set = pan != 0.0f;
 
@@ -399,6 +401,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	volume_offset_section = 0;
 	dutycycle_section = 0;
 	pan_section = 0;
+	hybrid_section = 0;
 	t = 0;
 	pos = 0;
 	mix_volume = 1.0f;
@@ -519,7 +522,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
-			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan);
+			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan, hybrids);
 			t->internal_volume = v;
 			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
@@ -755,13 +758,16 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 			v_final = 0.0f;
 		}
 
+		float samp_l = get_sample_volume();
+		float samp_r = get_sample_volume();
+
 		if (internal::audio_context.device_spec.channels == 2) {
 			float the_pan = pan_set ? pan : calc_pan();
-			buf[i*2] += v_final * audio::calc_pan_left(the_pan);
-			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan);
+			buf[i*2] += v_final * audio::calc_pan_left(the_pan) * samp_l;
+			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan) * samp_r;
 		}
 		else {
-			buf[i] += v_final;
+			buf[i] += v_final * (samp_l + samp_r);
 		}
 
 		note_fulfilled++;
@@ -1236,6 +1242,30 @@ float MML::Track::calc_pan()
 	return pan;
 }
 
+float MML::Track::get_sample_volume()
+{
+	while (hybrid_section < int(hybrids.size())-1 && sample >= hybrids[hybrid_section].first) {
+		hybrid_section++;
+	}
+	float stride = hybrids[hybrid_section].first - hybrids[hybrid_section-1].first;
+	float diff = sample - hybrids[hybrid_section-1].first;
+	int h = hybrids[hybrid_section-1].second;
+	if (h < 0 || h >= wav_samples.size()) {
+		return 1.0f;
+	}
+	float p = diff / stride;
+	int length = wav_samples[h]->get_length();
+	int gsv = gsvol;
+	gsvol++;
+	int samp = MIN(length-wav_samples[h]->get_spec()->channels, p * length);
+	if (wav_samples[h]->get_spec()->channels == 1) {
+		return ((Sint16 *)(wav_samples[h]->get_data()))[samp]/32768.0f;
+	}
+	else {
+		return ((Sint16 *)(wav_samples[h]->get_data()))[samp * wav_samples[h]->get_spec()->channels + (gsv % 2)]/32768.0f;
+	}
+}
+
 std::string MML::Track::next_note(const char *text, int *pos)
 {
 	std::string result;
@@ -1609,6 +1639,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector< std::vector< std::pair<int, float> > > volume_offsets;
 	std::vector< std::vector< std::pair<int, float> > > dutycycles;
 	std::vector< std::vector< std::pair<int, float> > > pans;
+	std::vector< std::vector< std::pair<int, float> > > hybrids;
 	std::vector< std::vector<int> > pitches;
 	std::vector< std::vector<int> > pitch_offsets;
 	std::vector<int> note_lengths;
@@ -1623,6 +1654,8 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector<int> curr_duty; // current dutycycle envelope
 	std::vector<int> pan_start; // pan envelope start sample
 	std::vector<int> curr_pan; // current pan envelope
+	std::vector<int> hybrid_start; // hybrid envelope start sample
+	std::vector<int> curr_hybrid; // current hybrid envelope
 	std::vector<int> note;
 	std::vector<int> current_pitch;
 	std::vector<int> current_pitch_o;
@@ -1637,6 +1670,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector<float> prev_volumes; // volume before current volume envelope started
 	std::vector<float> prev_duty;
 	std::vector<float> prev_pan;
+	std::vector<float> prev_hybrid;
 	std::vector<int> prev_note_start;
 	std::vector<int> note_end;
 	std::vector<Wav_Start> wav_starts;
@@ -1683,6 +1717,8 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				dutycycles[dutycycles.size()-1].push_back(std::pair<int, float>(0, 128.0f/255.0f));
 				pans.push_back(std::vector< std::pair<int, float> >());
 				pans[pans.size()-1].push_back(std::pair<int, float>(0, 0.0f));
+				hybrids.push_back(std::vector< std::pair<int, float> >());
+				hybrids[hybrids.size()-1].push_back(std::pair<int, float>(0, -1));
 				pitches.push_back(std::vector<int>());
 				pitch_offsets.push_back(std::vector<int>());
 				note_lengths.push_back(4);
@@ -1695,8 +1731,10 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				curr_vol_o.push_back(-1);
 				duty_start.push_back(0);
 				pan_start.push_back(0);
+				hybrid_start.push_back(0);
 				curr_duty.push_back(-1);
 				curr_pan.push_back(-1);
+				curr_hybrid.push_back(-1);
 				note.push_back(0);
 				current_pitch.push_back(-1);
 				current_pitch_o.push_back(-1);
@@ -1704,6 +1742,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				prev_volumes.push_back(1.0f);
 				prev_duty.push_back(128.0f/255.0f);
 				prev_pan.push_back(0.0f);
+				prev_hybrid.push_back(-1);
 				prev_note_start.push_back(0);
 				note_end.push_back(0);
 				wav_sample.push_back(-1);
@@ -1900,6 +1939,27 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 								));
 							}
 							curr_pan[track] = -1;
+						}
+					}
+					else if (tok[1] == 'H') {
+						if (curr_hybrid[track] == -1) {
+							hybrid_start[track] = sample[track];
+							curr_hybrid[track] = atoi(tok.c_str() + 2);
+							hybrids[track].push_back(std::pair<int, float>(
+								sample[track],
+								curr_hybrid[track]
+							));
+						}
+						else {
+							hybrids[track].push_back(std::pair<int, float>(
+								sample[track],
+								curr_hybrid[track]
+							));
+							hybrids[track].push_back(std::pair<int, float>(
+								sample[track],
+								prev_hybrid[track]
+							));
+							curr_hybrid[track] = -1;
 						}
 					}
 					else if (tok[1] == 'S') {
@@ -2303,12 +2363,17 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 			sample[i],
 			prev_pan[i]
 		));
+		hybrids[i].push_back(std::pair<int, float>(
+			sample[i],
+			prev_hybrid[i]
+		));
 	}
 
 	remove_dups(volumes);
 	remove_dups(volume_offsets);
 	remove_dups(dutycycles);
 	remove_dups(pans);
+	remove_dups(hybrids);
 
 	mml_data = new MML_Data;
 	mml_data->mml = this;
@@ -2329,6 +2394,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		t->pitch_offsets = pitch_offsets[i];
 		t->dutycycles = dutycycles[i];
 		t->pans = pans[i];
+		t->hybrids = hybrids[i];
 		t->wav_starts = i == 0 ? wav_starts : w;
 		t->beginning_silence = 0;
 		t->pad = longest-sample[i];
@@ -2404,7 +2470,7 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 
 	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
 		Track_Data *t = mml_data->track_data[i];
-		tracks.push_back(new Track(i, instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan));
+		tracks.push_back(new Track(i, instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan, t->hybrids));
 	}
 
 	tracks[0]->set_callbacks(finished_callback, finished_callback_data);

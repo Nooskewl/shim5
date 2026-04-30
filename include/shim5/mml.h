@@ -54,6 +54,7 @@ public:
 		std::vector<int> pitch_offsets;
 		std::vector< std::pair<int, float> > dutycycles;
 		std::vector< std::pair<int, float> > pans;
+		std::vector< std::pair<int, float> > hybrids;
 		int pad;
 		std::vector<Wav_Start> wav_starts;
 		Uint32 beginning_silence;
@@ -94,7 +95,7 @@ private:
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan);
+		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids);
 		~Track();
 
 		SHIM5_EXPORT void play(bool loop);
@@ -137,6 +138,7 @@ private:
 		void get_frequency_offset(float &ret_freq, float &ret_time, float &ret_len);
 		float real_get_volume(int &section, std::vector< std::pair<int, float> > &v, bool offset);
 		float get_volume();
+		float get_sample_volume();
 		float get_dutycycle();
 		float calc_pan();
 		void start_wavs(Uint32 buffer_offset, Uint32 on_or_after);
@@ -157,6 +159,7 @@ private:
 		std::vector< std::vector<float> > pitch_offset_envelopes;
 		std::vector< std::pair<int, float> > dutycycles;
 		std::vector< std::pair<int, float> > pans;
+		std::vector< std::pair<int, float> > hybrids;
 
 		int pad;
 		int sample;
@@ -175,6 +178,7 @@ private:
 		int volume_offset_section;
 		int dutycycle_section;
 		int pan_section;
+		int hybrid_section;
 		int pos;
 		std::string tok;
 		int length_in_samples;
@@ -240,6 +244,8 @@ private:
 		float pan;
 
 		int num;
+
+		int gsvol;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);

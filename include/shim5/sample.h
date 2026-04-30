@@ -69,6 +69,9 @@ public:
 	Uint32 get_length();
 	int get_frequency();
 
+	Uint8 *get_data();
+	SDL_AudioSpec *get_spec();
+
 private:
 	void delete_instances();
 
