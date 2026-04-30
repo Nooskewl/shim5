@@ -1280,13 +1280,15 @@ float MML::Track::get_sample_volume()
 		return 1.0f;
 	}
 	float p;
+	int length;
 	if (stretch_wavs) {
 		p = (float)note_fulfilled / length_in_samples;
+		length = wav_samples[h]->get_length();
 	}
 	else {
-		p = ((float)(sample - note_start)) / wav_samples[h]->get_length();
+		length = ((float)wav_samples[h]->get_length() * ((float)audio::internal::audio_context.device_spec.freq / wav_samples[h]->get_spec()->freq));
+		p = ((float)(sample - note_start)) / (float)length;
 	}
-	int length = wav_samples[h]->get_length();
 	int gsv = gsvol;
 	gsvol++;
 	int samp = MIN(length-1, p * length);
