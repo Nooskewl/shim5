@@ -6,6 +6,7 @@ namespace noo {
 namespace audio {
 
 class Sample;
+class MML;
 
 typedef Uint8 *(*sample_loader)(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32 *size);
 
@@ -32,6 +33,7 @@ struct Sample_Instance {
 	util::Callback finished_callback;
 	void *finished_callback_data;
 	float pan;
+	audio::MML *mml;
 };
 
 class SHIM5_EXPORT Sample {

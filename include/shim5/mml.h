@@ -87,6 +87,7 @@ public:
 	SHIM5_EXPORT float get_pan(Uint32 id, int track = -1);
 	SHIM5_EXPORT void set_pan(Uint32 id, float pan, int track = -1);
 	SHIM5_EXPORT int get_num_tracks();
+	SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
 
 private:
 	class Track
@@ -122,6 +123,8 @@ private:
 		SHIM5_EXPORT void set_pan(float pan); // set global pan
 		
 		SHIM5_EXPORT int get_track_number();
+
+		SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
 
 	private:
 		void reset(Uint32 buffer_fulfilled);

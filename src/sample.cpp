@@ -1,6 +1,7 @@
 #include "shim5/audio.h"
 #include "shim5/flac.h"
 #include "shim5/json.h"
+#include "shim5/mml.h"
 #include "shim5/sample.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
@@ -30,6 +31,9 @@ void Sample::stop_instance(Sample_Instance *s)
 		Sample_Instance *s2 = *it;
 		if (s2 == s) {
 			internal::audio_context.playing_samples.erase(it);
+			if (s->mml) {
+				s->mml->delete_wavs(s);
+			}
 			delete s;
 			break;
 		}
@@ -209,6 +213,7 @@ void Sample::play(float volume, bool loop, float pan)
 	s->volume = volume;
 	s->pan = pan;
 	s->sample = this;
+	s->mml = nullptr;
 	s->bits_per_sample = SDL_AUDIO_BITSIZE(spec->format);
 	s->bytes_per_sample = s->bits_per_sample / 8;
 	s->format_is_float = SDL_AUDIO_ISFLOAT(spec->format);
@@ -260,6 +265,7 @@ Sample_Instance *Sample::play_stretched(float volume, Uint32 silence, Uint32 pla
 	s->volume = volume;
 	s->pan = pan;
 	s->sample = this;
+	s->mml = nullptr;
 	s->bits_per_sample = bits_per_sample;
 	s->bytes_per_sample = bytes_per_sample;
 	s->format_is_float = SDL_AUDIO_ISFLOAT(spec->format);
@@ -303,6 +309,9 @@ void Sample::stop_all()
 		Sample_Instance *s = *it;
 		if (s->data == data) {
 			it = internal::audio_context.playing_samples.erase(it);
+			if (s->mml) {
+				s->mml->delete_wavs(s);
+			}
 			delete s;
 		}
 		else {

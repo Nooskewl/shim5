@@ -1445,6 +1445,7 @@ void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 			int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
 			if (silence >= 0) {
 				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false, pan);
+				w.instance->mml = mml;
 				w.instance->volume = master_volume;
 			}
 		}
@@ -1458,6 +1459,16 @@ void MML::Track::stop_wavs()
 		if (instance != 0) {
 			Sample::stop_instance(instance);
 			wav_starts[i].instance = 0;
+		}
+	}
+}
+
+void MML::Track::delete_wavs(audio::Sample_Instance *s)
+{
+	for (size_t i = 0; i < wav_starts.size(); i++) {
+		Wav_Start &w = wav_starts[i];
+		if (w.instance == s) {
+			w.instance = nullptr;
 		}
 	}
 }
@@ -2557,6 +2568,16 @@ void MML::set_pan(Uint32 id, float pan, int track)
 int MML::get_num_tracks()
 {
 	return mml_data->track_data.size();
+}
+
+void MML::delete_wavs(audio::Sample_Instance *s)
+{
+	for (size_t i = 0; i < tracks.size(); i++) {
+		tracks[i]->delete_wavs(s);
+	}
+	for (size_t i = 0; i < reverb_tracks.size(); i++) {
+		reverb_tracks[i]->delete_wavs(s);
+	}
 }
 
 } // End namespace audio
