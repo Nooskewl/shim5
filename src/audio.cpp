@@ -187,7 +187,11 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				it++;
 				continue;
 			}
-			if (s->silence > 0) {
+			else if (s->loop == false && s->offset >= s->play_length) {
+				it++;
+				continue;
+			}
+			else if (s->silence > 0) {
 				s->silence--;
 			}
 			else {
@@ -260,8 +264,9 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 					audio::internal::audio_callbacks.push_back(s->finished_callback);
 					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
 				}
-				it = audio::internal::audio_context.playing_samples.erase(it);
-				delete s;
+				it++; // erase causes leak
+				//it = audio::internal::audio_context.playing_samples.erase(it);
+				//delete s;
 											      
 			}
 			else {

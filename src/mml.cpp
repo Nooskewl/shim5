@@ -173,7 +173,7 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans) :
+MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan) :
 	id(id),
 	type(type),
 	text(text),
@@ -196,7 +196,9 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	reverb_types(reverb_types),
 	new_tempo(-1),
 	finished_callback(nullptr),
-	finished_callback_data(nullptr)
+	finished_callback_data(nullptr),
+	pan_set(false),
+	pan(pan)
 {
 	freq_interp = nullptr;
 	freq_interp_o = nullptr;
@@ -384,7 +386,6 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	curve_duty = 0;
 	dutycycle = 0.5f;
 	curve_pan = 0;
-	pan = 0.0f;
 	octave = 4;
 	note_length = 4;
 	volume = 1.0f;
@@ -516,12 +517,11 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
-			Track *t = new Track(id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans);
+			Track *t = new Track(id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan);
 			t->internal_volume = v;
 			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
 			if (playing) {
-				t->set_pan(global_pan);
 				t->play(false);
 			}
 		}
@@ -754,9 +754,9 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		}
 
 		if (internal::audio_context.device_spec.channels == 2) {
-			float the_pan = calc_pan();
-			buf[i*2] += v_final * audio::calc_pan_left(the_pan) * audio::calc_pan_left(global_pan);
-			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan) * audio::calc_pan_right(global_pan);
+			float the_pan = pan_set ? pan : calc_pan();
+			buf[i*2] += v_final * audio::calc_pan_left(the_pan);
+			buf[i*2+1] += v_final * audio::calc_pan_right(the_pan);
 		}
 		else {
 			buf[i] += v_final;
@@ -1044,7 +1044,12 @@ float MML::Track::real_get_volume(int &section, std::vector< std::pair<int, floa
 
 float MML::Track::get_volume()
 {
-	return real_get_volume(volume_section, volumes, false) + real_get_volume(volume_offset_section, volume_offsets, true);
+	float v = real_get_volume(volume_section, volumes, false) + real_get_volume(volume_offset_section, volume_offsets, true);
+	for (size_t i = 0; i < wav_starts.size(); i++) {
+		Wav_Start &w = wav_starts[i];
+		w.instance->volume = v;
+	}
+	return v;
 }
 
 float MML::Track::get_dutycycle()
@@ -1220,6 +1225,12 @@ float MML::Track::calc_pan()
 	}
 	pan_interp->interpolate(1);
 	pan = pan_interp->get_value();
+	for (size_t i = 0; i < wav_starts.size(); i++) {
+		Wav_Start &w = wav_starts[i];
+		if (w.instance != nullptr) {
+			w.instance->pan = pan;
+		}
+	}
 	return pan;
 }
 
@@ -1309,7 +1320,7 @@ std::string MML::Track::next_note(const char *text, int *pos)
 				// doesn't need to do this -- dutycycles set with get_dutycycle
 				break;
 			case 'L':
-				// doesn't need to do this -- pan set with calc_pan
+				// doesn't need to do this -- pan set with calc_pan 
 				break;
 			default:
 				if (result[0] == 0 || result[0] == 'r' || (result[0] >= 'a' && result[0] <= 'g')) {
@@ -1387,12 +1398,19 @@ int MML::Track::get_new_tempo()
 
 float MML::Track::get_pan()
 {
-	return global_pan;
+	return pan;
 }
 
 void MML::Track::set_pan(float pan)
 {
-	global_pan = pan;
+	this->pan = pan;
+	for (size_t i = 0; i < wav_starts.size(); i++) {
+		Wav_Start &w = wav_starts[i];
+		if (w.instance != nullptr) {
+			w.instance->pan = pan;
+		}
+	}
+	pan_set = true;
 }
 
 static int wav_len(std::vector<std::string> toks, int note_length, int tempo, int octave, int note)
@@ -1414,7 +1432,7 @@ void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 			int length = w.length == 0 ? 0 : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
 			int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
 			if (silence >= 0) {
-				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false, global_pan);
+				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false, pan);
 				w.instance->volume = master_volume;
 			}
 		}
@@ -2292,14 +2310,11 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		t->beginning_silence = 0;
 		t->pad = longest-sample[i];
 		mml_data->track_data.push_back(t);
-		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans));
 	}
 
 	num_tracks = (int)tracks.size();
 
 	loaded_mml.push_back(this);
-
-	instance++;
 
 	audio::unlock_mutex();
 
@@ -2362,29 +2377,27 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 {
 	audio::lock_mutex();
 
-	tracks[0]->set_callbacks(finished_callback, finished_callback_data);
+	Uint32 play_id = instance;
 
-	Uint32 play_id = instance - 1;
+	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
+		Track_Data *t = mml_data->track_data[i];
+		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan));
+	}
+
+	tracks[0]->set_callbacks(finished_callback, finished_callback_data);
 
 	set_master_volume(play_id, volume);
 
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == play_id) {
-			tracks[i]->set_pan(pan);
 			tracks[i]->play(loop);
 		}
 	}
 
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
 		if (reverb_tracks[i]->get_id() == play_id) {
-			reverb_tracks[i]->set_pan(pan);
 			reverb_tracks[i]->play(false); // never loop!
 		}
-	}
-
-	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
-		Track_Data *t = mml_data->track_data[i];
-		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans));
 	}
 
 	instance++;
@@ -2505,6 +2518,11 @@ void MML::set_pan(Uint32 id, float pan)
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == id) {
 			tracks[i]->set_pan(pan);
+		}
+	}
+	for (size_t i = 0; i < reverb_tracks.size(); i++) {
+		if (reverb_tracks[i]->get_id() == id) {
+			reverb_tracks[i]->set_pan(pan);
 		}
 	}
 }
