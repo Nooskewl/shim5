@@ -210,7 +210,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				int dest_offset;
 
 				if (audio::internal::audio_context.device_spec.channels == 2) {
-					if (s->spec->channels == 2) {
+					if (s->spec->channels >= 2) {
 						v = read_float_sample(s, sample_offset);
 						v = v * s->volume * audio::calc_pan_left(s->pan);
 						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 0;
@@ -234,7 +234,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 					}
 				}
 				else {
-					if (s->spec->channels == 2) {
+					if (s->spec->channels >= 2) {
 						v = read_float_sample(s, sample_offset);
 						v = v * s->volume * audio::calc_pan_left(s->pan);
 						sample_offset++;
