@@ -30,13 +30,10 @@ public:
 		float volume;
 		std::vector<std::string> toks;
 		int note_length;
-		int orig_tempo;
 		int tempo;
 		int octave;
 		int note;
 		int length;
-		int orig_play_length;
-		int orig_silence;
 	};
 
 	struct Reverb_Type {
@@ -182,6 +179,7 @@ private:
 		int note_length;
 		float volume;
 		int tempo;
+		int old_tempo;
 		int note;
 		int volume_section;
 		int volume_offset_section;

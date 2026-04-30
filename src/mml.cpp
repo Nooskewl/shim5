@@ -396,6 +396,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	volume = 1.0f;
 	if (ignore_tempo_changes == false) {
 		tempo = 120;
+		old_tempo = 120;
 	}
 	note = 0;
 	volume_section = 0;
@@ -670,6 +671,7 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 				if (w.instance->silence <= 0 && w.instance->offset < w.instance->play_length) {
 					float p = frequency / (freq1 + freq2);
 					int length = w.length == 0 ? w.instance->length : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
+					//w.play_start = w.orig_play_start * p;
 					w.instance->play_length = length * p;
 				}
 			}
@@ -1363,17 +1365,18 @@ void MML::Track::calc_tempo()
 		tempo_interp->start(prev_tempo, start_tempo, end_tempo, next_tempo, stride);
 	}
 	tempo_interp->interpolate(1);
-	int old_tempo = tempo;
 	tempo = tempo_interp->get_value();
 	if (old_tempo != tempo) {
 		for (size_t i = 0; i < wav_starts.size(); i++) {
 			Wav_Start &w = wav_starts[i];
-			if (w.instance->silence <= 0) {
-				float p = w.orig_tempo / (float)tempo;
-				w.instance->play_length = w.orig_play_length * p;
-				w.play_start = w.orig_play_start * p;
+			if (w.instance && w.instance->silence <= 0) {
+				float p = old_tempo / (float)tempo;
+				w.instance->play_length *= p;
+				//w.play_start = w.orig_play_start * p;
+				w.instance->silence *= p;
 			}
 		}
+		old_tempo = tempo;
 	}
 }
 
@@ -1566,11 +1569,10 @@ void MML::Track::real_set_tempo(int bpm)
 	tempo = bpm;
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
-		float p = w.orig_tempo / (float)bpm;
-		if (w.instance != nullptr) {
-			w.instance->play_length = w.orig_play_length * p;
-		}
-		w.play_start = w.orig_play_start * p;
+		float p = w.tempo / (float)bpm;
+		w.instance->play_length *= p;
+		//w.play_start = w.orig_play_start * p;
+		w.instance->silence *= p;
 	}
 	stop_wavs();
 	start_wavs(0, sample);
@@ -1625,10 +1627,11 @@ void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		if (w.play_start >= on_or_after) {
-			int length = w.length == 0 ? 0 : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
-			int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
+			float p = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
+			int length = w.length == 0 ? wav_samples[w.sample]->get_length() * p : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
+			//int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
+			int silence = (int)w.play_start - (int)on_or_after;
 			if (silence >= 0) {
-				w.orig_play_length = length;
 				w.instance = wav_samples[w.sample]->play_stretched(w.volume*internal_volume, silence, length, false, pan);
 				w.instance->mml = mml;
 				w.instance->volume = master_volume;
@@ -2267,7 +2270,6 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 										}
 									} while (tok2[0] == 'w');
 									w.note_length = note_lengths[track];
-									w.orig_tempo = _tempos[track];
 									w.tempo = _tempos[track];
 									w.octave = octaves[track];
 									w.note = note[track];
