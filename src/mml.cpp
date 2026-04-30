@@ -2554,6 +2554,11 @@ void MML::set_pan(Uint32 id, float pan, int track)
 	}
 }
 
+int MML::get_num_tracks()
+{
+	return mml_data->track_data.size();
+}
+
 } // End namespace audio
 
 } // End namespace noo

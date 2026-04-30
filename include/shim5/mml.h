@@ -86,6 +86,7 @@ public:
 	SHIM5_EXPORT bool track_active(Uint32 id);
 	SHIM5_EXPORT float get_pan(Uint32 id, int track = -1);
 	SHIM5_EXPORT void set_pan(Uint32 id, float pan, int track = -1);
+	SHIM5_EXPORT int get_num_tracks();
 
 private:
 	class Track
