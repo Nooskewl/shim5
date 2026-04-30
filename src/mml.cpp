@@ -173,7 +173,7 @@ void MML::static_stop()
 	delete[] tmp;
 }
 
-MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan) :
+MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan) :
 	id(id),
 	type(type),
 	text(text),
@@ -197,7 +197,8 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	new_tempo(-1),
 	finished_callback(nullptr),
 	finished_callback_data(nullptr),
-	pan(pan)
+	pan(pan),
+	num(num)
 {
 	pan_set = pan != 0.0f;
 
@@ -518,7 +519,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
-			Track *t = new Track(id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan);
+			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan);
 			t->internal_volume = v;
 			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
@@ -1397,6 +1398,11 @@ int MML::Track::get_new_tempo()
 	return new_tempo;
 }
 
+int MML::Track::get_tempo()
+{
+	return tempo;
+}
+
 float MML::Track::get_pan()
 {
 	return pan;
@@ -1412,6 +1418,11 @@ void MML::Track::set_pan(float pan)
 		}
 	}
 	pan_set = true;
+}
+
+int MML::Track::get_track_number()
+{
+	return num;
 }
 
 static int wav_len(std::vector<std::string> toks, int note_length, int tempo, int octave, int note)
@@ -2382,7 +2393,7 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 
 	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
 		Track_Data *t = mml_data->track_data[i];
-		tracks.push_back(new Track(instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan));
+		tracks.push_back(new Track(i, instance, t->type, t->text, t->volumes, t->volume_offsets, t->pitches, t->pitch_offsets, mml_data->pitch_envelopes, mml_data->pitch_offset_envelopes, t->dutycycles, t->pad, wav_samples, t->wav_starts, t->beginning_silence, this, mml_data->reverb_types, t->pans, pan));
 	}
 
 	tracks[0]->set_callbacks(finished_callback, finished_callback_data);
@@ -2466,63 +2477,78 @@ bool MML::track_active(Uint32 id)
 	return false;
 }
 
-void MML::set_master_volume(Uint32 id, float master_volume)
+void MML::set_master_volume(Uint32 id, float master_volume, int track)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
-		if (tracks[i]->get_id() == id) {
+		if (tracks[i]->get_id() == id && (track < 0 || tracks[i]->get_track_number() == track)) {
 			tracks[i]->set_master_volume(master_volume/tracks.size());
 		}
 	}
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
-		if (reverb_tracks[i]->get_id() == id) {
+		if (reverb_tracks[i]->get_id() == id && (track < 0 || reverb_tracks[i]->get_track_number() == track)) {
 			reverb_tracks[i]->set_master_volume(master_volume/reverb_tracks.size());
 		}
 	}
 }
 
-float MML::get_master_volume(Uint32 id)
+float MML::get_master_volume(Uint32 id, int track)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
-		if (tracks[i]->get_id() == id) {
+		if (tracks[i]->get_id() == id && (track < 0 || tracks[i]->get_track_number() == track)) {
 			return tracks[i]->get_master_volume();
 		}
 	}
 	return 1.0f;
 }
 
-void MML::set_tempo(Uint32 id, int bpm)
+void MML::set_tempo(Uint32 id, int bpm, int track)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
-		if (tracks[i]->get_id() == id) {
+		if (tracks[i]->get_id() == id && (track < 0 || tracks[i]->get_track_number() == track)) {
 			tracks[i]->set_tempo(bpm);
 		}
 	}
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
-		if (reverb_tracks[i]->get_id() == id) {
+		if (reverb_tracks[i]->get_id() == id && (track < 0 || reverb_tracks[i]->get_track_number() == track)) {
 			reverb_tracks[i]->set_tempo(bpm);
 		}
 	}
 }
 
-float MML::get_pan(Uint32 id)
+int MML::get_tempo(Uint32 id, int track)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
-		if (tracks[i]->get_id() == id) {
+		if (tracks[i]->get_id() == id && (track < 0 || tracks[i]->get_track_number() == track)) {
+			return tracks[i]->get_tempo();
+		}
+	}
+	for (size_t i = 0; i < reverb_tracks.size(); i++) {
+		if (reverb_tracks[i]->get_id() == id && (track < 0 || reverb_tracks[i]->get_track_number() == track)) {
+			return reverb_tracks[i]->get_tempo();
+		}
+	}
+	return 120;
+}
+
+float MML::get_pan(Uint32 id, int track)
+{
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->get_id() == id && tracks[i]->get_track_number() == track) {
 			return tracks[i]->get_pan();
 		}
 	}
 	return 0.0f;
 }
 
-void MML::set_pan(Uint32 id, float pan)
+void MML::set_pan(Uint32 id, float pan, int track)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
-		if (tracks[i]->get_id() == id) {
+		if (tracks[i]->get_id() == id && (track < 0 || tracks[i]->get_track_number() == track)) {
 			tracks[i]->set_pan(pan);
 		}
 	}
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
-		if (reverb_tracks[i]->get_id() == id) {
+		if (reverb_tracks[i]->get_id() == id && (track < 0 || reverb_tracks[i]->get_track_number() == track)) {
 			reverb_tracks[i]->set_pan(pan);
 		}
 	}
