@@ -115,7 +115,6 @@ private:
 		SHIM5_EXPORT void set_callbacks(util::Callback finished_callback, void *finished_callback_data);
 		SHIM5_EXPORT void call_callbacks();
 
-		SHIM5_EXPORT float calc_pan();
 		SHIM5_EXPORT float get_pan(); // get global pan
 		SHIM5_EXPORT void set_pan(float pan); // set global pan
 
@@ -131,6 +130,7 @@ private:
 		float real_get_volume(int &section, std::vector< std::pair<int, float> > &v, bool offset);
 		float get_volume();
 		float get_dutycycle();
+		float calc_pan();
 		void start_wavs(Uint32 buffer_offset, Uint32 on_or_after);
 		void stop_wavs();
 

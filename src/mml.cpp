@@ -2504,7 +2504,7 @@ void MML::set_pan(Uint32 id, float pan)
 {
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == id) {
-			return tracks[i]->set_pan(pan);
+			tracks[i]->set_pan(pan);
 		}
 	}
 }
