@@ -35,6 +35,8 @@ public:
 		int octave;
 		int note;
 		int length;
+		int orig_play_length;
+		int orig_silence;
 	};
 
 	struct Reverb_Type {
@@ -55,6 +57,7 @@ public:
 		std::vector< std::pair<int, float> > dutycycles;
 		std::vector< std::pair<int, float> > pans;
 		std::vector< std::pair<int, float> > hybrids;
+		std::vector< std::pair<int, float> > tempos;
 		int pad;
 		std::vector<Wav_Start> wav_starts;
 		Uint32 beginning_silence;
@@ -96,7 +99,7 @@ private:
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs);
+		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs, std::vector< std::pair<int, float> > &tempos);
 		~Track();
 
 		SHIM5_EXPORT void play(bool loop);
@@ -144,6 +147,7 @@ private:
 		float get_sample_volume();
 		float get_dutycycle();
 		float calc_pan();
+		void calc_tempo();
 		void start_wavs(Uint32 buffer_offset, Uint32 on_or_after);
 		void stop_wavs();
 
@@ -163,6 +167,7 @@ private:
 		std::vector< std::pair<int, float> > dutycycles;
 		std::vector< std::pair<int, float> > pans;
 		std::vector< std::pair<int, float> > hybrids;
+		std::vector< std::pair<int, float> > tempos;
 
 		int pad;
 		int sample;
@@ -171,6 +176,7 @@ private:
 		int curve_pitch;
 		int curve_duty;
 		int curve_pan;
+		int curve_tempo;
 		float dutycycle;
 		int octave;
 		int note_length;
@@ -182,6 +188,7 @@ private:
 		int dutycycle_section;
 		int pan_section;
 		int hybrid_section;
+		int tempo_section;
 		int pos;
 		std::string tok;
 		int length_in_samples;
@@ -218,6 +225,7 @@ private:
 		math::Interpolator *vol_interp_o;
 		math::Interpolator *duty_interp;
 		math::Interpolator *pan_interp;
+		math::Interpolator *tempo_interp;
 
 		MML *mml;
 
