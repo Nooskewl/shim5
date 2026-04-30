@@ -1276,7 +1276,7 @@ float MML::Track::get_sample_volume()
 	if (h < 0 || h >= wav_samples.size()) {
 		return 1.0f;
 	}
-	float p = diff / stride;
+	float p = (float)note_fulfilled / length_in_samples;
 	int length = wav_samples[h]->get_length();
 	int gsv = gsvol;
 	gsvol++;
