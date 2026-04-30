@@ -1257,12 +1257,22 @@ float MML::Track::get_sample_volume()
 	int length = wav_samples[h]->get_length();
 	int gsv = gsvol;
 	gsvol++;
-	int samp = MIN(length-wav_samples[h]->get_spec()->channels, p * length);
-	if (wav_samples[h]->get_spec()->channels == 1) {
-		return ((Sint16 *)(wav_samples[h]->get_data()))[samp]/32768.0f;
+	int samp = MIN(length-1, p * length);
+	if (wav_samples[h]->get_spec()->format == SDL_AUDIO_S16LE) {
+		if (wav_samples[h]->get_spec()->channels == 1) {
+			return ((Sint16 *)(wav_samples[h]->get_data()))[samp]/32768.0f;
+		}
+		else {
+			return ((Sint16 *)(wav_samples[h]->get_data()))[samp * wav_samples[h]->get_spec()->channels + (gsv % 2)]/32768.0f;
+		}
 	}
 	else {
-		return ((Sint16 *)(wav_samples[h]->get_data()))[samp * wav_samples[h]->get_spec()->channels + (gsv % 2)]/32768.0f;
+		if (wav_samples[h]->get_spec()->channels == 1) {
+			return ((float *)(wav_samples[h]->get_data()))[samp];
+		}
+		else {
+			return ((float *)(wav_samples[h]->get_data()))[samp * wav_samples[h]->get_spec()->channels + (gsv % 2)];
+		}
 	}
 }
 
