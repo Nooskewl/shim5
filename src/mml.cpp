@@ -670,11 +670,14 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		if (wav_sample >= 0) {
 			for (size_t i = 0; i < wav_starts.size(); i++) {
 				Wav_Start &w = wav_starts[i];
-				if (w.instance->silence <= 0 && w.instance->offset < w.instance->play_length) {
-					float p = frequency / (freq1 + freq2);
-					int length = w.length == 0 ? w.instance->length : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
-					//w.play_start = w.orig_play_start * p;
-					w.instance->play_length = length * p;
+				if (w.instance) {
+					if (w.instance->silence <= 0 && w.instance->offset < w.instance->play_length) {
+						float p = frequency / (freq1 + freq2);
+						int length = w.length == 0 ? w.instance->length : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
+						//w.play_start = w.orig_play_start * p;
+						w.instance->play_length = length * p;
+					}
+					w.instance->volume = get_volume() * master_volume;
 				}
 			}
 			note_fulfilled++;
