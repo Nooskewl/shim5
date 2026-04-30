@@ -447,6 +447,8 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 		}
 	}
 
+	_uses_reverb = used_reverbs.size() > 0;
+
 	for (size_t i = 0; i < used_reverbs.size(); i++) {
 		int rtype = used_reverbs[i];
 		bool active = false;
@@ -524,7 +526,6 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			std::vector<Wav_Start> w; // dummy
 			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan, hybrids);
 			t->internal_volume = v;
-			t->set_master_volume(master_volume/(float)used_reverbs.size());
 			mml->reverb_tracks.push_back(t);
 			if (playing) {
 				t->play(false);
@@ -1463,6 +1464,11 @@ void MML::Track::set_pan(float pan)
 int MML::Track::get_track_number()
 {
 	return num;
+}
+
+bool MML::Track::uses_reverb()
+{
+	return _uses_reverb;
 }
 
 static int wav_len(std::vector<std::string> toks, int note_length, int tempo, int octave, int note)
@@ -2566,14 +2572,18 @@ bool MML::track_active(Uint32 id)
 
 void MML::set_master_volume(Uint32 id, float master_volume, int track)
 {
+	int reverbs = 0;
 	for (size_t i = 0; i < tracks.size(); i++) {
-		if (tracks[i]->get_id() == id && (track < 0 || tracks[i]->get_track_number() == track)) {
-			tracks[i]->set_master_volume(master_volume/tracks.size());
+		if (tracks[i]->get_id() == id) {
+		       	if (track < 0 || tracks[i]->get_track_number() == track) {
+				tracks[i]->set_master_volume(master_volume/tracks.size());
+			}
+			reverbs += tracks[i]->uses_reverb();
 		}
 	}
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
 		if (reverb_tracks[i]->get_id() == id && (track < 0 || reverb_tracks[i]->get_track_number() == track)) {
-			reverb_tracks[i]->set_master_volume(master_volume/reverb_tracks.size());
+			reverb_tracks[i]->set_master_volume(master_volume/reverbs);
 		}
 	}
 }

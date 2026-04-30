@@ -126,6 +126,8 @@ private:
 		SHIM5_EXPORT int get_track_number();
 
 		SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
+		
+		SHIM5_EXPORT bool uses_reverb();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -246,6 +248,8 @@ private:
 		int num;
 
 		int gsvol;
+
+		bool _uses_reverb;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
