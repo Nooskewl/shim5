@@ -179,42 +179,28 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 		sfx_buf[i] = 0.0f;
 	}
 
-	int max = audio::MML::mix(music_buf, samples);
-
-	std::vector<audio::Sample_Instance *>::iterator it;
-	for (it = audio::internal::audio_context.playing_samples.begin(); it != audio::internal::audio_context.playing_samples.end();) {
-		audio::Sample_Instance *s = *it;
-		if (s->paused) {
-			it++;
-			continue;
-		}
-		int count = s->silence;
-		s->silence -= MIN((int)s->silence, samples);
-		while (count < samples) {
-			int length;
-			float p;
-
-			if (s->play_length != s->length) {
-				length = s->play_length - s->offset;
-				if (length > samples-count) {
-					length = samples - count;
-				}
-
-				p = (float)s->play_length / s->length;
+	for (int samp = 0; samp < samples; samp++) {
+		std::vector<audio::Sample_Instance *>::iterator it;
+		for (it = audio::internal::audio_context.playing_samples.begin(); it != audio::internal::audio_context.playing_samples.end();) {
+			audio::Sample_Instance *s = *it;
+			if (s->paused) {
+				it++;
+				continue;
+			}
+			if (s->silence > 0) {
+				s->silence--;
 			}
 			else {
-				length = s->length - s->offset;
-				if (length > samples-count) {
-					length = samples - count;
+				float p;
+
+				if (s->play_length != s->length) {
+					p = (float)s->play_length / s->length;
+				}
+				else {
+					p = 1.0f;
 				}
 
-				p = 1.0f;
-			}
-
-			max = MAX(max, length);
-
-			for (int i = 0; i < length; i++) {
-				int sample_offset = int((i + s->offset) / p) * s->spec->channels;
+				int sample_offset = int(s->offset / p) * s->spec->channels;
 
 				float v;
 				int dest_offset;
@@ -223,22 +209,22 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 					if (s->spec->channels == 2) {
 						v = read_float_sample(s, sample_offset);
 						v = v * s->volume * audio::calc_pan_left(s->pan);
-						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
+						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
 						v = read_float_sample(s, sample_offset);
 						v = v * s->volume * audio::calc_pan_right(s->pan);
-						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 1;
+						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 1;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
 					}
 					else {
 						v = read_float_sample(s, sample_offset);
 						v = v * s->volume;
-						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
+						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
-						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 1;
+						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 1;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
 					}
@@ -251,47 +237,38 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 						float v2 = read_float_sample(s, sample_offset);
 						v2 = v2 * s->volume * audio::calc_pan_right(s->pan);
 						sample_offset++;
-						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
+						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += (v + v2);
 					}
 					else {
 						v = read_float_sample(s, sample_offset);
 						v = v * s->volume;
-						dest_offset = (count + i) * audio::internal::audio_context.device_spec.channels + 0;
+						dest_offset = samp * audio::internal::audio_context.device_spec.channels + 0;
 						*((float *)sfx_buf + dest_offset) += v;
 						sample_offset++;
 					}
 				}
 
-			}
+				s->offset++;
 
-			s->offset += length;
-
-			if (s->loop && s->offset >= s->play_length) {
-				s->offset = 0;
+				if (s->loop && s->offset >= s->play_length) {
+					s->offset = 0;
+				}
 			}
-
-			if (s->loop) {
-				count += length;
-			}
-			else {
-				break;
-			}
-		}
-		if (s->loop == false && s->offset >= s->play_length) {
-			if (s->sample->is_done() == false) {
-				s->sample->set_done(true);
+			if (s->loop == false && s->offset >= s->play_length) {
 				if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
 					audio::internal::audio_callbacks.push_back(s->finished_callback);
 					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
 				}
+				it = audio::internal::audio_context.playing_samples.erase(it);
+				delete s;
+											      
 			}
-			// erasing causes a memory leak
-			it++;// = audio::internal::audio_context.playing_samples.erase(it);
+			else {
+				it++;
+			}
 		}
-		else {
-			it++;
-		}
+		audio::MML::mix(music_buf+samp*audio::internal::audio_context.device_spec.channels, 1);
 	}
 
 	// Fast paths for common sample formats...
@@ -343,19 +320,6 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 			write_sample(stream, i, v);
 		}
 	}
-
-#ifdef DUMP
-	for (int i = 0; i < max*audio::internal::audio_context.device_spec.channels; i++) {
-		float v = (music_buf[i] + sfx_buf[i]);
-		if (v < -1.0f) {
-			v = -1.0f;
-		}
-		else if (v > 1.0f) {
-			v = 1.0f;
-		}
-		SDL_WriteU16LE(dumpfile, v*32767);
-	}
-#endif
 
 	SDL_PutAudioStreamData(audio_stream, stream, additional_amount);
 
