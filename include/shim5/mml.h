@@ -91,6 +91,7 @@ public:
 	SHIM5_EXPORT int get_num_tracks();
 	SHIM5_EXPORT void set_sample(int index, audio::Sample *sample);
 	SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
+	SHIM5_EXPORT bool is_done();
 
 private:
 	class Track

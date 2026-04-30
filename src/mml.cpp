@@ -2908,6 +2908,17 @@ void MML::delete_wavs(audio::Sample_Instance *s)
 	}
 }
 
+bool MML::is_done()
+{
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->is_done() == false) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 } // End namespace audio
 
 } // End namespace noo
