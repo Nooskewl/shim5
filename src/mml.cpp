@@ -607,6 +607,16 @@ float MML::Track::vol_from_phase(float p, MML::Wave_Type type, float freq, float
 	return v;
 }
 
+static int wav_len(std::vector<std::string> toks, int note_length, int tempo, int octave, int note)
+{
+	char ch = toks[0][0];
+	int total = onenotelength(toks[0].c_str(), note_length, tempo, octave, note, 'z'); // z == nothing never used
+	for (size_t i = 1; i < toks.size(); i++) {
+		total += onenotelength(toks[i].c_str(), note_length, tempo, octave, note, ch);
+	}
+	return total;
+}
+
 void MML::Track::generate(float *buf, int samples, int t, const char *tok, int octave)
 {
 	char c = tok[0];
@@ -634,18 +644,26 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 	float frequency = note_pitches[index][octave];
 
 	for (int i = 0; i < samples; i++) {
-		if (wav_sample >= 0) {
-			note_fulfilled++;
-			sample++;
-			abs_sample++;
-			continue;
-		}
-
 		float freq1, freq2;
 		float time1, time2;
 		float len1, len2;
 		get_frequency(frequency, freq1, time1, len1);
 		get_frequency_offset(freq2, time2, len2);
+
+		if (wav_sample >= 0) {
+			for (size_t i = 0; i < wav_starts.size(); i++) {
+				Wav_Start &w = wav_starts[i];
+				if (w.instance->silence <= 0 && w.instance->offset < w.instance->play_length) {
+					float p = frequency / (freq1 + freq2);
+					int length = w.length == 0 ? w.instance->length : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
+					w.instance->play_length = length * p;
+				}
+			}
+			note_fulfilled++;
+			sample++;
+			abs_sample++;
+			continue;
+		}
 
 		float freq = freq1 + freq2;
 		float time = (time1 == note_fulfilled) ? time2 : time1;
@@ -1474,17 +1492,6 @@ bool MML::Track::used_reverb()
 {
 	return _used_reverb;
 }
-
-static int wav_len(std::vector<std::string> toks, int note_length, int tempo, int octave, int note)
-{
-	char ch = toks[0][0];
-	int total = onenotelength(toks[0].c_str(), note_length, tempo, octave, note, 'z'); // z == nothing never used
-	for (size_t i = 1; i < toks.size(); i++) {
-		total += onenotelength(toks[i].c_str(), note_length, tempo, octave, note, ch);
-	}
-	return total;
-}
-
 
 void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 {
