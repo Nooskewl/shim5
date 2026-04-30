@@ -657,7 +657,9 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 	float frequency = note_pitches[index][octave];
 
 	for (int i = 0; i < samples; i++) {
-		calc_tempo();
+		if (ignore_tempo_changes == false) {
+			calc_tempo();
+		}
 
 		float freq1, freq2;
 		float time1, time2;
@@ -1570,9 +1572,7 @@ void MML::Track::real_set_tempo(int bpm)
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		float p = w.tempo / (float)bpm;
-		w.instance->play_length *= p;
 		//w.play_start = w.orig_play_start * p;
-		w.instance->silence *= p;
 	}
 	stop_wavs();
 	start_wavs(0, sample);
