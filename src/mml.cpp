@@ -197,9 +197,10 @@ MML::Track::Track(Uint32 id, Wave_Type type, std::string text, std::vector< std:
 	new_tempo(-1),
 	finished_callback(nullptr),
 	finished_callback_data(nullptr),
-	pan_set(false),
 	pan(pan)
 {
+	pan_set = pan != 0.0f;
+
 	freq_interp = nullptr;
 	freq_interp_o = nullptr;
 	vol_interp = nullptr;
