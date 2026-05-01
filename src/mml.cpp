@@ -7,18 +7,6 @@
 
 #include "shim5/internal/audio.h"
 
-//#define DUMP
-
-#ifdef DUMP
-extern SDL_IOStream *dumpfile;
-static bool use_mml_loops = true;
-static int mml_loops = 3;
-#else
-static bool use_mml_loops = false;
-static int mml_loops = 0;
-#endif
-static int num_tracks;
-
 using namespace noo;
 
 namespace noo {
@@ -218,6 +206,106 @@ MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vec
 	ignore_tempo_changes = false;
 
 	reset(0);
+	
+	std::vector<int> used_reverbs;
+	for (size_t i = 0; i < reverb_types.size(); i++) {
+		std::string tag = "@R" + util::itos((int)i);
+		if (text.find(tag) != std::string::npos) {
+			if (std::find(used_reverbs.begin(), used_reverbs.end(), (int)i) == std::end(used_reverbs)) {
+				used_reverbs.push_back((int)i);
+			}
+		}
+	}
+
+	_used_reverb = 0;
+
+	for (size_t i = 0; i < used_reverbs.size(); i++) {
+		int rtype = used_reverbs[i];
+		bool active = false;
+		std::string new_text;
+		for (size_t j = 0; j < text.length(); j++) {
+			if (text[j] == '@' && j < text.length()-2 && text[j+1] == 'R' && isdigit(text[j+2])) {
+				int rnum = atoi(text.c_str()+j+2);
+				if (rnum == rtype) {
+					active = !active;
+				}
+			}
+			char s[2];
+			s[1] = 0;
+			if (active == false && text[j] >= 'a' && text[j] <= 'g') {
+				s[0] = 'r';
+			}
+			else if (j > 0 && text[j-1] == '@' && text[j] == 'R' && j < text.length()-1 && isdigit(text[j+1])) {
+				s[0] = 'X'; // killed '@R' so it doesn't propagate and repeat
+			}
+			else {
+				s[0] = text[j];
+			}
+			new_text += s;
+		}
+		Reverb_Type rt = reverb_types[rtype];
+		math::Interpolator *tinterp;
+		math::Interpolator *vinterp;
+		switch (rt.falloff_interpolator) {
+			case 1:
+				// min. 4 points for Hermite
+				tinterp = new math::I_Linear;
+				break;
+			case 2:
+				tinterp = new math::I_Slow();
+				break;
+			case 3:
+				tinterp = new math::I_Sin();
+				break;
+			case 4:
+				tinterp = new math::I_Pulse();
+				break;
+			default:
+				tinterp = new math::I_Linear();
+				break;
+		}
+		switch (rt.falloff_interpolator) {
+			case 1:
+				// min. 4 points for Hermite
+				vinterp = new math::I_Linear;
+				break;
+			case 2:
+				vinterp = new math::I_Slow();
+				break;
+			case 3:
+				vinterp = new math::I_Sin();
+				break;
+			case 4:
+				vinterp = new math::I_Pulse();
+				break;
+			default:
+				vinterp = new math::I_Linear();
+				break;
+		}
+		tinterp->start(0, 0, rt.falloff_time, rt.falloff_time, rt.reverberations+1);
+		tinterp->interpolate(1); // there is a +1 above to skip the 0 spot (start value above)
+		vinterp->start(rt.start_volume, rt.start_volume, rt.final_volume, rt.final_volume, rt.reverberations);
+		for (int i = 0; i < rt.reverberations; i++) {
+			tinterp->interpolate(1);
+			int delay = tinterp->get_value();
+			// convert from MS to samples
+			delay *= internal::audio_context.device_spec.freq / 1000.0f;
+			//delay += buffer_fulfilled;
+			vinterp->interpolate(1);
+			float v = vinterp->get_value()/255.0f;
+			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, pad, wav_samples, wav_starts, delay, mml, reverb_types, pans, pan, hybrids, stretch_wavs, tempos);
+			t->set_master_volume(v/rt.reverberations);
+			mml->reverb_tracks.push_back(t);
+			if (playing) {
+				t->play(play_volume, false);
+			}
+		}
+		_used_reverb = rt.reverberations;
+		delete tinterp;
+		delete vinterp;
+	}
+
+	_used_reverb = MAX(1, _used_reverb);
 }
 
 MML::Track::~Track()
@@ -346,15 +434,6 @@ int MML::Track::update(float *buf, int length)
 						}
 					}
 					else {
-						if (use_mml_loops) {
-							std::string tag = "@X";
-							if (text.find(tag) == std::string::npos) {
-								mml_loops--;
-							}
-							// FIXME:
-							//if (mml_loops < num_tracks) loop = false; else loop = true;
-							if (mml_loops < num_tracks) exit(0); else loop = true;
-						}
 						length_in_samples = pad;
 						tok = "r";
 						padded = true;
@@ -387,6 +466,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	stop_wavs();
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
+		w.played = false;
 		w.play_start = w.orig_play_start;
 	}
 	if (playing) {
@@ -408,7 +488,6 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	volume = 1.0f;
 	if (ignore_tempo_changes == false) {
 		tempo = 120;
-		old_tempo = 120;
 	}
 	note = 0;
 	volume_section = 0;
@@ -441,6 +520,9 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	last_noise = 0.0f;
 	last_noise2 = 0.0f;
 
+	old_tempo = 120;
+	sample_dec = 0;
+
 	// stuff for fading first two/last 2.x phases
 	//--
 	remain = 0.0f;
@@ -452,107 +534,6 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	prev_note_o = 0;
 	prev_section = 0;
 	prev_section_o = 0;
-
-	std::vector<int> used_reverbs;
-	for (size_t i = 0; i < reverb_types.size(); i++) {
-		std::string tag = "@R" + util::itos((int)i);
-		if (text.find(tag) != std::string::npos) {
-			if (std::find(used_reverbs.begin(), used_reverbs.end(), (int)i) == std::end(used_reverbs)) {
-				used_reverbs.push_back((int)i);
-			}
-		}
-	}
-
-	_used_reverb = 0;
-
-	for (size_t i = 0; i < used_reverbs.size(); i++) {
-		int rtype = used_reverbs[i];
-		bool active = false;
-		std::string new_text;
-		for (size_t j = 0; j < text.length(); j++) {
-			if (text[j] == '@' && j < text.length()-2 && text[j+1] == 'R' && isdigit(text[j+2])) {
-				int rnum = atoi(text.c_str()+j+2);
-				if (rnum == rtype) {
-					active = !active;
-				}
-			}
-			char s[2];
-			s[1] = 0;
-			if (active == false && text[j] >= 'a' && text[j] <= 'g') {
-				s[0] = 'r';
-			}
-			else if (j > 0 && text[j-1] == '@' && text[j] == 'R' && j < text.length()-1 && isdigit(text[j+1])) {
-				s[0] = 'X'; // killed '@R' so it doesn't propagate and repeat
-			}
-			else {
-				s[0] = text[j];
-			}
-			new_text += s;
-		}
-		Reverb_Type rt = reverb_types[rtype];
-		math::Interpolator *tinterp;
-		math::Interpolator *vinterp;
-		switch (rt.falloff_interpolator) {
-			case 1:
-				// min. 4 points for Hermite
-				tinterp = new math::I_Linear;
-				break;
-			case 2:
-				tinterp = new math::I_Slow();
-				break;
-			case 3:
-				tinterp = new math::I_Sin();
-				break;
-			case 4:
-				tinterp = new math::I_Pulse();
-				break;
-			default:
-				tinterp = new math::I_Linear();
-				break;
-		}
-		switch (rt.falloff_interpolator) {
-			case 1:
-				// min. 4 points for Hermite
-				vinterp = new math::I_Linear;
-				break;
-			case 2:
-				vinterp = new math::I_Slow();
-				break;
-			case 3:
-				vinterp = new math::I_Sin();
-				break;
-			case 4:
-				vinterp = new math::I_Pulse();
-				break;
-			default:
-				vinterp = new math::I_Linear();
-				break;
-		}
-		tinterp->start(0, 0, rt.falloff_time, rt.falloff_time, rt.reverberations+1);
-		tinterp->interpolate(1); // there is a +1 above to skip the 0 spot (start value above)
-		vinterp->start(rt.start_volume, rt.start_volume, rt.final_volume, rt.final_volume, rt.reverberations);
-		for (int i = 0; i < rt.reverberations; i++) {
-			tinterp->interpolate(1);
-			int delay = tinterp->get_value();
-			// convert from MS to samples
-			delay *= internal::audio_context.device_spec.freq / 1000.0f;
-			//delay += buffer_fulfilled;
-			vinterp->interpolate(1);
-			float v = vinterp->get_value()/255.0f;
-			std::vector<Wav_Start> w; // dummy
-			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, 0, wav_samples, w, delay, mml, reverb_types, pans, pan, hybrids, stretch_wavs, tempos);
-			t->set_master_volume(v/rt.reverberations);
-			mml->reverb_tracks.push_back(t);
-			if (playing) {
-				t->play(play_volume, false);
-			}
-		}
-		_used_reverb = rt.reverberations;
-		delete tinterp;
-		delete vinterp;
-	}
-
-	_used_reverb = MAX(1, _used_reverb);
 }
 
 float MML::Track::vol_from_phase(float p, MML::Wave_Type type, float freq, float dutycycle)
@@ -656,6 +637,20 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 		}
 	}
 
+	if (wav_sample >= 0) {
+		for (size_t i = 0; i < wav_starts.size(); i++) {
+			Wav_Start &w = wav_starts[i];
+			if (w.played == false && w.play_start <= sample) {
+				float p = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
+				int length = w.length == 0 ? wav_samples[w.sample]->get_length() * p : wav_len(w.toks, w.note_length, tempo, w.octave, w.note);
+				w.instance = wav_samples[w.sample]->play_stretched(w.volume, 0, length, false, pan);
+				w.instance->mml = mml;
+				w.instance->volume = master_volume;
+				w.played = true;
+			}
+		}
+	}
+
 	float frequency = note_pitches[index][octave];
 
 	for (int i = 0; i < samples; i++) {
@@ -673,10 +668,10 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 			for (size_t i = 0; i < wav_starts.size(); i++) {
 				Wav_Start &w = wav_starts[i];
 				if (w.instance) {
-					if (w.instance->silence <= 0 && w.instance->offset < w.instance->play_length) {
+					if (w.instance->offset < w.instance->play_length) {
 						float p = frequency / (freq1 + freq2);
-						int length = w.length == 0 ? w.instance->length : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
-						//w.play_start = w.orig_play_start * p;
+						float p2 = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
+						int length = w.length == 0 ? w.instance->length * p2 : wav_len(w.toks, w.note_length, tempo, w.octave, w.note);
 						w.instance->play_length = length * p;
 					}
 					w.instance->volume = get_volume() * master_volume;
@@ -913,14 +908,6 @@ void MML::Track::real_get_frequency(int index, std::vector< std::vector<float> >
 	}
 	if (note_fulfilled == 0 || diff == 0 || *interp == nullptr) {
 		delete *interp;
-		// special case
-		/*
-		int cp = curve_pitch;
-		if (start_freq == end_freq) {
-			cp = 0;
-		}
-		switch (cp) {
-		*/
 		switch (curve_pitch) {
 			case 1:
 				*interp = new math::I_Hermite();
@@ -947,13 +934,6 @@ void MML::Track::real_get_frequency(int index, std::vector< std::vector<float> >
 		ret_time = note_fulfilled % period;
 		ret_len = period;
 	}
-	/*
-	if (reset_time == 2) {
-		ret_time = abs_sample;
-		ret_len = FLT_MAX;
-	}
-	*/
-	//else if (reset_time == 1) {
 	else {
 		if (last_freq == start_freq) {
 			ret_time = note_fulfilled - last_start;
@@ -978,19 +958,11 @@ void MML::Track::real_get_frequency(int index, std::vector< std::vector<float> >
 			}
 		}
 	}
-	/*
-	else {
-		ret_time = note_fulfilled;
-		ret_len = length_in_samples;
-	}
-	*/
 }
 
 
 void MML::Track::get_frequency(float start_freq, float &ret_freq, float &ret_time, float &ret_len)
 {
-	//int index = pitches[note];
-	//real_get_frequency(pitches[note], pitch_envelopes, index < 0 ? start_freq : pitch_envelopes[index][0], start_freq, ret_freq, ret_time, ret_len, last_freq, last_start, same_sections, false);
 	real_get_frequency(pitches[note], pitch_envelopes, start_freq, start_freq, ret_freq, ret_time, ret_len, last_freq, last_start, same_sections, false);
 }
 
@@ -998,7 +970,6 @@ void MML::Track::get_frequency_offset(float &ret_freq, float &ret_time, float &r
 {
 	int index = pitch_offsets[note];
 	real_get_frequency(index, pitch_offset_envelopes, index < 0 ? 0.0f : pitch_offset_envelopes[index][0], 0.0f, ret_freq, ret_time, ret_len, last_freq_o, last_start_o, same_sections_o, true);
-	//real_get_frequency(pitch_offsets[note], pitch_offset_envelopes, 0.0f, 0.0f, ret_freq, ret_time, ret_len, last_freq_o, last_start_o, same_sections_o, true);
 }
 
 float MML::Track::real_get_volume(int &section, std::vector< std::pair<int, float> > &v, bool offset)
@@ -1099,12 +1070,6 @@ float MML::Track::real_get_volume(int &section, std::vector< std::pair<int, floa
 float MML::Track::get_volume()
 {
 	float v = real_get_volume(volume_section, volumes, false) + real_get_volume(volume_offset_section, volume_offsets, true);
-#if 0
-	for (size_t i = 0; i < wav_starts.size(); i++) {
-		Wav_Start &w = wav_starts[i];
-		w.instance->volume = v;
-	}
-#endif
 	return v;
 }
 
@@ -1375,17 +1340,27 @@ void MML::Track::calc_tempo()
 	}
 	tempo_interp->interpolate(1);
 	tempo = tempo_interp->get_value();
-	if (old_tempo != tempo) {
+
+	if (wav_sample >= 0) {
+	       	if (tempo != old_tempo) {
+			sample_dec += ((float)tempo / old_tempo) - 1;
+			old_tempo = tempo;
+		}
+		int sd = int(sample_dec);
 		for (size_t i = 0; i < wav_starts.size(); i++) {
 			Wav_Start &w = wav_starts[i];
-			if (w.instance && w.instance->silence <= 0) {
-				float p = old_tempo / (float)tempo;
-				w.instance->play_length *= p;
-				//w.play_start = w.orig_play_start * p;
-				w.instance->silence *= p;
+			if (w.instance == nullptr) {
+				w.play_start -= sd;
+			}
+			else {
+				if (w.length == 0) {
+					float p = (float)w.tempo / tempo;
+					float p2 = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
+					int length = wav_samples[w.sample]->get_length() * p2;
+					w.instance->play_length = length * p;
+				}
 			}
 		}
-		old_tempo = tempo;
 	}
 }
 
@@ -1529,6 +1504,7 @@ std::string MML::Track::next_note(const char *text, int *pos)
 				break;
 		}
 	} while (!done);
+
 	return result;
 }
 
@@ -1551,14 +1527,6 @@ int MML::Track::notelength(const char *tok, const char *text, int *pos)
 void MML::Track::set_master_volume(float master_volume)
 {
 	this->master_volume = master_volume;
-#if 0
-	for (size_t i = 0; i < wav_starts.size(); i++) {
-		Wav_Start &w = wav_starts[i];
-		if (w.instance != nullptr) {
-			w.instance->volume = master_volume;
-		}
-	}
-#endif
 }
 
 float MML::Track::get_master_volume()
@@ -1581,7 +1549,6 @@ void MML::Track::real_set_tempo(int bpm)
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		float p = w.tempo / (float)bpm;
-		//w.play_start = w.orig_play_start * p;
 	}
 	stop_wavs();
 	start_wavs(0, sample);
@@ -1633,12 +1600,12 @@ bool MML::Track::used_reverb()
 
 void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
 {
+return;
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		if (w.play_start >= on_or_after) {
 			float p = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
 			int length = w.length == 0 ? wav_samples[w.sample]->get_length() * p : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
-			//int silence = (int)w.play_start + (int)buffer_offset - (int)on_or_after;
 			int silence = (int)w.play_start - (int)on_or_after;
 			if (silence >= 0) {
 				w.instance = wav_samples[w.sample]->play_stretched(w.volume, silence, length, false, pan);
@@ -2264,9 +2231,10 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 							if (wav_sample[track] >= 0 && (tok[0] >= 'a' && tok[0] <= 'g')) {
 								if (wav_starts[track].size() == 0 || wav_starts[track][wav_starts[track].size()-1].sample != wav_sample[track] || wav_starts[track][wav_starts[track].size()-1].play_start != (Uint32)save) { // avoid duplicates
 									Wav_Start w;
+									w.played = false;
 									w.sample = wav_sample[track];
-									w.orig_play_start = save;
 									w.play_start = save;
+									w.orig_play_start = save;
 									w.toks.push_back(tok);
 									char ch = tok[0];
 									int total = onenotelength(tok.c_str(), note_lengths[track], _tempos[track], octaves[track], note[track], 'z'); // z == nothing never used
@@ -2289,9 +2257,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 									wav_starts[track].push_back(w);
 								}
 							}
-							//if (tok[0] != 'r') {
-								prev_note_start[track] = save;
-							//}
+							prev_note_start[track] = save;
 						}
 					}
 					else if (tok[0] == 'v') {
@@ -2636,7 +2602,6 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	audio::lock_mutex();
 
 	for (size_t i = 0; i < tracks_s.size(); i++) {
-		std::vector<Wav_Start> w; // dummy
 		Track_Data *t = new Track_Data;
 		t->text = tracks_s[i];
 		t->type = MML::PULSE;
@@ -2655,8 +2620,6 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		mml_data->track_data.push_back(t);
 	}
 
-	num_tracks = (int)tracks.size();
-
 	loaded_mml.push_back(this);
 
 	audio::unlock_mutex();
@@ -2667,18 +2630,6 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	else {
 		util::close_file(f);
 	}
-
-#ifdef DUMP
-	if (dumpfile == 0) {
-		dumpfile = SDL_IOFromFile("dump.raw", "wb");
-	}
-#endif
-	int arg;
-	if ((arg = util::check_args(shim::argc, shim::argv, "+mml_loops")) > 0) {
-		mml_loops = atoi(shim::argv[arg+1]);
-		use_mml_loops = true;
-	}
-	mml_loops *= num_tracks;
 }
 
 MML::~MML()
@@ -2712,10 +2663,6 @@ MML::~MML()
 		delete mml_data->track_data[i];
 	}
 	delete mml_data;
-
-#ifdef DUMP
-	SDL_CloseIO(dumpfile);
-#endif
 }
 
 Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_callback, void *finished_callback_data)
@@ -2740,8 +2687,7 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 
 	for (size_t i = 0; i < reverb_tracks.size(); i++) {
 		if (reverb_tracks[i]->get_id() == play_id) {
-			//reverb_tracks[i]->set_master_volume(volume/(float)tracks[i]->used_reverb());
-			reverb_tracks[i]->play(volume, false); // never loop!
+			reverb_tracks[i]->play(volume, loop);
 		}
 	}
 

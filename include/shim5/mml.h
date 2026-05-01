@@ -24,8 +24,8 @@ public:
 
 	struct Wav_Start {
 		int sample;
-		Uint32 orig_play_start;
 		Uint32 play_start;
+		Uint32 orig_play_start;
 		Sample_Instance *instance;
 		float volume;
 		std::vector<std::string> toks;
@@ -34,6 +34,7 @@ public:
 		int octave;
 		int note;
 		int length;
+		bool played;
 	};
 
 	struct Reverb_Type {
@@ -263,6 +264,8 @@ private:
 		bool stretch_wavs;
 
 		float play_volume;
+
+		float sample_dec;
 	};
 
 	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
