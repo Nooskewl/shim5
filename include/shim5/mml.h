@@ -148,7 +148,6 @@ private:
 		float get_dutycycle();
 		float calc_pan();
 		void calc_tempo();
-		void start_wavs(Uint32 buffer_offset, Uint32 on_or_after);
 		void stop_wavs();
 
 		std::string next_note(const char *text, int *pos);

@@ -335,7 +335,6 @@ void MML::Track::play(float volume, bool loop)
 	this->loop = loop;
 
 	stop_wavs();
-	start_wavs(0, sample);
 }
 
 void MML::Track::stop()
@@ -356,7 +355,6 @@ void MML::Track::pause(bool onoff)
 		this->loop = loop;
 
 		stop_wavs();
-		start_wavs(0, sample);
 	}
 }
 
@@ -463,14 +461,10 @@ bool MML::Track::is_done()
 
 void MML::Track::reset(Uint32 buffer_fulfilled)
 {
-	stop_wavs();
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		w.played = false;
 		w.play_start = w.orig_play_start;
-	}
-	if (playing) {
-		start_wavs(buffer_fulfilled, 0);
 	}
 
 	wav_sample = -1;
@@ -1343,7 +1337,12 @@ void MML::Track::calc_tempo()
 
 	if (wav_sample >= 0) {
 	       	if (tempo != old_tempo) {
-			sample_dec += ((float)tempo / old_tempo) - 1;
+			if (tempo > old_tempo) {
+				sample_dec += ((float)tempo / old_tempo) - 1;
+			}
+			else {
+				sample_dec -= ((float)old_tempo / tempo) - 1;
+			}
 			old_tempo = tempo;
 		}
 		int sd = int(sample_dec);
@@ -1550,8 +1549,6 @@ void MML::Track::real_set_tempo(int bpm)
 		Wav_Start &w = wav_starts[i];
 		float p = w.tempo / (float)bpm;
 	}
-	stop_wavs();
-	start_wavs(0, sample);
 }
 
 void MML::Track::set_tempo(int bpm)
@@ -1596,24 +1593,6 @@ int MML::Track::get_track_number()
 bool MML::Track::used_reverb()
 {
 	return _used_reverb;
-}
-
-void MML::Track::start_wavs(Uint32 buffer_offset, Uint32 on_or_after)
-{
-return;
-	for (size_t i = 0; i < wav_starts.size(); i++) {
-		Wav_Start &w = wav_starts[i];
-		if (w.play_start >= on_or_after) {
-			float p = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
-			int length = w.length == 0 ? wav_samples[w.sample]->get_length() * p : wav_len(w.toks, w.note_length, w.tempo, w.octave, w.note);
-			int silence = (int)w.play_start - (int)on_or_after;
-			if (silence >= 0) {
-				w.instance = wav_samples[w.sample]->play_stretched(w.volume, silence, length, false, pan);
-				w.instance->mml = mml;
-				w.instance->volume = master_volume;
-			}
-		}
-	}
 }
 
 void MML::Track::stop_wavs()
