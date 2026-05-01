@@ -29,6 +29,7 @@ static bool format_is_signed;
 static bool format_should_be_swapped;
 static float min_sample;
 static float max_sample;
+static SDL_Mutex *mutex;
 
 static float swap_float(float f)
 {
@@ -353,6 +354,8 @@ bool static_start()
 
 bool start()
 {
+	mutex = SDL_CreateMutex();
+
 	util::JSON::Node *root = shim::shim_json->get_root();
 
 	internal::audio_context.mute = root->get_nested_bool("shim>audio>mute", &internal::audio_context.mute, false, true, true);
@@ -442,6 +445,8 @@ void end()
 	sfx_buf = nullptr;
 
 	MML::static_stop();
+
+	SDL_DestroyMutex(mutex);
 }
 
 int millis_to_samples(int millis, int freq)
@@ -473,12 +478,12 @@ float calc_pan_right(float pan)
 
 void lock_mutex()
 {
-	SDL_LockAudioStream(audio_stream);
+	SDL_LockMutex(mutex);
 }
 
 void unlock_mutex()
 {
-	SDL_UnlockAudioStream(audio_stream);
+	SDL_UnlockMutex(mutex);
 }
 
 namespace internal {

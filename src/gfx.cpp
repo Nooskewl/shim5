@@ -1940,12 +1940,16 @@ int load_palette(std::string name, SDL_Color *out, int out_size)
 	int sz;
 	SDL_IOStream *file = util::open_file(name, &sz);
 
+	if (file == nullptr) {
+		return 0;
+	}
+
 	char line[1000];
 	int count = 0;
 
 	util::SDL_fgets(file, line, 1000);
 	if (strncmp(line, "GIMP Palette", 12)) {
-		SDL_CloseIO(file);
+		util::close_file(file);
 		throw util::LoadError("not a GIMP palette: " + name);
 	}
 	count += strlen(line);

@@ -186,6 +186,12 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 	png_infop info_ptr;
 
 	if (!check_if_png(fp)) {
+		if (load_from_filesystem) {
+			SDL_CloseIO(fp);
+		}
+		else {
+			util::close_file(fp);
+		}
 		return NULL;
 	}
 
@@ -198,6 +204,12 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
 					 (void *)NULL, NULL, NULL);
 	if (!png_ptr) {
+		if (load_from_filesystem) {
+			SDL_CloseIO(fp);
+		}
+		else {
+			util::close_file(fp);
+		}
 		return NULL;
 	}
 
@@ -205,6 +217,12 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr) {
 		png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
+		if (load_from_filesystem) {
+			SDL_CloseIO(fp);
+		}
+		else {
+			util::close_file(fp);
+		}
 		return NULL;
 	}
 
@@ -213,6 +231,12 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 		/* Free all of the memory associated with the png_ptr and info_ptr */
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
 		/* If we get here, we had a problem reading the file */
+		if (load_from_filesystem) {
+			SDL_CloseIO(fp);
+		}
+		else {
+			util::close_file(fp);
+		}
 		return NULL;
 	}
 	png_set_error_fn(png_ptr, jmpbuf, user_error_fn, NULL);
@@ -389,6 +413,13 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 
 	if (has_alpha != nullptr) {
 		*has_alpha = alpha;
+	}
+		
+	if (load_from_filesystem) {
+		SDL_CloseIO(fp);
+	}
+	else {
+		util::close_file(fp);
 	}
 
 	return bytes;

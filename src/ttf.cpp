@@ -26,7 +26,7 @@ TTF::TTF(std::string filename, int size, int sheet_size, bool load_from_filesyst
 
 	file = util::open_file(filename, &sz, false, load_from_filesystem); // FIXME: does this get automatically closed? (I think yes)
 
-	font = TTF_OpenFontIO(file, true, size);
+	font = TTF_OpenFontIO(file, false, size);
 
 	if (font == 0) {
 		throw util::LoadError("TTF_OpenFontIO failed");
@@ -59,7 +59,7 @@ TTF::~TTF()
 
 	TTF_CloseFont(font);
 
-	util::free_data(file);
+	util::close_file(file);
 }
 
 void TTF::clear_cache()
