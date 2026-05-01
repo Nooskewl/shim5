@@ -14,49 +14,49 @@ public:
 	TGUI *gui;
 	TGUI_Widget *focus; // backup focus
 
-	SHIM5_EXPORT GUI();
-	SHIM5_EXPORT virtual ~GUI();
+	GUI();
+	virtual ~GUI();
 
-	SHIM5_EXPORT bool is_transitioning_in();
-	SHIM5_EXPORT bool is_transitioning_out();
-	SHIM5_EXPORT bool is_transition_out_finished();
+	bool is_transitioning_in();
+	bool is_transitioning_out();
+	bool is_transition_out_finished();
 
-	SHIM5_EXPORT virtual void handle_event(TGUI_Event *event);
+	virtual void handle_event(TGUI_Event *event);
 
-	SHIM5_EXPORT virtual void update();
-	SHIM5_EXPORT virtual void update_background(); // called when the GUI is not the foremost
+	virtual void update();
+	virtual void update_background(); // called when the GUI is not the foremost
 
-	SHIM5_EXPORT void pre_draw(); // special stuff (starts transition timer)
+	void pre_draw(); // special stuff (starts transition timer)
 
-	SHIM5_EXPORT virtual void draw_back();
-	SHIM5_EXPORT virtual void draw();
-	SHIM5_EXPORT virtual void draw_fore();
+	virtual void draw_back();
+	virtual void draw();
+	virtual void draw_fore();
 
-	SHIM5_EXPORT virtual void resize(util::Size<int> new_size);
+	virtual void resize(util::Size<int> new_size);
 
-	SHIM5_EXPORT virtual bool is_fullscreen(); // if the top gui returns true, other guis don't get drawn
+	virtual bool is_fullscreen(); // if the top gui returns true, other guis don't get drawn
 
-	SHIM5_EXPORT bool do_return(bool ret);
+	bool do_return(bool ret);
 
-	SHIM5_EXPORT virtual bool transition_done(bool transition_in); // return true to cancel and keep this GUI alive
+	virtual bool transition_done(bool transition_in); // return true to cancel and keep this GUI alive
 
-	SHIM5_EXPORT virtual void transition_start(float p);
-	SHIM5_EXPORT virtual void transition_end();
+	virtual void transition_start(float p);
+	virtual void transition_end();
 
 	// normally a fade is done if transitions are enabled, but these can be used instead
-	SHIM5_EXPORT void use_enlarge_transition(bool onoff);
-	SHIM5_EXPORT void use_shrink_transition(bool onoff);
-	SHIM5_EXPORT void use_slide_transition(bool onoff);
-	SHIM5_EXPORT void use_slide_vertical_transition(bool onoff);
+	void use_enlarge_transition(bool onoff);
+	void use_shrink_transition(bool onoff);
+	void use_slide_transition(bool onoff);
+	void use_slide_vertical_transition(bool onoff);
 
-	SHIM5_EXPORT void exit(); // call this to exit this GUI and remove it from shim::guis after transition and update()
+	void exit(); // call this to exit this GUI and remove it from shim::guis after transition and update()
 
-	SHIM5_EXPORT virtual void lost_device();
-	SHIM5_EXPORT virtual void found_device();
+	virtual void lost_device();
+	virtual void found_device();
 
-	SHIM5_EXPORT virtual void transition_in_done(); // called when transition in is done (only if transition is true)
+	virtual void transition_in_done(); // called when transition in is done (only if transition is true)
 
-	SHIM5_EXPORT void set_transition(bool transition);
+	void set_transition(bool transition);
 
 	// For 16 byte alignment to make glm::mat4 able to use SIMD
 
@@ -66,10 +66,10 @@ protected:
 	static bool started_transition_timer;
 	static Uint32 transition_start_time;
 
-	SHIM5_EXPORT void fade_transition(float p);
-	SHIM5_EXPORT void scale_transition(float scale);
-	SHIM5_EXPORT void slide_transition(float x);
-	SHIM5_EXPORT void slide_vertical_transition(float y);
+	void fade_transition(float p);
+	void scale_transition(float scale);
+	void slide_transition(float x);
+	void slide_vertical_transition(float y);
 
 	bool transition;
 	bool transitioning_in;

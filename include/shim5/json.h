@@ -40,58 +40,58 @@ public:
 
 		bool readonly; // devsettings can't modify it
 
-		SHIM5_EXPORT Node *find(std::string loc); // can search nested nodes by separating with >
+		Node *find(std::string loc); // can search nested nodes by separating with >
 
-		SHIM5_EXPORT std::string to_json(int indent = 0); // get the whole tree as a string in JSON format
+		std::string to_json(int indent = 0); // get the whole tree as a string in JSON format
 
-		SHIM5_EXPORT std::string as_string(); // removes quotes if any
+		std::string as_string(); // removes quotes if any
 		// these do not trim quotes before conversion, so e.g. "74" will not be correct
-		SHIM5_EXPORT int as_int();
-		SHIM5_EXPORT bool as_bool();
-		SHIM5_EXPORT double as_double();
-		SHIM5_EXPORT Uint8 as_byte();
+		int as_int();
+		bool as_bool();
+		double as_double();
+		Uint8 as_byte();
 
 		// If userdata is set, these expect it to be the correct type. these also call trigger->run if trigger != NULL
-		SHIM5_EXPORT void set_string(std::string s);
-		SHIM5_EXPORT void set_int(int i);
-		SHIM5_EXPORT void set_bool(bool b);
-		SHIM5_EXPORT void set_double(double f);
-		SHIM5_EXPORT void set_byte(Uint8 b);
+		void set_string(std::string s);
+		void set_int(int i);
+		void set_bool(bool b);
+		void set_double(double f);
+		void set_byte(Uint8 b);
 
-		SHIM5_EXPORT void set_type(Type t);
-		SHIM5_EXPORT void set_userdata(void *u);
+		void set_type(Type t);
+		void set_userdata(void *u);
 
-		SHIM5_EXPORT Type get_type();
-		SHIM5_EXPORT int size();
-		SHIM5_EXPORT std::string get_value();
+		Type get_type();
+		int size();
+		std::string get_value();
 
 		// sets type, userdata and value
-		SHIM5_EXPORT void set_type_string(void *userdata, std::string s);
-		SHIM5_EXPORT void set_type_int(void *userdata, int i);
-		SHIM5_EXPORT void set_type_bool(void *userdata, bool b);
-		SHIM5_EXPORT void set_type_double(void *userdata, double f);
-		SHIM5_EXPORT void set_type_byte(void *userdata, Uint8 b);
+		void set_type_string(void *userdata, std::string s);
+		void set_type_int(void *userdata, int i);
+		void set_type_bool(void *userdata, bool b);
+		void set_type_double(void *userdata, double f);
+		void set_type_byte(void *userdata, Uint8 b);
 
 		// returns value at loc of given type, sets type and userdata. If loc doesn't exist, it just returns the default value passed in and/or adds it if add is true
-		SHIM5_EXPORT std::string get_nested_string(std::string loc, void *userdata, std::string def, bool add = true, bool readonly = false);
-		SHIM5_EXPORT int get_nested_int(std::string loc, void *userdata, int def, bool add = true, bool readonly = false);
-		SHIM5_EXPORT bool get_nested_bool(std::string loc, void *userdata, bool def, bool add = true, bool readonly = false); double get_nested_double(std::string loc, void *userdata, double def, bool add = true, bool readonly = false);
-		SHIM5_EXPORT Uint8 get_nested_byte(std::string loc, void *userdata, Uint8 def, bool add = true, bool readonly = false);
+		std::string get_nested_string(std::string loc, void *userdata, std::string def, bool add = true, bool readonly = false);
+		int get_nested_int(std::string loc, void *userdata, int def, bool add = true, bool readonly = false);
+		bool get_nested_bool(std::string loc, void *userdata, bool def, bool add = true, bool readonly = false); double get_nested_double(std::string loc, void *userdata, double def, bool add = true, bool readonly = false);
+		Uint8 get_nested_byte(std::string loc, void *userdata, Uint8 def, bool add = true, bool readonly = false);
 
-		SHIM5_EXPORT void add_nested_string(std::string loc, void *userdata, std::string val, Trigger *trigger = NULL, bool readonly = false);
-		SHIM5_EXPORT void add_nested_int(std::string loc, void *userdata, int val, Trigger *trigger = NULL, bool readonly = false);
-		SHIM5_EXPORT void add_nested_bool(std::string loc, void *userdata, bool val, Trigger *trigger = NULL, bool readonly = false);
-		SHIM5_EXPORT void add_nested_double(std::string loc, void *userdata, double val, Trigger *trigger = NULL, bool readonly = false);
-		SHIM5_EXPORT void add_nested_byte(std::string loc, void *userdata, Uint8 val, Trigger *trigger = NULL, bool readonly = false);
-		SHIM5_EXPORT void add_nested_array(std::string loc);
-		SHIM5_EXPORT void add_nested_hash(std::string loc);
+		void add_nested_string(std::string loc, void *userdata, std::string val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_int(std::string loc, void *userdata, int val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_bool(std::string loc, void *userdata, bool val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_double(std::string loc, void *userdata, double val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_byte(std::string loc, void *userdata, Uint8 val, Trigger *trigger = NULL, bool readonly = false);
+		void add_nested_array(std::string loc);
+		void add_nested_hash(std::string loc);
 
-		SHIM5_EXPORT bool remove_child(Node *child, bool del = true); // del = delete also
+		bool remove_child(Node *child, bool del = true); // del = delete also
 
-		SHIM5_EXPORT void update_value(); // read value from userdata, store in value
+		void update_value(); // read value from userdata, store in value
 
-		SHIM5_EXPORT Node *clone(Node *parent);
-		SHIM5_EXPORT void merge(Node *n, Node *parent);
+		Node *clone(Node *parent);
+		void merge(Node *n, Node *parent);
 	
 	private:
 		Node *add_child(Node *child);
@@ -99,13 +99,13 @@ public:
 		void add_nested(std::string loc, Node *add); // doesn't check if node exists, just adds it
 	};
 
-	SHIM5_EXPORT JSON(std::string filename, bool load_from_filesystem = false);
-	SHIM5_EXPORT JSON(SDL_IOStream *file);
-	SHIM5_EXPORT JSON(bool array);
-	SHIM5_EXPORT ~JSON();
+	JSON(std::string filename, bool load_from_filesystem = false);
+	JSON(SDL_IOStream *file);
+	JSON(bool array);
+	~JSON();
 
-	SHIM5_EXPORT Node *get_root();
-	SHIM5_EXPORT bool remove(std::string loc, bool del = true);
+	Node *get_root();
+	bool remove(std::string loc, bool del = true);
 
 private:
 	void read(std::string filename, bool load_from_filesystem = false);

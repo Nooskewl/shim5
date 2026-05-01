@@ -33,7 +33,7 @@ Uint8 *decode_flac(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32
 	FLAC__StreamDecoderInitStatus init_status;
 
 	if((decoder = FLAC__stream_decoder_new()) == NULL) {
-		strcpy(errmsg, "Error allocating FLAC decoder.\n");
+		strcpy_s(errmsg, 1000, "Error allocating FLAC decoder.\n");
 		return nullptr;
 	}
 
@@ -47,14 +47,14 @@ Uint8 *decode_flac(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint32
 
 	init_status = FLAC__stream_decoder_init_stream(decoder, read_callback, nullptr, nullptr, nullptr, nullptr, write_callback, metadata_callback, error_callback, info);
 	if(init_status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
-		sprintf(errmsg, "Error initializing FLAC decoder: %s.\n", FLAC__StreamDecoderInitStatusString[init_status]);
+		snprintf(errmsg, 1000, "Error initializing FLAC decoder: %s.\n", FLAC__StreamDecoderInitStatusString[init_status]);
 		ok = false;
 	}
 
 	if(ok) {
 		ok = FLAC__stream_decoder_process_until_end_of_stream(decoder);
 		if (ok == false) {
-			sprintf(errmsg, "FLAC decoding failed: %s.\n", FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
+			snprintf(errmsg, 1000, "FLAC decoding failed: %s.\n", FLAC__StreamDecoderStateString[FLAC__stream_decoder_get_state(decoder)]);
 		}
 	}
 

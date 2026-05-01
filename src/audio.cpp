@@ -29,7 +29,6 @@ static bool format_is_signed;
 static bool format_should_be_swapped;
 static float min_sample;
 static float max_sample;
-static SDL_Mutex *mutex;
 
 static float swap_float(float f)
 {
@@ -349,8 +348,6 @@ bool static_start()
 	Sample::register_sample_loader("ogg", decode_vorbis);
 #endif
 
-	mutex = SDL_CreateMutex();
-
 	return true;
 }
 
@@ -444,8 +441,6 @@ void end()
 	music_buf = nullptr;
 	sfx_buf = nullptr;
 
-	SDL_DestroyMutex(mutex);
-
 	MML::static_stop();
 }
 
@@ -478,12 +473,12 @@ float calc_pan_right(float pan)
 
 void lock_mutex()
 {
-	SDL_LockMutex(mutex);
+	SDL_LockAudioStream(audio_stream);
 }
 
 void unlock_mutex()
 {
-	SDL_UnlockMutex(mutex);
+	SDL_UnlockAudioStream(audio_stream);
 }
 
 namespace internal {

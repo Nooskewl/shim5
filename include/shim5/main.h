@@ -22,6 +22,7 @@
 #endif
 
 #include <cctype>
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
@@ -36,7 +37,10 @@
 #include <vector>
 
 #include <sys/types.h>
+
+#ifdef __GNUC__
 #include <utime.h>
+#endif
 
 #include <windows.h>
 #include <GL/gl.h>

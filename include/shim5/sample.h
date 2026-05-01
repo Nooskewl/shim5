@@ -43,7 +43,7 @@ public:
 	static void pause_instance(Sample_Instance *s, bool onoff);
 	static bool sample_active(Sample_Instance *s);
 
-	SHIM5_EXPORT static void register_sample_loader(std::string ext, sample_loader func);
+	static void register_sample_loader(std::string ext, sample_loader func);
 
 	Sample(std::string filename, bool load_from_filesystem = false);
 	// S16LE constructor

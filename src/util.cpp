@@ -6,7 +6,6 @@
 #include "shim5/internal/util.h"
 
 #include <sys/stat.h>
-#include <sys/time.h>
 
 #include <shlobj.h>
 #include <dbghelp.h>
@@ -68,7 +67,7 @@ void flush_log_file()
 
 static void print_string_console(const char *string)
 {
-	OutputDebugString(string);
+	OutputDebugStringA(string);
 	printf("%s", string);
 }
 
@@ -108,7 +107,7 @@ bool static_start()
 {
 	if (shim::logging) {
 		std::string log_filename = get_appdata_dir() + "/log.txt";
-		log_file = fopen(log_filename.c_str(), "w");
+		fopen_s(&log_file, log_filename.c_str(), "w");
 	}
 
 	return true;
@@ -143,7 +142,7 @@ void errormsg(const char *fmt, ...)
 	else {
 		fmt2[0] = 0;
 	}
-	strcat(fmt2, fmt);
+	strcat_s(fmt2, len, fmt);
 	va_start(v, fmt);
 	vsnprintf(buf, sizeof(buf), fmt2, v);
 	internal::print_string(1, buf);
@@ -169,7 +168,7 @@ void infomsg(const char *fmt, ...)
 	else {
 		fmt2[0] = 0;
 	}
-	strcat(fmt2, fmt);
+	strcat_s(fmt2, len, fmt);
 	va_start(v, fmt);
 	vsnprintf(buf, sizeof(buf), fmt2, v);
 	internal::print_string(2, buf);
@@ -195,7 +194,7 @@ void debugmsg(const char *fmt, ...)
 	else {
 		fmt2[0] = 0;
 	}
-	strcat(fmt2, fmt);
+	strcat_s(fmt2, len, fmt);
 	va_start(v, fmt);
 	vsnprintf(buf, sizeof(buf), fmt2, v);
 	internal::print_string(3, buf);
@@ -221,7 +220,7 @@ void verbosemsg(const char *fmt, ...)
 	else {
 		fmt2[0] = 0;
 	}
-	strcat(fmt2, fmt);
+	strcat_s(fmt2, len, fmt);
 	va_start(v, fmt);
 	vsnprintf(buf, sizeof(buf), fmt2, v);
 	internal::print_string(4, buf);
@@ -448,13 +447,6 @@ Uint64 file_date(std::string filename)
 	else {
 		return -1;
 	}
-}
-
-time_t utc_secs()
-{
-	struct timeval tv;
-	gettimeofday(&tv, 0);
-	return tv.tv_sec;
 }
 
 void mkdir(std::string path)
@@ -919,8 +911,17 @@ std::string itos(int i)
 std::string get_standard_path(Path_Type type, bool create)
 {
 	if (type == SAVED_GAMES) {
-		std::string userprofile = getenv("USERPROFILE");
-		if (userprofile != "") {
+		std::string userprofile;
+		char *s;
+#ifdef __GNUC__
+		s = getenv("USERPROFILE");
+		if (s) {
+#else
+		size_t sz;
+		errno_t err = _dupenv_s(&s, &sz, "USERPROFILE");
+		if (err == 0) {
+#endif
+			userprofile = s;
 			userprofile += "\\Saved Games";
 			if (create) {
 				mkdir(userprofile);
@@ -949,7 +950,7 @@ std::string get_standard_path(Path_Type type, bool create)
 
 	char buf[MAX_PATH];
 
-	HRESULT result = SHGetFolderPath(
+	HRESULT result = SHGetFolderPathA(
 		//gfx::internal::gfx_context.hwnd,
 		nullptr,
 		i,
@@ -1068,8 +1069,8 @@ void printGLerror(const char *fmt, ...)
 		else {
 			fmt2[0] = 0;
 		}
-		strcat(fmt2, fmt);
-		strcat(fmt2, ".\n");
+		strcat_s(fmt2, len, fmt);
+		strcat_s(fmt2, len, ".\n");
 		va_start(v, fmt);
 		vsnprintf(buf, sizeof(buf), fmt2, v);
 		internal::print_string(3, buf);
@@ -1083,7 +1084,7 @@ void open_with_system(std::string filename)
 	if (gfx::internal::gfx_context.fullscreen) {
 		ShowWindow(gfx::internal::gfx_context.hwnd, SW_MINIMIZE);
 	}
-	ShellExecute(0, 0, filename.c_str(), 0, 0 , SW_SHOW);
+	ShellExecuteA(0, 0, filename.c_str(), 0, 0 , SW_SHOW);
 }
 
 void open_url(std::string url)

@@ -143,7 +143,6 @@ static bool create_stencil_buffer;
 static bool blending_enabled;
 static util::Size<int> minimum_window_size;
 static util::Size<int> maximum_window_size;
-static int press_and_hold_state;
 static util::Size<int> last_gui_size;
 static util::Size<int> last_screen_mode;
 static bool handled_lost;
@@ -1010,8 +1009,6 @@ bool static_start()
 	minimum_window_size = {-1, -1};
 	maximum_window_size = {-1, -1};
 
-	press_and_hold_state = -1;
-
 	last_gui_size = {-1, -1};
 
 	internal::gfx_context.work_image = 0;
@@ -1177,9 +1174,6 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 	}
 	if (maximum_window_size.w > 0) {
 		real_set_maximum_window_size(maximum_window_size);
-	}
-	if (press_and_hold_state >= 0) {
-		enable_press_and_hold(press_and_hold_state == 1);
 	}
 
 	internal::handle_found_device(true, true);
@@ -1601,17 +1595,27 @@ void flip()
 {
 	if (shim::take_screenshot) {
 		shim::take_screenshot = false;
-		char *home = getenv("USERPROFILE");
-		if (home == nullptr || home[0] == 0) {
+		char *home;
+#ifdef __GNUC__
+		home = getenv("USERPROFILE");
+		if (home == nullptr) {
 			home = getenv("HOME");
 		}
+#else
+		size_t len;
+		errno_t err = _dupenv_s(&home, &len, "USERPROFILE");
+		if (err) {
+			_dupenv_s(&home, &len, "HOME");
+		}
+#endif
 		if (home != nullptr) {
 			char fn[1000];
 			int n = 0;
 			for (; n < 1000000; n++) {
 				snprintf(fn, 1000, "%s/shim-screenshot-%06d.png", home, n);
-				FILE *f = fopen(fn, "r");
-				if (f == nullptr) {
+				FILE *f;
+				errno_t err = fopen_s(&f, fn, "r");
+				if (err) {
 					break;
 				}
 				else {
@@ -1959,7 +1963,7 @@ int load_palette(std::string name, SDL_Color *out, int out_size)
 			continue;
 		}
 		int red, green, blue;
-		if (sscanf(line, "%d %d %d", &red, &green, &blue) == 3) {
+		if (sscanf_s(line, "%d %d %d", &red, &green, &blue) == 3) {
 			out[colour_count].r = red;
 			out[colour_count].g = green;
 			out[colour_count].b = blue;
@@ -2490,38 +2494,6 @@ int get_max_comfortable_scale(util::Size<int> scaled_size)
 	int nh = h / scaled_size.h;
 
 	return MIN(nw, nh);
-}
-
-bool enable_press_and_hold(bool enable)
-{
-	press_and_hold_state = enable ? 1 : 0;
-
-	// Toggle the press and hold gesture for the given window
-	// See: https://msdn.microsoft.com/en-us/library/ms812373.aspx
-
-	// The atom identifier and Tablet PC atom
-	ATOM atomID = 0;
-	LPCTSTR tabletAtom = "MicrosoftTabletPenServiceProperty";
-
-	// Get the Tablet PC atom ID
-	atomID = GlobalAddAtom(tabletAtom);
-
-	// If getting the ID failed, return false
-	if (atomID == 0) {
-		return false;
-	}
-
-	// Enable or disable the press and hold gesture
-	if (enable) {
-		// Try to enable press and hold gesture by 
-		// clearing the window property, return the result
-		return RemoveProp(internal::gfx_context.hwnd, tabletAtom) != 0;
-	}
-	else {
-		// Try to disable press and hold gesture by 
-		// setting the window property, return the result
-		return SetProp(internal::gfx_context.hwnd, tabletAtom, (HANDLE)1) != 0;
-	}
 }
 
 bool is_fullscreen()

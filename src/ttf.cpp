@@ -1,5 +1,3 @@
-#ifdef USE_TTF
-
 #include "shim5/gfx.h"
 #include "shim5/image.h"
 #include "shim5/shader.h"
@@ -255,5 +253,3 @@ void TTF::set_smooth(bool smooth)
 } // End namespace gfx
 
 } // End namespace noo
-
-#endif // USE_TTF

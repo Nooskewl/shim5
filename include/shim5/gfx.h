@@ -156,8 +156,6 @@ void SHIM5_EXPORT set_screen_size(util::Size<int> size);
 
 int SHIM5_EXPORT get_max_comfortable_scale(util::Size<int> scaled_size);
 
-bool SHIM5_EXPORT enable_press_and_hold(bool enable);
-
 bool SHIM5_EXPORT is_fullscreen();
 bool SHIM5_EXPORT is_real_fullscreen();
 bool SHIM5_EXPORT is_fullscreen_window();

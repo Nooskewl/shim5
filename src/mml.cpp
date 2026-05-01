@@ -1598,6 +1598,7 @@ void MML::Track::stop_wavs()
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Sample_Instance *instance = wav_starts[i].instance;
 		if (instance != 0) {
+			wav_starts[i].instance->mml = nullptr;
 			Sample::stop_instance(instance);
 			wav_starts[i].instance = 0;
 		}
@@ -1824,7 +1825,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		if ((tmppos = tmp.find(';', 0)) != std::string::npos) {
 			tmp = tmp.substr(0, tmppos);
 		}
-		strcpy(buf, tmp.c_str());
+		strcpy_s(buf, 1000, tmp.c_str());
 		int pos = 0;
 		std::string tok = token(buf, &pos);
 		if (tok[0] >= 'A' && tok[0] <= 'Z') {
@@ -2620,8 +2621,6 @@ MML::~MML()
 		}
 	}
 
-	audio::unlock_mutex();
-
 	for (size_t i =  0; i < tracks.size(); i++) {
 		delete tracks[i];
 	}
@@ -2636,10 +2635,14 @@ MML::~MML()
 		}
 	}
 
-	for (size_t i = 0; i < mml_data->track_data.size(); i++) {
-		delete mml_data->track_data[i];
+	while (mml_data->track_data.size() > 0) {
+		audio::MML::Track_Data *d = mml_data->track_data.back();
+		mml_data->track_data.pop_back();
+		delete d;
 	}
 	delete mml_data;
+	
+	audio::unlock_mutex();
 }
 
 Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_callback, void *finished_callback_data)

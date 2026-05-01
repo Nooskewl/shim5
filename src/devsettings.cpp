@@ -175,10 +175,10 @@ std::string DevSettings_NumGetter_GUI::get_character_text()
 
 	char buf[100];
 
-	sprintf(buf, "|%02x", white);
+	snprintf(buf, 100, "|%02x", white);
 	std::string white_s = util::uppercase(buf);
 
-	sprintf(buf, "|%02x", highlight);
+	snprintf(buf, 100, "|%02x", highlight);
 	std::string highlight_s = util::uppercase(buf);
 
 	std::string letters;

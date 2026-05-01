@@ -14,41 +14,41 @@ class JSON;
 
 class SHIM5_EXPORT Error {
 public:
-	SHIM5_EXPORT Error();
-	SHIM5_EXPORT Error(std::string error_message);
-	SHIM5_EXPORT virtual ~Error();
+	Error();
+	Error(std::string error_message);
+	virtual ~Error();
 	
 	std::string error_message;
 };
 
 class SHIM5_EXPORT MemoryError : public Error {
 public:
-	SHIM5_EXPORT MemoryError(std::string error_message);
-	SHIM5_EXPORT virtual ~MemoryError();
+	MemoryError(std::string error_message);
+	virtual ~MemoryError();
 };
 
 class SHIM5_EXPORT LoadError : public Error {
 public:
-	SHIM5_EXPORT LoadError(std::string error_message);
-	SHIM5_EXPORT virtual ~LoadError();
+	LoadError(std::string error_message);
+	virtual ~LoadError();
 };
 
 class SHIM5_EXPORT FileNotFoundError : public Error {
 public:
-	SHIM5_EXPORT FileNotFoundError(std::string error_message);
-	SHIM5_EXPORT virtual ~FileNotFoundError();
+	FileNotFoundError(std::string error_message);
+	virtual ~FileNotFoundError();
 };
 
 class SHIM5_EXPORT ParseError : public Error {
 public:
-	SHIM5_EXPORT ParseError(std::string error_message);
-	SHIM5_EXPORT virtual ~ParseError();
+	ParseError(std::string error_message);
+	virtual ~ParseError();
 };
 
 class SHIM5_EXPORT GLError : public Error {
 public:
-	SHIM5_EXPORT GLError(std::string error_message);
-	SHIM5_EXPORT virtual ~GLError();
+	GLError(std::string error_message);
+	virtual ~GLError();
 };
 
 enum Path_Type {
@@ -166,8 +166,6 @@ char SHIM5_EXPORT *slurp_file(std::string filename, int *sz);
 char SHIM5_EXPORT *slurp_file_from_filesystem(std::string filename, int *sz);
 
 Uint64 SHIM5_EXPORT file_date(std::string filename);
-
-time_t SHIM5_EXPORT utc_secs();
 
 void SHIM5_EXPORT printGLerror(const char *fmt, ...);
 #ifdef DEBUG

@@ -396,8 +396,9 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 
 bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba)
 {
-	FILE *fp = fopen(filename.c_str(), "wb");
-	if (!fp) {
+	FILE *fp;
+	errno_t err = fopen_s(&fp, filename.c_str(), "wb");
+	if (err) {
 		return false;
 	}
 

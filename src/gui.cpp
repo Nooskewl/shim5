@@ -343,7 +343,7 @@ int popup(std::string caption, std::string text, Popup_Type type)
 	else {
 		return -1;
 	}
-	int ret = MessageBox(gfx::internal::gfx_context.hwnd, text.c_str(), caption.c_str(), native_type);
+	int ret = MessageBoxA(gfx::internal::gfx_context.hwnd, text.c_str(), caption.c_str(), native_type);
 	int result;
 	if (type == OK) {
 		result = 0;
@@ -378,11 +378,11 @@ int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_e
 	shim::argc = 3;
 	shim::argv = new char *[shim::argc];
 	shim::argv[0] = new char[2];
-	strcpy(shim::argv[0], "x");
+	strcpy_s(shim::argv[0], 2, "x");
 	shim::argv[1] = new char[10];
-	strcpy(shim::argv[1], "+windowed");
+	strcpy_s(shim::argv[1], 10, "+windowed");
 	shim::argv[2] = new char[8];
-	strcpy(shim::argv[2], "+opengl");
+	strcpy_s(shim::argv[2], 8, "+opengl");
 
 	try {
 		gfx::restart(1280, 720, false, 1280, 720);

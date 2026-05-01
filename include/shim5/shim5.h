@@ -26,9 +26,7 @@
 #include "shim5/tilemap.h"
 #include "shim5/translation.h"
 #include "shim5/trigger.h"
-#ifdef USE_TTF
 #include "shim5/ttf.h"
-#endif
 #include "shim5/util.h"
 #include "shim5/vertex_cache.h"
 #include "shim5/vorbis.h"

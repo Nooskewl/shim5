@@ -161,7 +161,7 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
             if(bytes<4096)break;
 
             /* error case.  Must not be Vorbis data */
-            strcpy(errmsg,"Input does not appear to be an Ogg bitstream.\n");
+            strcpy_s(errmsg, 1000, "Input does not appear to be an Ogg bitstream.\n");
             return 0;
         }
 
@@ -181,19 +181,19 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
         vorbis_comment_init(&vc);
         if(ogg_stream_pagein(&os,&og)<0){ 
             /* error; stream version mismatch perhaps */
-            strcpy(errmsg,"Error reading first page of Ogg bitstream data.\n");
+            strcpy_s(errmsg, 1000, "Error reading first page of Ogg bitstream data.\n");
             return 0;
         }
 
         if(ogg_stream_packetout(&os,&op)!=1){ 
             /* no page? must not be vorbis */
-            strcpy(errmsg,"Error reading initial header packet.\n");
+            strcpy_s(errmsg, 1000, "Error reading initial header packet.\n");
             return 0;
         }
 
         if(vorbis_synthesis_headerin(&vi,&vc,&op)<0){ 
             /* error case; not a vorbis header */
-            strcpy(errmsg,"This Ogg bitstream does not contain Vorbis "
+            strcpy_s(errmsg, 1000, "This Ogg bitstream does not contain Vorbis "
                     "audio data.\n");
             return 0;
         }
@@ -225,12 +225,12 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
                         if(result<0){
                             /* Uh oh; data at some point was corrupted or missing!
                                We can't tolerate that in a header.  Die. */
-                            strcpy(errmsg,"Corrupt secondary header.  Exiting.\n");
+                            strcpy_s(errmsg, 1000, "Corrupt secondary header.  Exiting.\n");
                             return 0;
                         }
                         result=vorbis_synthesis_headerin(&vi,&vc,&op);
                         if(result<0){
-                            strcpy(errmsg,"Corrupt secondary header.  Exiting.\n");
+                            strcpy_s(errmsg, 1000, "Corrupt secondary header.  Exiting.\n");
                             return 0;
                         }
                         i++;
@@ -241,7 +241,7 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
             buffer=ogg_sync_buffer(&oy,4096);
             bytes=(int)SDL_ReadIO(file,buffer,4096);
             if(bytes==0 && i<2){
-                strcpy(errmsg,"End of file before finding all Vorbis headers!\n");
+                strcpy_s(errmsg, 1000, "End of file before finding all Vorbis headers!\n");
                 return 0;
             }
             ogg_sync_wrote(&oy,bytes);
@@ -279,7 +279,7 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
                     int result=ogg_sync_pageout(&oy,&og);
                     if(result==0)break; /* need more data */
                     if(result<0){ /* missing or corrupt data at this page position */
-                        strcpy(errmsg,"Corrupt or missing data in bitstream; "
+                        strcpy_s(errmsg, 1000, "Corrupt or missing data in bitstream; "
                                 "continuing...\n");
                     }else{
                         ogg_stream_pagein(&os,&og); /* can safely ignore errors at
@@ -380,7 +380,7 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
             vorbis_block_clear(&vb);
             vorbis_dsp_clear(&vd);
         }else{
-            strcpy(errmsg,"Error: Corrupt header during playback initialization.\n");
+            strcpy_s(errmsg, 1000, "Error: Corrupt header during playback initialization.\n");
         }
 
         *size = decoded_size;
@@ -398,7 +398,7 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
     /* OK, clean up the framer */
     ogg_sync_clear(&oy);
 
-    strcpy(errmsg,"Done.\n");
+    strcpy_s(errmsg, 1000, "Done.\n");
 
     spec->format = SDL_AUDIO_S16LE; // FIXME!
 
