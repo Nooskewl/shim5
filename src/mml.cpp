@@ -287,83 +287,85 @@ int MML::Track::update(float *buf, int length)
 			buffer_fulfilled += samples;
 			sample += samples;
 		}
-		int to_generate = length_in_samples - note_fulfilled;
-		int left_in_buffer = length - buffer_fulfilled;
-		if (left_in_buffer < to_generate) {
-			to_generate = left_in_buffer;
-		}
-		generate(buf + buffer_fulfilled * internal::audio_context.device_spec.channels, to_generate, t, tok.c_str(), octave);
-		t += to_generate;
-		buffer_fulfilled += to_generate;
-		bool get_next_note = false;
-		if (note_fulfilled >= length_in_samples) {
-			get_next_note = true;
-		}
-		if (get_next_note) {
-			const char *text_cstr = text.c_str();
-
-			std::string last_tok = tok;
-
-			tok = next_note(text_cstr, &pos);
-
-			if (tok[0] != 0) {
-				t = 0;
+		else {
+			int to_generate = length_in_samples - note_fulfilled;
+			int left_in_buffer = length - buffer_fulfilled;
+			if (left_in_buffer < to_generate) {
+				to_generate = left_in_buffer;
 			}
+			generate(buf + buffer_fulfilled * internal::audio_context.device_spec.channels, to_generate, t, tok.c_str(), octave);
+			t += to_generate;
+			buffer_fulfilled += to_generate;
+			bool get_next_note = false;
+			if (note_fulfilled >= length_in_samples) {
+				get_next_note = true;
+			}
+			if (get_next_note) {
+				const char *text_cstr = text.c_str();
 
-			note++;
+				std::string last_tok = tok;
 
-			if (tok[0] == 0) {
-				note--;
-				if (padded) {
-					if (loop) {
-						int save = buffer_fulfilled;
-						reset(buffer_fulfilled);
-						buffer_fulfilled = save;
-						if (finished_callback) {
-							internal::audio_callbacks.push_back(finished_callback);
-							internal::audio_callback_data.push_back(finished_callback_data);
+				tok = next_note(text_cstr, &pos);
+
+				if (tok[0] != 0) {
+					t = 0;
+				}
+
+				note++;
+
+				if (tok[0] == 0) {
+					note--;
+					if (padded) {
+						if (loop) {
+							int save = buffer_fulfilled;
+							reset(buffer_fulfilled);
+							buffer_fulfilled = save;
+							if (finished_callback) {
+								internal::audio_callbacks.push_back(finished_callback);
+								internal::audio_callback_data.push_back(finished_callback_data);
+							}
+						}
+						else {
+							// Silence at the end, don't need to do anything
+							if (loop == false) {
+								// don't 'stop' reverb tracks which would reset them, just set them done for mix to clean up
+								std::string tag = "@X";
+								if (text.find(tag) == std::string::npos) {
+									stop();
+								}
+							}
+							// reset (stop?) above sets done to false
+							done = true;
+
+							if (finished_callback) {
+								internal::audio_callbacks.push_back(finished_callback);
+								internal::audio_callback_data.push_back(finished_callback_data);
+							}
+
+							return buffer_fulfilled;
 						}
 					}
 					else {
-						// Silence at the end, don't need to do anything
-						if (loop == false) {
-							// don't 'stop' reverb tracks which would reset them, just set them done for mix to clean up
+						if (use_mml_loops) {
 							std::string tag = "@X";
 							if (text.find(tag) == std::string::npos) {
-								stop();
+								mml_loops--;
 							}
+							// FIXME:
+							//if (mml_loops < num_tracks) loop = false; else loop = true;
+							if (mml_loops < num_tracks) exit(0); else loop = true;
 						}
-						// reset (stop?) above sets done to false
-						done = true;
-
-						if (finished_callback) {
-							internal::audio_callbacks.push_back(finished_callback);
-							internal::audio_callback_data.push_back(finished_callback_data);
-						}
-
-						return buffer_fulfilled;
+						length_in_samples = pad;
+						tok = "r";
+						padded = true;
 					}
 				}
 				else {
-					if (use_mml_loops) {
-						std::string tag = "@X";
-						if (text.find(tag) == std::string::npos) {
-							mml_loops--;
-						}
-						// FIXME:
-						//if (mml_loops < num_tracks) loop = false; else loop = true;
-						if (mml_loops < num_tracks) exit(0); else loop = true;
-					}
-					length_in_samples = pad;
-					tok = "r";
-					padded = true;
+					length_in_samples = notelength(tok.c_str(), text_cstr, &pos);
 				}
+				note_fulfilled = 0;
+				note_start = sample;
 			}
-			else {
-				length_in_samples = notelength(tok.c_str(), text_cstr, &pos);
-			}
-			note_fulfilled = 0;
-			note_start = sample;
 		}
 	}
 
@@ -534,7 +536,7 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 			int delay = tinterp->get_value();
 			// convert from MS to samples
 			delay *= internal::audio_context.device_spec.freq / 1000.0f;
-			delay += buffer_fulfilled;
+			//delay += buffer_fulfilled;
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			std::vector<Wav_Start> w; // dummy
@@ -1849,7 +1851,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	std::vector<float> prev_tempo;
 	std::vector<int> prev_note_start;
 	std::vector<int> note_end;
-	std::vector<Wav_Start> wav_starts;
+	std::vector< std::vector<Wav_Start> > wav_starts;
 	std::vector<int> wav_sample;
 	std::vector<bool> stretch_wavs;
 	std::vector<Reverb_Type> reverb_types;
@@ -1893,6 +1895,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 				dutycycles[dutycycles.size()-1].push_back(std::pair<int, float>(0, 128.0f/255.0f));
 				pans.push_back(std::vector< std::pair<int, float> >());
 				pans[pans.size()-1].push_back(std::pair<int, float>(0, 0.0f));
+				wav_starts.push_back(std::vector<Wav_Start>());
 				hybrids.push_back(std::vector< std::pair<int, float> >());
 				hybrids[hybrids.size()-1].push_back(std::pair<int, float>(0, -1));
 				tempos.push_back(std::vector< std::pair<int, float> >());
@@ -2259,7 +2262,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 								}
 							}
 							if (wav_sample[track] >= 0 && (tok[0] >= 'a' && tok[0] <= 'g')) {
-								if (wav_starts.size() == 0 || wav_starts[wav_starts.size()-1].sample != wav_sample[track] || wav_starts[wav_starts.size()-1].play_start != (Uint32)save) { // avoid duplicates
+								if (wav_starts[track].size() == 0 || wav_starts[track][wav_starts[track].size()-1].sample != wav_sample[track] || wav_starts[track][wav_starts[track].size()-1].play_start != (Uint32)save) { // avoid duplicates
 									Wav_Start w;
 									w.sample = wav_sample[track];
 									w.orig_play_start = save;
@@ -2283,7 +2286,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 									w.length = stretch_wavs[track] ? total : 0;
 									w.instance = 0;
 									w.volume = prev_volumes[track];
-									wav_starts.push_back(w);
+									wav_starts[track].push_back(w);
 								}
 							}
 							//if (tok[0] != 'r') {
@@ -2645,7 +2648,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 		t->pans = pans[i];
 		t->hybrids = hybrids[i];
 		t->tempos = tempos[i];
-		t->wav_starts = i == 0 ? wav_starts : w;
+		t->wav_starts = wav_starts[i];
 		t->beginning_silence = 0;
 		t->pad = longest-sample[i];
 		t->stretch_wavs = stretch_wavs[i];
