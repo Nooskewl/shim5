@@ -411,12 +411,14 @@ bool start()
 		}
 
 		//util::infomsg("Audio format=0x%x, frequency=%d Hz\n", format, internal::audio_context.device_spec.freq);
-
-		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio_stream));
 	}
 
 	music_buf = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
 	sfx_buf = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
+
+	if (internal::audio_context.mute == false) {
+		SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio_stream));
+	}
 
 	MML::static_start(); // this can't go in audio::static_start because it needs some device info
 

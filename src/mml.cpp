@@ -153,7 +153,9 @@ void MML::static_start()
 
 	tmp = new float[SHIM_AUDIO_BUFFER_SIZE*internal::audio_context.device_spec.channels];
 
+	audio::lock_mutex();
 	loaded_mml.clear();
+	audio::unlock_mutex();
 }
 
 void MML::static_stop()
