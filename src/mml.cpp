@@ -441,7 +441,10 @@ int MML::Track::update(float *buf, int length)
 					length_in_samples = notelength(tok.c_str(), text_cstr, &pos);
 				}
 				note_fulfilled = 0;
-				note_start = sample;
+
+				if (tok[0] != 'r') {
+					note_start = sample;
+				}
 			}
 		}
 	}
@@ -1374,19 +1377,14 @@ float MML::Track::get_sample_volume()
 	if (h < 0 || h >= wav_samples.size()) {
 		return 1.0f;
 	}
-	float p;
-	int length;
-	if (stretch_wavs) {
-		p = (float)note_fulfilled / length_in_samples;
-		length = wav_samples[h]->get_length();
-	}
-	else {
-		length = ((float)wav_samples[h]->get_length() * ((float)audio::internal::audio_context.device_spec.freq / wav_samples[h]->get_spec()->freq));
-		p = ((float)(sample - note_start)) / (float)length;
+	int length = wav_samples[h]->get_length();
+	float p = ((float)(sample - note_start)) / (float)length;
+	if (p < 0.0f || p > 1.0f) {
+		return 1.0f;
 	}
 	int gsv = gsvol;
 	gsvol++;
-	int samp = MIN(length-1, p * length);
+	int samp = MIN(length-wav_samples[h]->get_spec()->channels, p * length);
 	if (wav_samples[h]->get_spec()->format == SDL_AUDIO_S16LE) {
 		if (wav_samples[h]->get_spec()->channels == 1) {
 			return ((Sint16 *)(wav_samples[h]->get_data()))[samp]/32768.0f;
