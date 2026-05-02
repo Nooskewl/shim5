@@ -469,7 +469,10 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
 		w.played = false;
-		w.play_start = w.orig_play_start;
+		if (ignore_tempo_changes == false) {
+			w.play_start = w.orig_play_start;
+		}
+		//w.instance = nullptr;
 	}
 
 	wav_sample = -1;
@@ -1543,11 +1546,22 @@ void MML::Track::real_set_tempo(int bpm)
 		return;
 	}
 	float p = tempo / (float)bpm;
-	sample *= p;
+	//sample *= p;
 	tempo = bpm;
 	for (size_t i = 0; i < wav_starts.size(); i++) {
 		Wav_Start &w = wav_starts[i];
-		float p = w.tempo / (float)bpm;
+		if (w.instance == nullptr) {
+			float p = (float)w.tempo / tempo;
+			w.play_start = w.orig_play_start * p;
+		}
+		else {
+			if (w.length == 0) {
+				float p = (float)w.tempo / tempo;
+				float p2 = (float)internal::audio_context.device_spec.freq / wav_samples[w.sample]->get_spec()->freq;
+				int length = wav_samples[w.sample]->get_length() * p2;
+				w.instance->play_length = length * p;
+			}
+		}
 	}
 }
 

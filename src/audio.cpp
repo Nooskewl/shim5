@@ -172,7 +172,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 
 	Uint8 *stream = SDL_stack_alloc(Uint8, additional_amount);
 
-	int samples = additional_amount / format_bytes / audio::internal::audio_context.device_spec.channels; // 2 channels -- will be repeated to make stereo
+	int samples = additional_amount / format_bytes / audio::internal::audio_context.device_spec.channels;
 
 	for (int i = 0; i < samples*audio::internal::audio_context.device_spec.channels; i++) {
 		music_buf[i] = 0.0f;
@@ -264,9 +264,12 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 					audio::internal::audio_callbacks.push_back(s->finished_callback);
 					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
 				}
-				it++; // erase causes leak
-				//it = audio::internal::audio_context.playing_samples.erase(it);
-				//delete s;
+				//it++; // erase causes leak
+				it = audio::internal::audio_context.playing_samples.erase(it);
+				if (s->mml) {
+					s->mml->delete_wavs(s);
+				}
+				delete s;
 											      
 			}
 			else {
