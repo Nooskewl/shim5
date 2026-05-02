@@ -354,8 +354,6 @@ void MML::Track::pause(bool onoff)
 	else {
 		playing = true;
 
-		this->loop = loop;
-
 		stop_wavs();
 	}
 }
