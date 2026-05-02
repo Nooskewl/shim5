@@ -144,7 +144,6 @@ static bool blending_enabled;
 static util::Size<int> minimum_window_size;
 static util::Size<int> maximum_window_size;
 static util::Size<int> last_gui_size;
-static util::Size<int> last_screen_mode;
 static bool handled_lost;
 static float screen_shake_amount;
 static Uint32 screen_shake_end;
@@ -1013,8 +1012,6 @@ bool static_start()
 
 	internal::gfx_context.work_image = 0;
 
-	last_screen_mode = {-1, -1};
-	
 	handled_lost = false;
 
 	Shader::static_start();
@@ -1181,8 +1178,6 @@ bool restart(int scaled_w, int scaled_h, bool force_integer_scaling, int window_
 	set_window_icon();
 
 	SDL_PumpEvents(); // without this the icon doesn't appear until the event loop starts
-
-	last_screen_mode = {-1, -1};
 
 	SDL_LockMutex(gfx::internal::gfx_context.draw_mutex);
 	internal::gfx_context.restarting = false;
@@ -1631,72 +1626,6 @@ void flip()
 					}
 					delete[] data;
 				}
-			}
-		}
-	}
-
-	// Handle screen orientation changes on desktop
-	if (internal::gfx_context.fullscreen && internal::gfx_context.restarting == false) {
-		int flags = SDL_GetWindowFlags(internal::gfx_context.window);
-		if (flags & SDL_WINDOW_INPUT_FOCUS) {
-			SDL_DisplayMode m;
-			if (internal::My_SDL_GetCurrentDisplayMode(0, &m) == 0) {
-				if (last_screen_mode.w > 0 && (m.w != last_screen_mode.w || m.h != last_screen_mode.h)) {
-					int w = m.w;
-					int h = m.h;
-					// If the screen was rotated 90/270 degrees, try to find an exact inverse of the current mode and use that if possible
-					if ((w > h) != (shim::real_screen_size.w > shim::real_screen_size.h)) {
-						std::vector< util::Size<int> > modes = get_supported_video_modes();
-						for (size_t i = 0; i < modes.size(); i++) {
-							if (modes[i].h == shim::real_screen_size.h && modes[i].w == shim::real_screen_size.w) {
-								w = modes[i].h;
-								h = modes[i].w;
-								break;
-							}
-						}
-					}
-					if (w != shim::real_screen_size.w || h != shim::real_screen_size.h) {
-						char **bak_argv = shim::argv;
-						int bak_argc = shim::argc;
-						int count = shim::argc + 1;
-						if (util::check_args(shim::argc, shim::argv, "+width") <= 0) {
-							count += 2;
-						}
-						if (util::check_args(shim::argc, shim::argv, "+height") <= 0) {
-							count += 2;
-						}
-						char **args = (char **)malloc(count * sizeof(char *));
-						int j = 0;
-						for (int i = 0; i < shim::argc; i++) {
-							if (!strcmp(shim::argv[i], "+width")) {
-								// skip an extra for number
-								i++;
-							}
-							else if (!strcmp(shim::argv[i], "+height")) {
-								// skip an extra for number
-								i++;
-							}
-							else {
-								args[j++] = strdup(shim::argv[i]);
-							}
-						}
-						args[j++] = strdup("+width");
-						args[j++] = strdup(util::itos(w).c_str());
-						args[j++] = strdup("+height");
-						args[j++] = strdup(util::itos(h).c_str());
-						args[j++] = strdup("+fullscreen");
-						shim::argv = args;
-						shim::argc = count;
-						restart(scaled_w, scaled_h, force_integer_scaling, w, h);
-						for (int i = 0; i < count; i++) {
-							free(args[i]);
-						}
-						free(args);
-						shim::argv = bak_argv;
-						shim::argc = bak_argc;
-					}
-				}
-				last_screen_mode = {m.w, m.h};
 			}
 		}
 	}
