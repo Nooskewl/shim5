@@ -292,15 +292,11 @@ MML::Track::Track(int num, Uint32 id, Wave_Type type, std::string text, std::vec
 			int delay = tinterp->get_value();
 			// convert from MS to samples
 			delay *= internal::audio_context.device_spec.freq / 1000.0f;
-			//delay += buffer_fulfilled;
 			vinterp->interpolate(1);
 			float v = vinterp->get_value()/255.0f;
 			Track *t = new Track(num, id, type, new_text, volumes, volume_offsets, pitches, pitch_offsets, pitch_envelopes, pitch_offset_envelopes, dutycycles, pad, wav_samples, wav_starts, delay, mml, reverb_types, pans, pan, hybrids, stretch_wavs, tempos);
 			t->set_master_volume(v/rt.reverberations);
 			mml->reverb_tracks.push_back(t);
-			if (playing) {
-				t->play(play_volume, false);
-			}
 		}
 		_used_reverb = rt.reverberations;
 		delete tinterp;
@@ -368,7 +364,7 @@ int MML::Track::update(float *buf, int length)
 
 	while (buffer_fulfilled < length) {
 		if (sample < 0) {
-			int samples = MIN(length, -sample);
+			int samples = -sample;
 			samples = MIN(samples, length - buffer_fulfilled);
 			buffer_fulfilled += samples;
 			sample += samples;
@@ -473,9 +469,13 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 		//w.instance = nullptr;
 	}
 
+	old_tempo = 120;
+	sample_dec = 0;
+
 	wav_sample = -1;
 	// some of this stuff must be before the 'next_note' call below
 	sample = beginning_silence > 0 ? -int(beginning_silence) : 0;
+	beginning_silence = 0;
 	reset_time = 0;
 	curve_volume = 0;
 	curve_pitch = 0;
@@ -519,9 +519,6 @@ void MML::Track::reset(Uint32 buffer_fulfilled)
 	same_sections_o = 0;
 	last_noise = 0.0f;
 	last_noise2 = 0.0f;
-
-	old_tempo = 120;
-	sample_dec = 0;
 
 	// stuff for fading first two/last 2.x phases
 	//--
