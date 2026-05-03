@@ -402,10 +402,6 @@ int MML::Track::update(float *buf, int length)
 							int save = buffer_fulfilled;
 							reset(buffer_fulfilled);
 							buffer_fulfilled = save;
-							if (finished_callback) {
-								internal::audio_callbacks.push_back(finished_callback);
-								internal::audio_callback_data.push_back(finished_callback_data);
-							}
 						}
 						else {
 							// Silence at the end, don't need to do anything
