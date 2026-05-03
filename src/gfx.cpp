@@ -775,21 +775,23 @@ static void end_video()
 static void set_window_icon()
 {
 	util::Size<int> size;
-	unsigned char *pixels;
+	unsigned char* pixels = nullptr;
 	try {
 		int h = 16;
 		std::string filename = std::string("gfx/images/misc/icon") + util::itos(h) + ".png";
 		pixels = Image::load_image(filename, size);
 	}
-	catch (util::Error &e) {
+	catch (util::Error& e) {
 		util::infomsg(e.error_message + "\n");
 		return;
 	}
 
-	unsigned char *flip_buf;
-	icon_small = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8 *)pixels, size, 0, 0, false);
-	SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICONSM, (LONG_PTR)icon_small);
-	delete[] pixels;
+	if (pixels != nullptr) {
+		unsigned char* flip_buf;
+		icon_small = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8*)pixels, size, 0, 0, false);
+		SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICONSM, (LONG_PTR)icon_small);
+		delete[] pixels;
+	}
 
 	try {
 		// Get taskbar height to find a suitable icon size... we pick the nearest value less than the
@@ -841,8 +843,10 @@ static void set_window_icon()
 		}
 	}
 
-	icon_big = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8 *)pixels, size, 0, 0, false);
-	SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICON, (LONG_PTR)icon_big);
+	if (pixels != nullptr) {
+		icon_big = internal::win_create_icon(internal::gfx_context.hwnd, (Uint8*)pixels, size, 0, 0, false);
+		SetClassLongPtr(internal::gfx_context.hwnd, GCLP_HICON, (LONG_PTR)icon_big);
+	}
 
 	delete[] pixels;
 }
