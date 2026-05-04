@@ -11,9 +11,7 @@
 
 #include "shim5/internal/gfx.h"
 
-#ifdef USE_PNG
 #include <png.h>
-#endif
 
 using namespace noo;
 
@@ -83,10 +81,8 @@ void Image::register_image_saver(std::string ext, image_saver func)
 
 void Image::static_start()
 {
-#ifdef USE_PNG
 	register_image_loader("png", read_png);
 	register_image_saver("png", save_png);
-#endif
 	register_image_loader("tga", read_tga);
 	register_image_saver("tga", save_tga);
 
@@ -132,7 +128,6 @@ void Image::audit()
 {
 }
 
-#ifdef USE_PNG
 /* loadpng, Allegro wrapper routines for libpng
  * by Peter Wang (tjaden@users.sf.net).
  *
@@ -486,7 +481,6 @@ bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> 
 
 	return true;
 }
-#endif
 
 // returns true if pixel is transparent
 bool Image::merge_bytes(unsigned char *pixel, unsigned char *p, int bytes, TGA_Header *header, bool *alpha)
@@ -1198,13 +1192,10 @@ bool Image::save(std::string filename)
 {
 	bool _save_rgba = internal->has_alpha || save_rgba; // FIXME: should be able to force NOT saving RGBA
 
-#ifdef USE_PNG	
 	if (filename.find(".png") != std::string::npos) {
 		return save_png(filename, internal->loaded_data, size, _save_rgba);
 	}
-	else
-#endif
-	{
+	else {
 		return save_tga(filename, internal->loaded_data, size, _save_rgba);
 	}
 }

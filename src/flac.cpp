@@ -1,5 +1,3 @@
-#ifdef USE_FLAC
-
 #include "shim5/main.h"
 #include "shim5/util.h"
 
@@ -151,5 +149,3 @@ void error_callback(const FLAC__StreamDecoder *decoder, FLAC__StreamDecoderError
 } // End namespace audio
 
 } // End namespace noo
-
-#endif // USE_FLAC

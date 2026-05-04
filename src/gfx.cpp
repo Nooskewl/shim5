@@ -1122,11 +1122,9 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 
 	internal::gfx_context.target_image = 0;
 
-#ifdef USE_TTF
 	if (TTF_Init() == false) {
 		return false;
 	}
-#endif
 
 	load_fonts();
 

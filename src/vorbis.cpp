@@ -1,5 +1,3 @@
-#ifdef USE_VORBIS
-
 // TMG
 // Ripped entirely from decode_example.c in libvorbis source!
 
@@ -409,5 +407,3 @@ Uint8 *decode_vorbis(SDL_IOStream *file, char *errmsg, SDL_AudioSpec *spec, Uint
 } // End namespace audio
 
 } // End namespace noo
-
-#endif // USE_VORBIS

@@ -99,7 +99,6 @@ void Tilemap::reload_sheets(bool load_from_filesystem)
 			image = new Image(filename, false, load_from_filesystem);
 		}
 		catch (util::Error &e) {
-#ifdef USE_PNG
 			std::string filename = std::string("tiles/tiles" + util::itos(i) + ".png");
 			try {
 				image = new Image(filename, false, load_from_filesystem);
@@ -107,9 +106,6 @@ void Tilemap::reload_sheets(bool load_from_filesystem)
 			catch (util::Error &e) {
 				break;
 			}
-#else
-			break;
-#endif
 		}
 
 		if (load_from_filesystem) {
