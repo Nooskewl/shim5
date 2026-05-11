@@ -1610,11 +1610,18 @@ void flip()
 			int n = 0;
 			for (; n < 1000000; n++) {
 				snprintf(fn, 1000, "%s/shim-screenshot-%06d.png", home, n);
+#ifdef __GNUC__
+				FILE *f = fopen(fn, "r");
+				if (f == nullptr) {
+					break;
+				}
+#else
 				FILE *f;
 				errno_t err = fopen_s(&f, fn, "r");
 				if (err) {
 					break;
 				}
+#endif
 				else {
 					fclose(f);
 				}
@@ -1898,7 +1905,11 @@ int load_palette(std::string name, SDL_Color *out, int out_size)
 			continue;
 		}
 		int red, green, blue;
+#ifdef __GNUC__
+		if (sscanf(line, "%d %d %d", &red, &green, &blue) == 3) {
+#else
 		if (sscanf_s(line, "%d %d %d", &red, &green, &blue) == 3) {
+#endif
 			out[colour_count].r = red;
 			out[colour_count].g = green;
 			out[colour_count].b = blue;

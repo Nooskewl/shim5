@@ -112,9 +112,9 @@ if(MINGW)
 		SET(FLAGS "${FLAGS} -g -fsanitize=address -shared-libasan")
 		SET(LFLAGS "${LFLAGS} -g -fsanitize=address -shared-libasan")
 	endif()
-	add_custom_command(TARGET ${SHIM_LIB} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/libshim5.dll.a ${CMAKE_BINARY_DIR}/libshim5.a
-	)
+	#add_custom_command(TARGET ${SHIM_LIB} POST_BUILD
+	#COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/libshim5.dll.a ${CMAKE_BINARY_DIR}/libshim5.a
+	#)
 
 	if(USE_STATIC_LIBS)
 		set(FLAGS "${FLAGS} -DTGUI6_STATIC")

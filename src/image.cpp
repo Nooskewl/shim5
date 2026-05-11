@@ -423,10 +423,17 @@ unsigned char *Image::read_png(std::string filename, util::Size<int> &out_size, 
 bool Image::save_png(std::string filename, unsigned char *data, util::Size<int> size, bool _save_rgba)
 {
 	FILE *fp;
+#ifdef __GNUC__
+	fp = fopen(filename.c_str(), "wb");
+	if (fp == nullptr) {
+		return false;
+	}
+#else
 	errno_t err = fopen_s(&fp, filename.c_str(), "wb");
 	if (err) {
 		return false;
 	}
+#endif
 
 	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png) {

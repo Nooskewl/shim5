@@ -242,6 +242,11 @@ extern SHIM5_EXPORT glGenerateMipmap_func glGenerateMipmap_ptr;
 #define REVERSE_TRANSLATE(s) s // for std::string objects eg std::string s; with s in English
 #define END
 
+#ifdef __GNUC__
+#define strcpy_s(t, n, f) strncpy(t, f, n)
+#define strcat_s(d, n, s) strcat(d, s)
+#endif
+
 namespace noo {
 
 namespace util {

@@ -33,9 +33,17 @@ int c99_vsnprintf(char* str, int size, const char* format, va_list ap)
     int count = -1;
 
     if (size != 0)
+#ifdef __GNUC__
+	count = vsnprintf(str, size, format, ap);
+#else
         count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
+#endif
     if (count == -1)
+#ifdef __GNUC__
+	count = vprintf(format, ap);
+#else
         count = _vscprintf(format, ap);
+#endif
 
     return count;
 }
@@ -107,7 +115,11 @@ bool static_start()
 {
 	if (shim::logging) {
 		std::string log_filename = get_appdata_dir() + "/log.txt";
+#ifdef __GNUC__
+		log_file = fopen(log_filename.c_str(), "w");
+#else
 		fopen_s(&log_file, log_filename.c_str(), "w");
+#endif
 	}
 
 	return true;
