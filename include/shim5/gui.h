@@ -66,7 +66,6 @@ protected:
 	static bool started_transition_timer;
 	static Uint32 transition_start_time;
 
-	void fade_transition(float p);
 	void scale_transition(float scale);
 	void slide_transition(float x);
 	void slide_vertical_transition(float y);
@@ -81,7 +80,6 @@ protected:
 	glm::mat4 mv_backup;
 	glm::mat4 p_backup;
 	float last_transition_p;
-	gfx::Image *plasma;
 	int transition_duration;
 	float slide_save;
 };

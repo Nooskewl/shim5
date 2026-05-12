@@ -159,9 +159,6 @@ void GUI::transition_start(float p)
 		else if (transition_is_slide_vertical) {
 			slide_vertical_transition(p-1.0f);
 		}
-		else {
-			fade_transition(p);
-		}
 	}
 	else {
 		if (transition_is_enlarge || transition_is_shrink) {
@@ -180,10 +177,6 @@ void GUI::transition_start(float p)
 		else if (transition_is_slide_vertical) {
 			slide_vertical_transition(p);
 		}
-		else {
-			p = 1.0f - p;
-			fade_transition(p);
-		}
 	}
 }
 
@@ -199,25 +192,6 @@ void GUI::transition_end()
 		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		gfx::update_projection();
 	}
-	else {
-		gfx::set_target_backbuffer();
-		Uint8 c = Uint8(last_transition_p * 255);
-		SDL_Color whitish = { c, c, c, c };
-		glm::mat4 mv_backup, proj_backup, mv;
-		gfx::get_matrices(mv_backup, proj_backup);
-		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
-		gfx::update_projection();
-		gfx::internal::gfx_context.work_image->draw_tinted(whitish, util::Point<int>(0, 0));
-		gfx::set_matrices(mv_backup, proj_backup);
-		gfx::update_projection();
-	}
-}
-
-void GUI::fade_transition(float p)
-{
-	last_transition_p = p;
-	gfx::set_target_image(gfx::internal::gfx_context.work_image);
-	gfx::clear(shim::transparent);
 }
 
 void GUI::scale_transition(float scale)

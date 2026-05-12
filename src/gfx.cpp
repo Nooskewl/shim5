@@ -742,9 +742,6 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 	set_screen_size(shim::real_screen_size);
 
 	util::infomsg("Window size: %dx%d, scaled size: %dx%d.\n", shim::real_screen_size.w, shim::real_screen_size.h, shim::screen_size.w, shim::screen_size.h);
-	internal::gfx_context.plasma = gen_plasma(util::rand(0, 10000), 1.0f, 0.0f, shim::white);
-
-	internal::recreate_work_image();
 
 	SDL_DisplayMode mode;
 	if (internal::My_SDL_GetCurrentDisplayMode(0, &mode) == 0) {
@@ -754,9 +751,6 @@ static void start_video(int scaled_w, int scaled_h, bool force_integer_scaling, 
 
 static void end_video()
 {
-	delete internal::gfx_context.work_image;
-	internal::gfx_context.work_image = 0;
-
 	Vertex_Cache::destroy();
 
 	delete shim::default_shader;
@@ -1010,8 +1004,6 @@ bool static_start()
 	maximum_window_size = {-1, -1};
 
 	last_gui_size = {-1, -1};
-
-	internal::gfx_context.work_image = 0;
 
 	handled_lost = false;
 
@@ -1944,7 +1936,7 @@ void set_scissor(int x, int y, int w, int h)
 
 	int sx, sy;
 	float scale;
-	if (internal::gfx_context.target_image == internal::gfx_context.work_image || internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
+	if (internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
 		sx = scissor_x;
 		sy = scissor_y;
 		scale = shim::scale;
@@ -1969,7 +1961,7 @@ void unset_scissor()
 	user_scissor_set = false;
 
 	int sx, sy, sw, sh;
-	if (internal::gfx_context.target_image == internal::gfx_context.work_image || internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
+	if (internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
 		sx = scissor_x;
 		sy = scissor_y;
 		sw = scissor_w;
@@ -2010,7 +2002,7 @@ void set_viewport(int x, int y, int w, int h)
 
 	int sx, sy;
 	float scale;
-	if (internal::gfx_context.target_image == internal::gfx_context.work_image || internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
+	if (internal::gfx_context.target_image == 0 || (default_modelview == modelview && default_proj == proj)) {
 		sx = scissor_x;
 		sy = scissor_y;
 		scale = shim::scale;
@@ -2601,9 +2593,6 @@ void handle_lost_device(bool including_opengl, bool force)
 		lost_device_callback();
 	}
 
-	delete internal::gfx_context.plasma;
-	internal::gfx_context.plasma = NULL;
-
 	for (size_t i = 0; i < shim::guis.size(); i++) {
 		shim::guis[i]->lost_device();
 	}
@@ -2611,9 +2600,6 @@ void handle_lost_device(bool including_opengl, bool force)
 	Font::release_all();
 
 	Tilemap::release_sheets();
-
-	delete internal::gfx_context.work_image;
-	internal::gfx_context.work_image = 0;
 
 	if (including_opengl) {
 		Image::release_all(force);
@@ -2639,10 +2625,6 @@ void handle_found_device(bool including_opengl, bool force)
 		set_screen_size(shim::real_screen_size);
 
 		Tilemap::reload_sheets();
-
-		internal::recreate_work_image();
-
-		internal::gfx_context.plasma = gen_plasma(util::rand(0, 10000), 1.0f, 0.0f, shim::white);
 
 		for (size_t i = 0; i < shim::guis.size(); i++) {
 			shim::guis[i]->found_device();
@@ -2817,18 +2799,6 @@ HICON win_create_icon(HWND wnd, Uint8 *data, util::Size<int> size, int xfocus, i
 	delete[] tmp;
 
 	return icon;
-}
-
-void recreate_work_image()
-{
-	if (internal::gfx_context.work_image != 0) {
-		delete internal::gfx_context.work_image;
-	}
-	bool old_create_depth_buffer = gfx::Image::create_depth_buffer;
-	gfx::Image::create_depth_buffer = true;
-	//internal::gfx_context.work_image = new Image(util::Size<int>(shim::real_screen_size.w, shim::real_screen_size.h));
-	internal::gfx_context.work_image = new Image(util::Size<int>(4096, 4096));
-	gfx::Image::create_depth_buffer = old_create_depth_buffer;
 }
 
 void premultiply_surface(SDL_Surface *surface)

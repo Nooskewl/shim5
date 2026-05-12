@@ -17,8 +17,6 @@ struct GFX_Context {
 	bool fullscreen;
 	bool fullscreen_window;
 	Image *target_image;
-	Image *work_image; // same size as real screen size
-	Image *plasma;
 	SDL_Window *window;
 	Uint32 windowid;
 	bool restarting;
@@ -36,7 +34,6 @@ bool scale_mouse_event(TGUI_Event *event);
 void handle_lost_device(bool including_opengl, bool force = false);
 void handle_found_device(bool including_opengl, bool force = false);
 int My_SDL_GetCurrentDisplayMode(int adapter, SDL_DisplayMode *mode);
-void recreate_work_image();
 
 HICON win_create_icon(HWND wnd, Uint8 *data, util::Size<int> size, int xfocus, int yfocus, bool is_cursor);
 
