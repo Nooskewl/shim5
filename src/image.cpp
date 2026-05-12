@@ -1627,14 +1627,14 @@ void Image::Internal::upload(unsigned char *pixels)
 			glGenerateMipmap_ptr(GL_TEXTURE_2D);
 		}
 
-		glTextureParameteri_ptr(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		PRINT_GL_ERROR("glTextureParameteri\n");
-		glTextureParameteri_ptr(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		PRINT_GL_ERROR("glTextureParameteri\n");
+		glTexParameteri_ptr(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		PRINT_GL_ERROR("glTexParameteri\n");
+		glTexParameteri_ptr(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		PRINT_GL_ERROR("glTexParameteri\n");
 		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, shim::linear_filtering ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
-		PRINT_GL_ERROR("glTextureParameteri\n");
+		PRINT_GL_ERROR("glTexParameteri\n");
 		glTexParameteri_ptr(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, shim::linear_filtering ? GL_LINEAR : GL_NEAREST);
-		PRINT_GL_ERROR("glTextureParameteri\n");
+		PRINT_GL_ERROR("glTexParameteri\n");
 
 		if (has_render_to_texture) {
 			// Create an FBO for render-to-texture

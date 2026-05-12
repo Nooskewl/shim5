@@ -95,7 +95,6 @@ glGenTextures_func glGenTextures_ptr;
 glBindTexture_func glBindTexture_ptr;
 glTexImage2D_func glTexImage2D_ptr;
 glTexParameteri_func glTexParameteri_ptr;
-glTextureParameteri_func glTextureParameteri_ptr;
 glGetError_func glGetError_ptr;
 glDrawArrays_func glDrawArrays_ptr;
 glReadPixels_func glReadPixels_ptr;
@@ -543,7 +542,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	glBindTexture_ptr = (glBindTexture_func)SDL_GL_GetProcAddress("glBindTexture");
 	glTexImage2D_ptr = (glTexImage2D_func)SDL_GL_GetProcAddress("glTexImage2D");
 	glTexParameteri_ptr = (glTexParameteri_func)SDL_GL_GetProcAddress("glTexParameteri");
-	glTextureParameteri_ptr = (glTextureParameteri_func)SDL_GL_GetProcAddress("glTextureParameteri");
 	glGetError_ptr = (glGetError_func)SDL_GL_GetProcAddress("glGetError");
 	glDrawArrays_ptr = (glDrawArrays_func)SDL_GL_GetProcAddress("glDrawArrays");
 	glReadPixels_ptr = (glReadPixels_func)SDL_GL_GetProcAddress("glReadPixels");
@@ -630,7 +628,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	if (glBindTexture_ptr == 0) { util::debugmsg("glBindTexture_ptr=%p\n", glBindTexture_ptr); }
 	if (glTexImage2D_ptr == 0) { util::debugmsg("glTexImage2D_ptr=%p\n", glTexImage2D_ptr); }
 	if (glTexParameteri_ptr == 0) { util::debugmsg("glTexParameteri_ptr=%p\n", glTexParameteri_ptr); }
-	if (glTextureParameteri_ptr == 0) { util::debugmsg("glTextureParameteri_ptr=%p\n", glTextureParameteri_ptr); }
 	if (glGetError_ptr == 0) { util::debugmsg("glGetError_ptr=%p\n", glGetError_ptr); }
 	if (glDrawArrays_ptr == 0) { util::debugmsg("glDrawArrays_ptr=%p\n", glDrawArrays_ptr); }
 	if (glReadPixels_ptr == 0) { util::debugmsg("glReadPixels_ptr=%p\n", glReadPixels_ptr); }
