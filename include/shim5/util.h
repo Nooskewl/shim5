@@ -177,6 +177,9 @@ void SHIM5_EXPORT printGLerror(const char *fmt, ...);
 void SHIM5_EXPORT open_with_system(std::string filename); // open with default app
 void SHIM5_EXPORT open_url(std::string url);
 
+void SHIM5_EXPORT flush_log_file();
+void SHIM5_EXPORT close_log_file();
+
 } // End namespace util
 
 } // End namespace noo

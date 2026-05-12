@@ -345,6 +345,13 @@ bool static_start(int sdl_init_flags)
 	return true;
 }
 
+static LONG WINAPI CrashHandler(EXCEPTION_POINTERS *ExceptionInfo)
+{
+	util::flush_log_file();
+	util::close_log_file();
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 bool static_start_all(int sdl_init_flags)
 {
 	if (static_start(sdl_init_flags) == false) {
@@ -353,6 +360,8 @@ bool static_start_all(int sdl_init_flags)
 	if (util::static_start() == false) {
 		return false;
 	}
+
+	SetUnhandledExceptionFilter(CrashHandler);
 
 	if (audio::static_start() == false) {
 		return false;

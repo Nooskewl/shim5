@@ -60,19 +60,6 @@ int c99_snprintf(char* str, int size, const char* format, ...)
     return count;
 }
 
-void close_log_file()
-{
-	if (log_file) {
-		fclose(log_file);
-		log_file = 0;
-	}
-}
-
-void flush_log_file()
-{
-	fflush(log_file);
-}
-
 static void print_string_console(const char *string)
 {
 	OutputDebugStringA(string);
@@ -127,7 +114,7 @@ bool static_start()
 
 void static_end()
 {
-	internal::close_log_file();
+	close_log_file();
 }
 
 bool start()
@@ -139,6 +126,19 @@ bool start()
 
 void end()
 {
+}
+
+void close_log_file()
+{
+	if (log_file) {
+		fclose(log_file);
+		log_file = 0;
+	}
+}
+
+void flush_log_file()
+{
+	fflush(log_file);
 }
 
 void errormsg(const char *fmt, ...)
@@ -900,6 +900,10 @@ std::string remove_quotes(std::string s)
 {
        int start = 0;
        int count = s.length();
+
+       if (s.length() == 0) {
+	       return "";
+       }
 
        if (s[0] == '"') {
                start++;

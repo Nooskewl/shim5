@@ -17,9 +17,6 @@ std::string SHIM5_EXPORT get_game_name();
 SHIM5_EXPORT int c99_vsnprintf(char* str, int size, const char* format, va_list ap);
 SHIM5_EXPORT int c99_snprintf(char* str, int size, const char* format, ...);
 
-void close_log_file();
-void flush_log_file();
-
 } // End namespace internal
 
 } // End namespace util
