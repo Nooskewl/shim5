@@ -180,6 +180,8 @@ void SHIM5_EXPORT register_letterbox_callback(_letterbox_callback);
 void SHIM5_EXPORT create_mouse_cursors();
 void SHIM5_EXPORT delete_mouse_cursors();
 
+void SHIM5_EXPORT set_cursor_pos(util::Point<int> pos);
+
 } // End namespace gfx
 
 } // End namespace noo

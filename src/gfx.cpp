@@ -2555,6 +2555,13 @@ void screen_shake(float amount, Uint32 length)
 	screen_shake_end = SDL_GetTicks() + length;
 }
 
+void set_cursor_pos(util::Point<int> pos)
+{
+	pos += shim::screen_offset;
+	pos *= shim::scale;
+	SDL_WarpMouseInWindow(internal::gfx_context.window, pos.x, pos.y);
+}
+
 namespace internal {
 
 GFX_Context gfx_context;
