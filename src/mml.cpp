@@ -1600,6 +1600,11 @@ bool MML::Track::used_reverb()
 	return _used_reverb;
 }
 
+int MML::Track::get_sample()
+{
+	return sample;
+}
+
 void MML::Track::stop_wavs()
 {
 	for (size_t i = 0; i < wav_starts.size(); i++) {
@@ -2583,6 +2588,7 @@ void MML::load(SDL_IOStream *f, bool load_from_filesystem)
 	mml_data->pitch_envelopes = pitch_envelopes;
 	mml_data->pitch_offset_envelopes = pitch_offset_envelopes;
 	mml_data->reverb_types = reverb_types;
+	mml_data->longest = longest;
 
 	audio::lock_mutex();
 
@@ -2855,6 +2861,22 @@ bool MML::is_done()
 	}
 
 	return true;
+}
+
+// In samples
+int MML::get_length()
+{
+	return mml_data->longest;
+}
+
+int MML::get_elapsed(Uint32 id)
+{
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->get_id() == id) {
+			return tracks[i]->get_sample();
+		}
+	}
+	return 0;
 }
 
 } // End namespace audio

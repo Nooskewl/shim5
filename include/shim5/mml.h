@@ -68,6 +68,7 @@ public:
 		std::vector< std::vector<float> > pitch_offset_envelopes;
 		std::vector<Reverb_Type> reverb_types;
 		std::vector<Track_Data *> track_data;
+		int longest;
 	};
 
 	static void static_start();
@@ -93,6 +94,8 @@ public:
 	SHIM5_EXPORT void set_sample(int index, audio::Sample *sample);
 	SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
 	SHIM5_EXPORT bool is_done();
+	SHIM5_EXPORT int get_length(); // In samples
+	SHIM5_EXPORT int get_elapsed(Uint32 id); // Get sample play position
 
 private:
 	class Track
@@ -132,6 +135,8 @@ private:
 		SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
 		
 		SHIM5_EXPORT bool used_reverb();
+
+		SHIM5_EXPORT int get_sample();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
