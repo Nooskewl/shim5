@@ -263,6 +263,7 @@ static void audio_callback(void *userdata, SDL_AudioStream *audio_stream, int ad
 				if (s->finished_callback && std::find(audio::internal::audio_callback_data.begin(), audio::internal::audio_callback_data.end(), s->finished_callback_data) == audio::internal::audio_callback_data.end()) {
 					audio::internal::audio_callbacks.push_back(s->finished_callback);
 					audio::internal::audio_callback_data.push_back(s->finished_callback_data);
+					s->finished_callback = nullptr;
 				}
 				//it++; // erase causes leak
 				it = audio::internal::audio_context.playing_samples.erase(it);
