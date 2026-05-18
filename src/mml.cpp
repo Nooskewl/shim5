@@ -639,7 +639,7 @@ void MML::Track::generate(float *buf, int samples, int t, const char *tok, int o
 				int length = w.length == 0 ? wav_samples[w.sample]->get_length() * p : wav_len(w.toks, w.note_length, tempo, w.octave, w.note);
 				w.instance = wav_samples[w.sample]->play_stretched(w.volume, 0, length, false, pan);
 				w.instance->mml = mml;
-				w.instance->volume = master_volume;
+				w.instance->volume = get_volume() * master_volume;
 				w.played = true;
 			}
 		}
@@ -2674,7 +2674,7 @@ Uint32 MML::play(float volume, bool loop, float pan, util::Callback finished_cal
 
 	for (size_t i = 0; i < tracks.size(); i++) {
 		if (tracks[i]->get_id() == play_id) {
-			tracks[i]->set_master_volume(1.0f/(float)tracks.size());
+			tracks[i]->set_master_volume(1.0f/(float)mml_data->track_data.size());
 			tracks[i]->play(volume, loop);
 		}
 	}
