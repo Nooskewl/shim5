@@ -8,10 +8,10 @@ namespace noo {
 
 namespace audio {
 
-class Sample;
+class SHIM5_EXPORT Sample;
 struct Sample_Instance;
 
-class MML {
+class SHIM5_EXPORT MML {
 public:
 	enum Wave_Type {
 		PULSE = 0,
@@ -75,68 +75,68 @@ public:
 	static void static_stop();
 	static int mix(float *buf, int samples);
 
-	SHIM5_EXPORT MML(SDL_IOStream *f, bool load_from_filesystem = false);
-	SHIM5_EXPORT MML(std::string filename, bool load_from_filesystem = false);
-	SHIM5_EXPORT virtual ~MML();
+	MML(SDL_IOStream *f, bool load_from_filesystem = false);
+	MML(std::string filename, bool load_from_filesystem = false);
+	virtual ~MML();
 
-	SHIM5_EXPORT Uint32 play(float volume = 1.0f, bool loop = false, float pan = 0.0f, util::Callback finished_callback = 0, void *finished_callback_data = 0);
-	SHIM5_EXPORT void stop(Uint32 id);
-	SHIM5_EXPORT void pause(Uint32 id, bool onoff);
-	SHIM5_EXPORT void set_master_volume(Uint32 id, float volume, int track = -1);
-	SHIM5_EXPORT float get_master_volume(Uint32 id, int track = -1);
-	SHIM5_EXPORT int get_tempo(Uint32 id, int track = -1);
-	SHIM5_EXPORT void set_tempo(Uint32 id, int bpm, int track = -1);
-	SHIM5_EXPORT std::string get_name(); // returns same thing passed to constructor
-	SHIM5_EXPORT bool track_active(Uint32 id);
-	SHIM5_EXPORT float get_pan(Uint32 id, int track = -1);
-	SHIM5_EXPORT void set_pan(Uint32 id, float pan, int track = -1);
-	SHIM5_EXPORT int get_num_tracks();
-	SHIM5_EXPORT void set_sample(int index, audio::Sample *sample);
-	SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
-	SHIM5_EXPORT bool is_done();
-	SHIM5_EXPORT int get_length(); // In samples
-	SHIM5_EXPORT int get_elapsed(Uint32 id); // Get sample play position
+	Uint32 play(float volume = 1.0f, bool loop = false, float pan = 0.0f, util::Callback finished_callback = 0, void *finished_callback_data = 0);
+	void stop(Uint32 id);
+	void pause(Uint32 id, bool onoff);
+	void set_master_volume(Uint32 id, float volume, int track = -1);
+	float get_master_volume(Uint32 id, int track = -1);
+	int get_tempo(Uint32 id, int track = -1);
+	void set_tempo(Uint32 id, int bpm, int track = -1);
+	std::string get_name(); // returns same thing passed to constructor
+	bool track_active(Uint32 id);
+	float get_pan(Uint32 id, int track = -1);
+	void set_pan(Uint32 id, float pan, int track = -1);
+	int get_num_tracks();
+	void set_sample(int index, audio::Sample *sample);
+	void delete_wavs(audio::Sample_Instance *s);
+	bool is_done();
+	int get_length(); // In samples
+	int get_elapsed(Uint32 id); // Get sample play position
 
 private:
 	class Track
 	{
 	public:
 		// pad is # of samples of silence to pad the end with so all tracks are even
-		SHIM5_EXPORT Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs, std::vector< std::pair<int, float> > &tempos);
+		Track(int num, Uint32 id, Wave_Type type, std::string text, std::vector< std::pair<int, float> > &volumes, std::vector< std::pair<int, float> > &volume_offsets, std::vector<int> &pitches, std::vector<int> &pitch_offsets, std::vector< std::vector<float> > &pitch_envelopes, std::vector< std::vector<float> > &pitch_offset_envelopes, std::vector< std::pair<int, float> > &dutycycles, int pad, std::vector<Sample *> wav_samples, std::vector<Wav_Start> wav_starts, Uint32 beginning_silence, MML *mml, std::vector<Reverb_Type> reverb_types, std::vector< std::pair<int, float> > &pans, float pan, std::vector< std::pair<int, float> > &hybrids, bool stretch_wavs, std::vector< std::pair<int, float> > &tempos);
 		~Track();
 
-		SHIM5_EXPORT void play(float volume, bool loop);
-		SHIM5_EXPORT void stop();
-		SHIM5_EXPORT void pause(bool onoff);
-		SHIM5_EXPORT int update(float *buf, int length);
+		void play(float volume, bool loop);
+		void stop();
+		void pause(bool onoff);
+		int update(float *buf, int length);
 
-		SHIM5_EXPORT bool is_playing();
-		SHIM5_EXPORT bool is_done();
+		bool is_playing();
+		bool is_done();
 
-		SHIM5_EXPORT void set_master_volume(float master_volume);
-		SHIM5_EXPORT float get_master_volume();
-		SHIM5_EXPORT float get_master_volume_real();
+		void set_master_volume(float master_volume);
+		float get_master_volume();
+		float get_master_volume_real();
 
-		SHIM5_EXPORT Uint32 get_id();
+		Uint32 get_id();
 
-		SHIM5_EXPORT void real_set_tempo(int bpm);
-		SHIM5_EXPORT void set_tempo(int bpm);
-		SHIM5_EXPORT int get_new_tempo();
-		SHIM5_EXPORT int get_tempo();
+		void real_set_tempo(int bpm);
+		void set_tempo(int bpm);
+		int get_new_tempo();
+		int get_tempo();
 
-		SHIM5_EXPORT void set_callbacks(util::Callback finished_callback, void *finished_callback_data);
-		SHIM5_EXPORT void call_callbacks();
+		void set_callbacks(util::Callback finished_callback, void *finished_callback_data);
+		void call_callbacks();
 
-		SHIM5_EXPORT float get_pan(); // get global pan
-		SHIM5_EXPORT void set_pan(float pan); // set global pan
+		float get_pan(); // get global pan
+		void set_pan(float pan); // set global pan
 		
-		SHIM5_EXPORT int get_track_number();
+		int get_track_number();
 
-		SHIM5_EXPORT void delete_wavs(audio::Sample_Instance *s);
+		void delete_wavs(audio::Sample_Instance *s);
 		
-		SHIM5_EXPORT bool used_reverb();
+		bool used_reverb();
 
-		SHIM5_EXPORT int get_sample();
+		int get_sample();
 
 	private:
 		void reset(Uint32 buffer_fulfilled);
@@ -272,7 +272,7 @@ private:
 		float sample_dec;
 	};
 
-	SHIM5_EXPORT void load(SDL_IOStream *f, bool load_from_filesystem);
+	void load(SDL_IOStream *f, bool load_from_filesystem);
 
 	std::vector<Track *> tracks;
 	std::vector<Track *> reverb_tracks;
