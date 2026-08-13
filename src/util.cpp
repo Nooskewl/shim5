@@ -461,9 +461,9 @@ Uint64 file_date(std::string filename)
 	}
 }
 
-void mkdir(std::string path)
+bool mkdir(std::string path)
 {
-	_mkdir(path.c_str());
+	return _mkdir(path.c_str()) == 0;
 }
 
 std::string get_system_language_windows()

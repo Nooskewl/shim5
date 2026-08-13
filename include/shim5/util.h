@@ -58,7 +58,7 @@ enum Path_Type {
 	SAVED_GAMES
 };
 
-void SHIM5_EXPORT mkdir(std::string path);
+bool SHIM5_EXPORT mkdir(std::string path);
 
 std::string SHIM5_EXPORT get_system_language(); // returns language in Steam format like "english", "french" etc
 
