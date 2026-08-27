@@ -219,6 +219,7 @@ extern SHIM5_EXPORT glGenerateMipmap_func glGenerateMipmap_ptr;
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <direct.h>
 
