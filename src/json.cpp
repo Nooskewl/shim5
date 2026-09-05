@@ -10,13 +10,39 @@ namespace noo {
 
 namespace util {
 
+std::string next_key(std::string full, int &start)
+{
+	std::string k = "";
+	int prev = -1;
+
+	while (start < full.length()) {
+		if (full[start] == '>' && prev == '\\') {
+			k[k.length()-1] = '>';
+		}
+		else if (full[start] == '>') {
+			start++;
+			return k;
+		}
+		else {
+			char buf[2];
+			buf[0] = full[start];
+			buf[1] = 0;
+			k += buf;
+		}
+		prev = full[start];
+		start++;
+	}
+
+	return k;
+}
+
 JSON::Node *JSON::Node::find(std::string loc)
 {
-	Tokenizer t(loc, '>');
+	int start = 0;
 	std::string k;
 	Node *result = this;
 
-	while ((k = t.next()) != "") {
+	while ((k = next_key(loc, start)) != "") {
 		// FIXME: use quotes or no?
 		NodeIt it = result->child_map.find(k);
 		//NodeIt it = result->child_map.find(k);
@@ -412,9 +438,11 @@ JSON::Node *JSON::Node::add_child(std::string key, std::string value, Type type,
 
 void JSON::Node::add_nested(std::string loc, Node *add)
 {
-	Tokenizer t(loc, '>');
+	int start = 0;
 	std::string k, all;
-	k = t.next();
+
+	k = next_key(loc, start);
+
 	JSON::Node *n = this;
 
 	do {
@@ -432,7 +460,7 @@ void JSON::Node::add_nested(std::string loc, Node *add)
 			}
 			all += ">";
 		}
-	} while ((k = t.next()) != "");
+	} while ((k = next_key(loc, start)) != "");
 }
 
 void JSON::Node::add_nested_string(std::string loc, void *userdata, std::string val, Trigger *trigger, bool readonly)
