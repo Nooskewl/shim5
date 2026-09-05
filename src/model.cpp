@@ -155,14 +155,15 @@ Model::Model(std::string filename, bool load_from_filesystem) :
 		}
 	}
 	if (found) {
+		instance->is_clone = true;
 		instance->animations = it->second->model->instance->animations;
 		instance->model = it->second->model;
 		instance->filename = it->second->model->instance->filename;
-		instance->is_clone = true;
 	}
 	else {
-		read(filename, load_from_filesystem);
 		instance->is_clone = false;
+		read(filename, load_from_filesystem);
+		precalculate_animations(instance->frames_per_second);
 	}
 
 	std::pair<std::string, Instance *> pair;
@@ -1940,11 +1941,11 @@ float *Model::calc_frame(std::string anim_name, int frame)
 
 	if (a && a->is_precalculated) {
 		int actual_frame = frame * ((float)a->precalc_fps/instance->frames_per_second);
-		return precalculated[anim_name][actual_frame];
+		return instance->model->precalculated[anim_name][actual_frame];
 	}
-	else if (precalculated.find(anim_name) != precalculated.end()) {
+	else if (instance->model->precalculated.find(anim_name) != instance->model->precalculated.end()) {
 		int actual_frame = frame * ((float)a->precalc_fps/instance->frames_per_second);
-		vertices = precalculated[anim_name][actual_frame];
+		vertices = instance->model->precalculated[anim_name][actual_frame];
 	}
 	else {
 		Uint32 num_animations = (Uint32)instance->animations.size();
@@ -2024,6 +2025,20 @@ float *Model::calc_frame(std::string anim_name, int frame)
 		}
 	}
 
+	if (a && instance->is_clone == false) {	
+		GLuint vbo;
+		glGenBuffers_ptr(1, &vbo);
+		PRINT_GL_ERROR("glGenBuffers\n");
+		glBindBuffer_ptr(GL_ARRAY_BUFFER, vbo);
+		PRINT_GL_ERROR("glBindBuffer\n");
+		glBufferData_ptr(GL_ARRAY_BUFFER, (GLsizei *)(sizeof(float) * node->num_vertices * 12), vertices, GL_STATIC_DRAW);
+		PRINT_GL_ERROR("glBufferData\n");
+		glBindBuffer_ptr(GL_ARRAY_BUFFER, 0);
+		PRINT_GL_ERROR("glBindBuffer\n");
+
+		a->vbos.push_back(vbo);
+	}
+
 	return vertices;
 }
 
@@ -2043,7 +2058,7 @@ void Model::precalculate_animation(std::string name, int fps)
 	size_t num_frames = bone->frames.size();
 	size_t precalc_frames = num_frames * ((float)fps/instance->frames_per_second);
 	float **f = new float *[precalc_frames];
-	precalculated[name] = f;
+	instance->model->precalculated[name] = f;
 	for (size_t i = 0; i < precalc_frames; i++) {
 		f[i] = new float[node->num_vertices*12];
 		memcpy(f[i], node->vertices, sizeof(float)*node->num_vertices*12);
@@ -2075,6 +2090,12 @@ void Model::draw(SDL_Color tint, bool textured)
 	if (node) {
 		int frame = get_current_frame();
 		std::string anim_name = get_current_animation();
+
+		if (instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
+			glBindBuffer_ptr(GL_ARRAY_BUFFER, instance->model->instance->animations[anim_name]->vbos[frame]);
+			PRINT_GL_ERROR("glBindBuffer\n");
+		}
+
 		float *vertices = calc_frame(anim_name, frame);
 		if (textured && node->textures.size() > 0) {
 			Shader *old_shader = shim::current_shader;
@@ -2115,7 +2136,13 @@ void Model::draw(SDL_Color tint, bool textured)
 			Vertex_Cache::instance()->start();
 			Vertex_Cache::instance()->cache_3d_immediate(vertices, node->num_triangles);
 		}
+		
+		if (instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
+			glBindBuffer_ptr(GL_ARRAY_BUFFER, 0);
+			PRINT_GL_ERROR("glBindBuffer\n");
+		}
 	}
+
 }
 
 void Model::draw()

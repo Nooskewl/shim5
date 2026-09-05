@@ -40,6 +40,7 @@ public:
 		std::map<std::string, Bone *> bones;
 		bool is_precalculated;
 		int precalc_fps;
+		std::vector<GLuint> vbos;
 	};
 
 	struct Influence {
