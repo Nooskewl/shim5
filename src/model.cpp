@@ -247,6 +247,9 @@ void Model::destroy(Animation *animation)
 		const std::pair<std::string, Bone *> &p = *it;
 		delete p.second;
 	}
+	for (size_t i = 0; i < animation->vbos.size(); i++) {
+		glDeleteBuffers_ptr(1, &animation->vbos[i]);
+	}
 	delete animation;
 }
 
