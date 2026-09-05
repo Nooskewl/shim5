@@ -2133,7 +2133,11 @@ void Model::draw(SDL_Color tint, bool textured)
 						end = -1;
 					}
 				}
-				
+			
+				if (start != -1) {	
+					Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
+				}
+
 				Vertex_Cache::instance()->end();
 			}
 
