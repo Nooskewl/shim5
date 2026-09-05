@@ -75,7 +75,6 @@ public:
 		// For 16 byte alignment to make glm::mat4 able to use SIMD
 	};
 
-	SHIM5_EXPORT Model();
 	SHIM5_EXPORT Model(std::string filename, bool load_from_filesystem = false);
 	SHIM5_EXPORT ~Model();
 
@@ -100,6 +99,8 @@ public:
 	SHIM5_EXPORT bool save_binary_model(std::string filename);
 	
 	SHIM5_EXPORT float *calc_frame(std::string anim_name, int frame);
+	
+	SHIM5_EXPORT void set_animation_finished_callback(util::Callback callback, void *callback_data);
 
 private:
 	SHIM5_EXPORT void read(std::string filename, bool load_from_filesystem);
@@ -134,12 +135,13 @@ private:
 		bool started;
 		Uint32 elapsed;
 		Uint32 frames_per_second;
+		Model *model;
+		std::string filename;
+		bool is_clone;
 	};
 
-	static std::map<int, Instance *> loaded_models;
+	static std::vector< std::pair<std::string, Instance *> > loaded_models;
 	static int model_count;
-
-	int model_id;
 
 	std::vector<Node *> roots;
 	std::vector<int> ungot;

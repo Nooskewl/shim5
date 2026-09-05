@@ -17,7 +17,7 @@ namespace noo {
 
 namespace gfx {
 
-std::map<int, Model::Instance *> Model::loaded_models;
+std::vector< std::pair<std::string, Model::Instance *> > Model::loaded_models;
 int Model::model_count;
 
 void Model::static_start()
@@ -30,9 +30,9 @@ void Model::update_all()
 {
 	Uint32 elapsed = 1000 / shim::logic_rate;
 
-	std::map<int, Instance *>::iterator it;
+	std::vector< std::pair<std::string, Instance *> >::iterator it;
 	for (it = loaded_models.begin(); it != loaded_models.end(); it++) {
-		const std::pair<int, Instance *> &p = *it;
+		const std::pair<std::string, Instance *> &p = *it;
 		Instance *instance = p.second;
 		if (instance->started) {
 			instance->elapsed += elapsed;
@@ -50,6 +50,12 @@ void Model::update_all()
 			}
 		}
 	}
+}
+
+void Model::set_animation_finished_callback(util::Callback finished_callback, void *finished_callback_data)
+{
+	instance->finished_callback = finished_callback;
+	instance->finished_callback_data = finished_callback_data;
 }
 
 Model::Weights::Weights() :
@@ -128,16 +134,6 @@ Model::Node::~Node()
 
 //--
 
-Model::Model()
-{
-	instance = new Instance;
-	instance->finished_callback = 0;
-	instance->started = false;
-	instance->elapsed = 0;
-	instance->frames_per_second = 60;
-	instance->current_animation = "";
-}
-
 Model::Model(std::string filename, bool load_from_filesystem) :
 	line(1)
 {
@@ -147,36 +143,90 @@ Model::Model(std::string filename, bool load_from_filesystem) :
 	instance->elapsed = 0;
 	instance->frames_per_second = 60;
 	instance->current_animation = "";
+	instance->model = this;
+	instance->filename = filename;
 
-	read(filename, load_from_filesystem);
+	bool found = false;
+	std::vector< std::pair<std::string, Instance *> >::iterator it = loaded_models.begin();
+	for (; it != loaded_models.end(); it++) {
+		if (it->second->filename == filename) {
+			found = true;
+			break;
+		}
+	}
+	if (found) {
+		instance->animations = it->second->model->instance->animations;
+		instance->model = it->second->model;
+		instance->filename = it->second->model->instance->filename;
+		instance->is_clone = true;
+	}
+	else {
+		read(filename, load_from_filesystem);
+		instance->is_clone = false;
+	}
+
+	std::pair<std::string, Instance *> pair;
+	pair.first = filename;
+	pair.second = instance;	
+	loaded_models.push_back(pair);
 }
 
 Model::~Model()
 {
-	for (std::map<std::string, float **>::iterator it = precalculated.begin(); it != precalculated.end(); it++) {
-		std::pair<std::string, float **> p = *it;
-		float **f = p.second;
-		Animation *anim = instance->animations[p.first];
-		std::pair<std::string, Bone *> p2 = *(anim->bones.begin());
-		Bone *bone = p2.second;
-		size_t num_frames = bone->frames.size() * ((float)anim->precalc_fps/instance->frames_per_second);
-		for (size_t i = 0; i < num_frames; i++) {
-			delete[] f[i];
+	std::vector< std::pair<std::string, Instance *> >::iterator it = loaded_models.begin();
+	for (; it != loaded_models.end(); it++) {
+		if (it->second->filename == instance->filename) {
+			break;
 		}
-		delete[] f;
+	}
+	std::pair<std::string, Instance *> p = *it;
+	std::string filename = p.first;
+	if (p.second->is_clone == false) {
+		std::vector< std::pair<std::string, Instance *> >::iterator it2 = loaded_models.begin();
+		for (; it2 != loaded_models.end(); it2++) {
+			if (it2->first == filename && it2->second->is_clone == true) {
+				it2->second->model->roots = it->second->model->roots;
+				it2->second->model->precalculated = it->second->model->precalculated;
+				it2->second->is_clone = false;
+				break;
+			}
+		}
+	}
+	loaded_models.erase(it);
+
+	bool found = false;
+	for (it = loaded_models.begin(); it != loaded_models.end(); it++) {
+		p = *it;
+		if (p.first == filename) {
+			found = true;
+			break;
+		}
 	}
 
-	for (size_t i = 0; i < roots.size(); i++) {
-		destroy(roots[i]);
+	if (found == false) {
+		for (std::map<std::string, float **>::iterator it = instance->model->precalculated.begin(); it != precalculated.end(); it++) {
+			std::pair<std::string, float **> p = *it;
+			float **f = p.second;
+			Animation *anim = instance->animations[p.first];
+			std::pair<std::string, Bone *> p2 = *(anim->bones.begin());
+			Bone *bone = p2.second;
+			size_t num_frames = bone->frames.size() * ((float)anim->precalc_fps/instance->frames_per_second);
+			for (size_t i = 0; i < num_frames; i++) {
+				delete[] f[i];
+			}
+			delete[] f;
+		}
+
+		for (size_t i = 0; i < roots.size(); i++) {
+			destroy(instance->model->roots[i]);
+		}
 	}
 
-	std::map<std::string, Animation *>::iterator it;
-	for (it = instance->animations.begin(); it != instance->animations.end(); it++) {
-		const std::pair<std::string, Animation *> &p = *it;
+	std::map<std::string, Animation *>::iterator it2;
+	for (it2 = instance->animations.begin(); it2 != instance->animations.end(); it2++) {
+		const std::pair<std::string, Animation *> &p = *it2;
 		destroy(p.second);
 	}
-
-	loaded_models.erase(loaded_models.find(model_id));
 
 	delete instance;
 }
@@ -252,20 +302,17 @@ void Model::read(std::string filename, bool load_from_filesystem)
 	}
 
 	util::close_file(file);
-
-	model_id = model_count++;
-	loaded_models[model_id] = instance;
 }
 
 std::vector<Model::Node *> Model::get_nodes()
 {
-	return roots;
+	return instance->model->roots;
 }
 
 Model::Node *Model::find(std::string name)
 {
-	for (size_t i = 0; i < roots.size(); i++) {
-		Node *m = roots[i]->find(name);
+	for (size_t i = 0; i < instance->model->roots.size(); i++) {
+		Node *m = instance->model->roots[i]->find(name);
 		if (m != 0) {
 			return m;
 		}
@@ -1790,7 +1837,7 @@ bool Model::save_binary_model(std::string filename)
 
 void Model::add_node(Node *node)
 {
-	roots.push_back(node);
+	instance->model->roots.push_back(node);
 }
 
 void Model::set_animation(std::string name, util::Callback finished_callback, void *finished_callback_data)
