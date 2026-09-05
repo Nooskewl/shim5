@@ -90,7 +90,7 @@ void Vertex_Cache::start(Image *image, bool repeat)
 	*_started = true;
 }
 
-void Vertex_Cache::end()
+void Vertex_Cache::end(int offset)
 {
 	if (*_started == false) {
 		return;
@@ -118,7 +118,7 @@ void Vertex_Cache::end()
 		shim::current_shader->set_bool("use_tex", false); // some shaders user this
 	}
 
-	shim::current_shader->set_opengl_attributes(*_vertices, &(*_vertices)[3], &(*_vertices)[6], &(*_vertices)[8]);
+	shim::current_shader->set_opengl_attributes(offset, *_vertices, &(*_vertices)[3], &(*_vertices)[6], &(*_vertices)[8]);
 	glDrawArrays_ptr(GL_TRIANGLES, 0, *_count);
 	PRINT_GL_ERROR("glDrawArrays\n");
 	
@@ -625,12 +625,12 @@ void Vertex_Cache::cache_3d(SDL_Color tint, float *in_verts, int *in_faces, floa
 	*_count += num_triangles * 3;
 }
 
-void Vertex_Cache::cache_3d_immediate(float *buffer, int num_triangles)
+void Vertex_Cache::cache_3d_immediate(float *buffer, int offset, int num_triangles)
 {
 	float *backup = *_vertices;
 	*_vertices = buffer;
 	*_count = num_triangles * 3;
-	end();
+	end(offset);
 	*_vertices = backup;
 }
 

@@ -51,7 +51,7 @@ public:
 	SHIM5_EXPORT bool set_colour(std::string name, SDL_Color colour);
 
 	SHIM5_EXPORT GLuint get_opengl_shader();
-	SHIM5_EXPORT void set_opengl_attributes(float *pos, float *normal, float *texcoord, float *colour);
+	SHIM5_EXPORT void set_opengl_attributes(int offset, float *pos, float *normal, float *texcoord, float *colour);
 
 private:
 	static std::string add_opengl_header(bool is_vertex, Precision precision, std::string source);

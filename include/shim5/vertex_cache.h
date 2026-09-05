@@ -18,7 +18,7 @@ public:
 	// These ones use the already selected cache...
 	SHIM5_EXPORT void start(bool repeat = false); // no texture
 	SHIM5_EXPORT void start(Image *image, bool repeat = false);
-	SHIM5_EXPORT void end();
+	SHIM5_EXPORT void end(int offset = 0);
 
 	SHIM5_EXPORT bool is_started();
 
@@ -30,7 +30,7 @@ public:
 	SHIM5_EXPORT void cache_z(SDL_Color vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale_x, float scale_y, float z, int flags);
 	SHIM5_EXPORT void cache(SDL_Color vertex_colours[4], util::Point<float> pivot, util::Point<int> source_position, util::Size<int> source_size, util::Point<float> dest_position, float angle, float scale, int flags);
 	SHIM5_EXPORT void cache_3d(SDL_Color tint, float *in_verts, int *in_faces, float *in_normals, float *in_texcoords, float *in_colours, int num_triangles);
-	SHIM5_EXPORT void cache_3d_immediate(float *buffer, int num_triangles);
+	SHIM5_EXPORT void cache_3d_immediate(float *buffer, int offset, int num_triangles);
 
 	SHIM5_EXPORT void maybe_resize_cache(int increase);
 

@@ -2028,6 +2028,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 		}
 	}
 
+///*
 	if (a && instance->is_clone == false) {	
 		GLuint vbo;
 		glGenBuffers_ptr(1, &vbo);
@@ -2041,6 +2042,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 
 		a->vbos.push_back(vbo);
 	}
+//*/
 
 	return vertices;
 }
@@ -2094,10 +2096,12 @@ void Model::draw(SDL_Color tint, bool textured)
 		int frame = get_current_frame();
 		std::string anim_name = get_current_animation();
 
+		//*
 		if (instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
 			glBindBuffer_ptr(GL_ARRAY_BUFFER, instance->model->instance->animations[anim_name]->vbos[frame]);
 			PRINT_GL_ERROR("glBindBuffer\n");
 		}
+		//*/
 
 		float *vertices = calc_frame(anim_name, frame);
 		if (textured && node->textures.size() > 0) {
@@ -2113,6 +2117,8 @@ void Model::draw(SDL_Color tint, bool textured)
 			for (size_t i = 0; i < node->textures.size(); i++) {
 				int start = -1;
 				int end = -1;
+				
+				Vertex_Cache::instance()->start(node->textures[i]);
 
 				for (size_t j = 0; j < (size_t)node->num_triangles; j++) {
 					if (node->face_textures[j] == (Uint32)i) {
@@ -2121,12 +2127,14 @@ void Model::draw(SDL_Color tint, bool textured)
 						}
 						end = (int)j + 1;
 					}
+					else if (start != -1) {
+						Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
+						start = -1;
+						end = -1;
+					}
 				}
-
-				if (start >= 0 && end >= 0) {
-					Vertex_Cache::instance()->start(node->textures[i]);
-					Vertex_Cache::instance()->cache_3d_immediate(vertices+start*12*3, end-start);
-				}
+				
+				Vertex_Cache::instance()->end();
 			}
 
 			if (old_shader == shim::default_shader) {
@@ -2137,13 +2145,14 @@ void Model::draw(SDL_Color tint, bool textured)
 		}
 		else {
 			Vertex_Cache::instance()->start();
-			Vertex_Cache::instance()->cache_3d_immediate(vertices, node->num_triangles);
+			Vertex_Cache::instance()->cache_3d_immediate(vertices, 0, node->num_triangles);
 		}
-		
+	///*	
 		if (instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
 			glBindBuffer_ptr(GL_ARRAY_BUFFER, 0);
 			PRINT_GL_ERROR("glBindBuffer\n");
 		}
+		//*/
 	}
 
 }

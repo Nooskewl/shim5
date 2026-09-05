@@ -323,7 +323,7 @@ void Shader::unbind(Shader *s)
 	pos_ptr = normal_ptr = texcoord_ptr = colour_ptr = 0;
 }
 
-void Shader::set_opengl_attributes(float *pos, float *normal, float *texcoord, float *colour)
+void Shader::set_opengl_attributes(int offset, float *pos, float *normal, float *texcoord, float *colour)
 {
 	if (pos_attrib == -1) {
 		pos_attrib = glGetAttribLocation_ptr(opengl_shader, "in_position");
@@ -384,10 +384,10 @@ void Shader::set_opengl_attributes(float *pos, float *normal, float *texcoord, f
 		}
 	}
 	else {
-		glVertexAttribPointer_ptr(pos_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(0*sizeof(float)));
-		glVertexAttribPointer_ptr(normal_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(3*sizeof(float)));
-		glVertexAttribPointer_ptr(texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(6*sizeof(float)));
-		glVertexAttribPointer_ptr(colour_attrib, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(8*sizeof(float)));
+		glVertexAttribPointer_ptr(pos_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)(offset*sizeof(float)));
+		glVertexAttribPointer_ptr(normal_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)((offset+3)*sizeof(float)));
+		glVertexAttribPointer_ptr(texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)((offset+6)*sizeof(float)));
+		glVertexAttribPointer_ptr(colour_attrib, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (GLvoid *)((offset+8)*sizeof(float)));
 		PRINT_GL_ERROR("glVertexAttribPointer\n");
 	}
 }
