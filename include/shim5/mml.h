@@ -11,6 +11,8 @@ namespace audio {
 class SHIM5_EXPORT Sample;
 struct Sample_Instance;
 
+/* Only the clone == false instance has some of these members defined */
+
 class SHIM5_EXPORT MML {
 public:
 	enum Wave_Type {
