@@ -398,6 +398,12 @@ int MML::Track::update(float *buf, int length)
 				if (tok[0] == 0) {
 					note--;
 					if (padded) {
+						if (finished_callback) {
+							internal::audio_callbacks.push_back(finished_callback);
+							internal::audio_callback_data.push_back(finished_callback_data);
+							finished_callback = nullptr;
+						}
+
 						if (loop) {
 							int save = buffer_fulfilled;
 							reset(buffer_fulfilled);
@@ -414,12 +420,6 @@ int MML::Track::update(float *buf, int length)
 							}
 							// reset (stop?) above sets done to false
 							done = true;
-
-							if (finished_callback) {
-								internal::audio_callbacks.push_back(finished_callback);
-								internal::audio_callback_data.push_back(finished_callback_data);
-								finished_callback = nullptr;
-							}
 
 							return buffer_fulfilled;
 						}
@@ -2878,6 +2878,16 @@ int MML::get_elapsed(Uint32 id)
 		}
 	}
 	return 0;
+}
+
+void MML::set_finished_callback(Uint32 id, util::Callback callback, void *callback_data)
+{
+	for (size_t i = 0; i < tracks.size(); i++) {
+		if (tracks[i]->get_id() == id) {
+			tracks[i]->set_callbacks(callback, callback_data);
+			break;
+		}
+	}
 }
 
 } // End namespace audio

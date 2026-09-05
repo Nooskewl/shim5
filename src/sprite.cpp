@@ -312,6 +312,21 @@ bool Sprite::set_animation_lazy(std::string name)
 	return set_animation(name);
 }
 
+void Sprite::set_animation_finished_callback(util::Callback finished_callback, void *finished_callback_data)
+{
+	// Make sure callbacks get called when animation changes
+	if (instance->finished_callback) {
+		util::Callback bak_callback = instance->finished_callback;
+		void *bak_data = instance->finished_callback_data;
+		instance->finished_callback = 0;
+		bak_callback(bak_data);
+	}
+
+	// Always update these?
+	instance->finished_callback = finished_callback;
+	instance->finished_callback_data = finished_callback_data;
+}
+
 bool Sprite::set_animation(std::string name, util::Callback finished_callback, void *finished_callback_data)
 {
 	// Make sure callbacks get called when animation changes

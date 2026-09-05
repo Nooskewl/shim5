@@ -76,6 +76,12 @@ bool Sample::sample_active(Sample_Instance *s)
 
 	return false;
 }
+
+void Sample::set_finished_callback(Sample_Instance *s, util::Callback callback, void *callback_data)
+{
+	s->finished_callback = callback;
+	s->finished_callback_data = callback_data;
+}
 		
 Sample::Sample(std::string filename, bool load_from_filesystem) :
 	done(false)

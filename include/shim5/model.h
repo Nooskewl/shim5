@@ -101,7 +101,7 @@ public:
 	
 	SHIM5_EXPORT float *calc_frame(std::string anim_name, int frame);
 	
-	SHIM5_EXPORT void set_animation_finished_callback(util::Callback callback, void *callback_data);
+	SHIM5_EXPORT void set_animation_finished_callback(util::Callback callback, void *callback_data = 0);
 
 private:
 	SHIM5_EXPORT void read(std::string filename, bool load_from_filesystem);

@@ -42,6 +42,7 @@ public:
 	static void set_instance_volume(Sample_Instance *s, float volume);
 	static void pause_instance(Sample_Instance *s, bool onoff);
 	static bool sample_active(Sample_Instance *s);
+	static void set_finished_callback(Sample_Instance *s, util::Callback callback, void *callback_data);
 
 	static void register_sample_loader(std::string ext, sample_loader func);
 

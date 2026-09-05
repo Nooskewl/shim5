@@ -45,6 +45,7 @@ public:
 	SHIM5_EXPORT Sprite(std::string image_directory, bool absolute_path = false, bool load_from_filesystem = false);
 	SHIM5_EXPORT ~Sprite();
 
+	SHIM5_EXPORT void set_animation_finished_callback(util::Callback finished_callback, void *finished_callback_data = 0);
 	SHIM5_EXPORT bool set_animation_lazy(std::string name);
 	SHIM5_EXPORT bool set_animation(std::string name, util::Callback finished_callback = 0, void *finished_callback_data = 0);
 	SHIM5_EXPORT std::string get_animation();

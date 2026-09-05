@@ -98,6 +98,7 @@ public:
 	bool is_done();
 	int get_length(); // In samples
 	int get_elapsed(Uint32 id); // Get sample play position
+	void set_finished_callback(Uint32 id, util::Callback callback, void *callback_data);
 
 private:
 	class Track
