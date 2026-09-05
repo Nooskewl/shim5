@@ -204,7 +204,7 @@ Model::~Model()
 	}
 
 	if (found == false) {
-		for (std::map<std::string, float **>::iterator it = instance->model->precalculated.begin(); it != precalculated.end(); it++) {
+		for (std::map<std::string, float **>::iterator it = instance->model->precalculated.begin(); it != instance->model->precalculated.end(); it++) {
 			std::pair<std::string, float **> p = *it;
 			float **f = p.second;
 			Animation *anim = instance->animations[p.first];
@@ -220,12 +220,12 @@ Model::~Model()
 		for (size_t i = 0; i < roots.size(); i++) {
 			destroy(instance->model->roots[i]);
 		}
-	}
 
-	std::map<std::string, Animation *>::iterator it2;
-	for (it2 = instance->animations.begin(); it2 != instance->animations.end(); it2++) {
-		const std::pair<std::string, Animation *> &p = *it2;
-		destroy(p.second);
+		std::map<std::string, Animation *>::iterator it2;
+		for (it2 = instance->animations.begin(); it2 != instance->animations.end(); it2++) {
+			const std::pair<std::string, Animation *> &p = *it2;
+			destroy(p.second);
+		}
 	}
 
 	delete instance;
