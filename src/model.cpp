@@ -134,8 +134,9 @@ Model::Node::~Node()
 
 //--
 
-Model::Model(std::string filename, bool load_from_filesystem) :
-	line(1)
+Model::Model(std::string filename, bool use_vbo, bool load_from_filesystem) :
+	line(1),
+	use_vbo(use_vbo)
 {
 	instance = new Instance;
 	instance->finished_callback = 0;
@@ -154,6 +155,7 @@ Model::Model(std::string filename, bool load_from_filesystem) :
 			break;
 		}
 	}
+
 	if (found) {
 		instance->is_clone = true;
 		instance->animations = it->second->model->instance->animations;
@@ -167,7 +169,7 @@ Model::Model(std::string filename, bool load_from_filesystem) :
 	}
 
 	std::pair<std::string, Instance *> pair;
-	pair.first = filename;
+	pair.first = instance->filename;
 	pair.second = instance;	
 	loaded_models.push_back(pair);
 }
@@ -1848,7 +1850,7 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 {
 	bool already_set = instance->current_animation == name;
 	// set up influences at this time so it can be done for only 1 anim (fastest way)
-	if (already_set == false && name != "") {
+	if (instance->is_clone == false && already_set == false && name != "") {
 		Model::Node *n = find("Model");
 		if (n == nullptr) {
 			std::vector<Model::Node *> nodes = get_nodes();
@@ -1968,7 +1970,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 	glm::vec4 norm;
 	vert.w = 1.0f;
 	
-	if (anim_name != "") {
+	if (anim_name != "" && a && instance->is_clone == false) {	
 		// animate it!
 		if (a == 0) {
 			util::errormsg("Animation %s not found in model!\n", anim_name.c_str());
@@ -2029,7 +2031,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 	}
 
 ///*
-	if (a && instance->is_clone == false) {	
+	if (use_vbo && a && instance->is_clone == false) {	
 		GLuint vbo;
 		glGenBuffers_ptr(1, &vbo);
 		PRINT_GL_ERROR("glGenBuffers\n");
@@ -2097,7 +2099,7 @@ void Model::draw(SDL_Color tint, bool textured)
 		std::string anim_name = get_current_animation();
 
 		//*
-		if (instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
+		if (use_vbo && instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
 			glBindBuffer_ptr(GL_ARRAY_BUFFER, instance->model->instance->animations[anim_name]->vbos[frame]);
 			PRINT_GL_ERROR("glBindBuffer\n");
 		}
@@ -2115,29 +2117,27 @@ void Model::draw(SDL_Color tint, bool textured)
 			}
 
 			for (size_t i = 0; i < node->textures.size(); i++) {
-				int start = -1;
-				int end = -1;
-				
 				Vertex_Cache::instance()->start(node->textures[i]);
 
 				for (size_t j = 0; j < (size_t)node->num_triangles; j++) {
-					if (node->face_textures[j] == (Uint32)i) {
-						if (start == -1) {
-							start = (int)j;
-						}
-						end = (int)j + 1;
+					while (j < (size_t)node->num_triangles && node->face_textures[j] != (Uint32)i) {
+						j++;
 					}
-					else if (start != -1) {
-						Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
-						start = -1;
-						end = -1;
+					if (j < (size_t)node->num_triangles) {
+						int start = j;
+						while (j < (size_t)node->num_triangles && node->face_textures[j] == (Uint32)i) {
+							j++;
+						}
+						int end = j;
+						if (use_vbo) {
+							Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
+						}
+						else {
+							Vertex_Cache::instance()->cache_3d_immediate(vertices+start*12*3, 0, end-start);
+						}
 					}
 				}
 			
-				if (start != -1) {	
-					Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
-				}
-
 				Vertex_Cache::instance()->end();
 			}
 
@@ -2152,7 +2152,7 @@ void Model::draw(SDL_Color tint, bool textured)
 			Vertex_Cache::instance()->cache_3d_immediate(vertices, 0, node->num_triangles);
 		}
 	///*	
-		if (instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
+		if (use_vbo && instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
 			glBindBuffer_ptr(GL_ARRAY_BUFFER, 0);
 			PRINT_GL_ERROR("glBindBuffer\n");
 		}

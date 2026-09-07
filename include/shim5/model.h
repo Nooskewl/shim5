@@ -76,7 +76,7 @@ public:
 		// For 16 byte alignment to make glm::mat4 able to use SIMD
 	};
 
-	SHIM5_EXPORT Model(std::string filename, bool load_from_filesystem = false);
+	SHIM5_EXPORT Model(std::string filename, bool use_vbo = true, bool load_from_filesystem = false);
 	SHIM5_EXPORT ~Model();
 
 	SHIM5_EXPORT std::vector<Node *> get_nodes();
@@ -153,6 +153,8 @@ private:
 	Instance *instance;
 
 	std::map<std::string, float **> precalculated;
+
+	bool use_vbo;
 };
 
 } // End namespace gfx
