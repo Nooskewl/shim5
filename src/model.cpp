@@ -134,7 +134,7 @@ Model::Node::~Node()
 
 //--
 
-Model::Model(std::string filename, bool use_vbo, bool load_from_filesystem) :
+Model::Model(std::string filename, bool use_vbo, int fps, bool load_from_filesystem) :
 	line(1),
 	use_vbo(use_vbo)
 {
@@ -144,7 +144,6 @@ Model::Model(std::string filename, bool use_vbo, bool load_from_filesystem) :
 	instance->elapsed = 0;
 	instance->frames_per_second = 60;
 	instance->current_animation = "";
-	instance->model = this;
 	instance->filename = filename;
 
 	bool found = false;
@@ -158,14 +157,17 @@ Model::Model(std::string filename, bool use_vbo, bool load_from_filesystem) :
 
 	if (found) {
 		instance->is_clone = true;
-		instance->animations = it->second->model->instance->animations;
 		instance->model = it->second->model;
+		instance->animations = it->second->model->instance->animations;
 		instance->filename = it->second->model->instance->filename;
 	}
 	else {
 		instance->is_clone = false;
+		instance->model = this;
 		read(filename, load_from_filesystem);
-		precalculate_animations(instance->frames_per_second);
+		if (use_vbo) {
+			precalculate_animations(fps);
+		}
 	}
 
 	std::pair<std::string, Instance *> pair;
@@ -207,20 +209,22 @@ Model::~Model()
 	}
 
 	if (found == false) {
-		for (std::map<std::string, float **>::iterator it = instance->model->precalculated.begin(); it != instance->model->precalculated.end(); it++) {
-			std::pair<std::string, float **> p = *it;
-			float **f = p.second;
-			Animation *anim = instance->animations[p.first];
-			std::pair<std::string, Bone *> p2 = *(anim->bones.begin());
-			Bone *bone = p2.second;
-			size_t num_frames = bone->frames.size() * ((float)anim->precalc_fps/instance->frames_per_second);
-			for (size_t i = 0; i < num_frames; i++) {
-				delete[] f[i];
+		if (use_vbo) {
+			for (std::map<std::string, float **>::iterator it = instance->model->precalculated.begin(); it != instance->model->precalculated.end(); it++) {
+				std::pair<std::string, float **> p = *it;
+				float **f = p.second;
+				Animation *anim = instance->animations[p.first];
+				std::pair<std::string, Bone *> p2 = *(anim->bones.begin());
+				Bone *bone = p2.second;
+				size_t num_frames = bone->frames.size() * ((float)anim->precalc_fps/instance->frames_per_second);
+				for (size_t i = 0; i < num_frames; i++) {
+					delete[] f[i];
+				}
+				delete[] f;
 			}
-			delete[] f;
 		}
 
-		for (size_t i = 0; i < roots.size(); i++) {
+		for (size_t i = 0; i < instance->model->roots.size(); i++) {
 			destroy(instance->model->roots[i]);
 		}
 
@@ -1850,7 +1854,7 @@ void Model::set_animation(std::string name, util::Callback finished_callback, vo
 {
 	bool already_set = instance->current_animation == name;
 	// set up influences at this time so it can be done for only 1 anim (fastest way)
-	if (instance->is_clone == false && already_set == false && name != "") {
+	if ((use_vbo == false || instance->is_clone == false) && already_set == false && name != "") {
 		Model::Node *n = find("Model");
 		if (n == nullptr) {
 			std::vector<Model::Node *> nodes = get_nodes();
@@ -1970,7 +1974,7 @@ float *Model::calc_frame(std::string anim_name, int frame)
 	glm::vec4 norm;
 	vert.w = 1.0f;
 	
-	if (anim_name != "" && a && instance->is_clone == false) {	
+	if (anim_name != "" && a && (use_vbo == false || instance->is_clone == false)) {	
 		// animate it!
 		if (a == 0) {
 			util::errormsg("Animation %s not found in model!\n", anim_name.c_str());
@@ -2100,7 +2104,8 @@ void Model::draw(SDL_Color tint, bool textured)
 
 		//*
 		if (use_vbo && instance->model->instance->animations.find(anim_name) != instance->model->instance->animations.end() && instance->model->instance->animations[anim_name]->is_precalculated) {	
-			glBindBuffer_ptr(GL_ARRAY_BUFFER, instance->model->instance->animations[anim_name]->vbos[frame]);
+			int actual_frame = frame * ((float)instance->model->instance->animations[anim_name]->precalc_fps/instance->frames_per_second);
+			glBindBuffer_ptr(GL_ARRAY_BUFFER, instance->model->instance->animations[anim_name]->vbos[actual_frame]);
 			PRINT_GL_ERROR("glBindBuffer\n");
 		}
 		//*/
@@ -2129,12 +2134,7 @@ void Model::draw(SDL_Color tint, bool textured)
 							j++;
 						}
 						int end = j;
-						if (use_vbo) {
-							Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
-						}
-						else {
-							Vertex_Cache::instance()->cache_3d_immediate(vertices+start*12*3, 0, end-start);
-						}
+						Vertex_Cache::instance()->cache_3d_immediate(vertices, start*12*3, end-start);
 					}
 				}
 			
