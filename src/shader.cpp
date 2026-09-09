@@ -363,21 +363,25 @@ void Shader::set_opengl_attributes(int offset, float *pos, float *normal, float 
 
 	if (vbo == 0) {
 		if (pos_attrib != -1 && pos_ptr != pos) {
+			pos += offset;
 			pos_ptr = pos;
 			glVertexAttribPointer_ptr(pos_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), pos);
 			PRINT_GL_ERROR("glVertexAttribPointer _ptr(in_position)\n");
 		}
 		if (normal_attrib != -1 && normal_ptr != normal) {
+			normal += offset;
 			normal_ptr = normal;
 			glVertexAttribPointer_ptr(normal_attrib, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), normal);
 			PRINT_GL_ERROR("glVertexAttribPointer _ptr(in_normal)\n");
 		}
 		if (texcoord_attrib != -1 && texcoord_ptr != texcoord) {
+			texcoord += offset;
 			texcoord_ptr = texcoord;
 			glVertexAttribPointer_ptr(texcoord_attrib, 2, GL_FLOAT, GL_FALSE, 12 * sizeof(float), texcoord);
 			PRINT_GL_ERROR("glVertexAttribPointer _ptr(in_texcoord)\n");
 		}
 		if (colour_attrib != -1 && colour_ptr != colour) {
+			colour += offset;
 			colour_ptr = colour;
 			glVertexAttribPointer_ptr(colour_attrib, 4, GL_FLOAT, GL_FALSE, 12 * sizeof(float), colour);
 			PRINT_GL_ERROR("glVertexAttribPointer _ptr(in_colour)\n");
