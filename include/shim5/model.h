@@ -137,6 +137,7 @@ private:
 		Uint32 elapsed;
 		Uint32 frames_per_second;
 		Model *model;
+		Model *self;
 		std::string filename;
 		bool is_clone;
 	};

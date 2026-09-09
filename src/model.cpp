@@ -145,6 +145,7 @@ Model::Model(std::string filename, bool use_vbo, int fps, bool load_from_filesys
 	instance->frames_per_second = 60;
 	instance->current_animation = "";
 	instance->filename = filename;
+	instance->self = this;
 
 	bool found = false;
 	std::vector< std::pair<std::string, Instance *> >::iterator it = loaded_models.begin();
@@ -190,6 +191,7 @@ Model::~Model()
 		std::vector< std::pair<std::string, Instance *> >::iterator it2 = loaded_models.begin();
 		for (; it2 != loaded_models.end(); it2++) {
 			if (it2->first == filename && it2->second->is_clone == true) {
+				it2->second->model = it2->second->self;
 				it2->second->model->roots = it->second->model->roots;
 				it2->second->model->precalculated = it->second->model->precalculated;
 				it2->second->is_clone = false;
