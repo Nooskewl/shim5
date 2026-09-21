@@ -924,7 +924,7 @@ static void load_fonts()
 	}
 
 	try {
-		shim::font = new TTF(shim::font_name, shim::font_size, sheet_size);
+		shim::font = new TTF("C:/WINDOWS/FONTS/ARIAL.TTF", shim::font_size, sheet_size, true);
 	}
 	catch (util::Error &e) {
 		try {
