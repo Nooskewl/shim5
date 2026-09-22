@@ -104,6 +104,7 @@ extern SHIM5_EXPORT bool multisampling;
 extern SHIM5_EXPORT int aa_samples;
 // audio
 extern SHIM5_EXPORT audio::MML *widget_sfx;
+extern SHIM5_EXPORT audio::MML *button_sfx;
 // input
 extern SHIM5_EXPORT int xbox_l;
 extern SHIM5_EXPORT int xbox_r;

@@ -2,6 +2,7 @@
 #include "shim5/font.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
+#include "shim5/mml.h"
 #include "shim5/primitives.h"
 #include "shim5/shim.h"
 #include "shim5/util.h"
@@ -692,6 +693,7 @@ void Widget_Button::handle_event(TGUI_Event *event)
 					_released = true;
 					_hover = false;
 					if (sound_enabled) {
+						shim::button_sfx->play();
 					}
 				}
 			}
@@ -707,6 +709,7 @@ void Widget_Button::handle_event(TGUI_Event *event)
 					_released = true;
 					_hover = false;
 					if (sound_enabled) {
+						shim::button_sfx->play();
 					}
 				}
 			}
@@ -721,6 +724,7 @@ void Widget_Button::handle_event(TGUI_Event *event)
 					gotten = false;
 					_released = true;
 					if (sound_enabled) {
+						shim::button_sfx->play();
 					}
 				}
 			}

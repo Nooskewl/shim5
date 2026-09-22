@@ -77,6 +77,7 @@ bool scale_mouse_cursor;
 bool multisampling;
 int aa_samples;
 audio::MML *widget_sfx;
+audio::MML *button_sfx;
 int key_l;
 int key_r;
 int key_u;
@@ -160,9 +161,20 @@ static bool init_sdl(int sdl_init_flags)
 static void load_mml()
 {
 	widget_sfx = nullptr;
+	button_sfx = nullptr;
 
 	try {
-		widget_sfx = new audio::MML("sfx/widget.mml");
+		Uint8 *bytes;
+		SDL_IOStream *file;
+		std::string str;
+		str = "@PO0 = { 0 50 }\nA @TYPE3 >> @PO0 g64 @PO0\n";
+		bytes = (Uint8 *)str.c_str();
+		file = SDL_IOFromMem(bytes, str.length());
+		widget_sfx = new audio::MML(file); // this closes the file
+		str = "@PO0 = { 0 10 0 10 0 25 }\nA @TYPE3 @PO0 g64 @PO0\n";
+		bytes = (Uint8 *)str.c_str();
+		file = SDL_IOFromMem(bytes, str.length());
+		button_sfx = new audio::MML(file); // this closes the file
 	}
 	catch (util::Error &e) {
 		util::infomsg(e.error_message + "\n");
@@ -172,6 +184,7 @@ static void load_mml()
 static void destroy_mml()
 {
 	delete widget_sfx;
+	delete button_sfx;
 }
 
 bool static_start(int sdl_init_flags)
@@ -228,6 +241,7 @@ bool static_start(int sdl_init_flags)
 	//user_render = 0;
 	refresh_rate = 0;
 	widget_sfx = 0;
+	button_sfx = 0;
 	cpa_extra_bytes_after_exe_data = 0;
 	cpa_pointer_to_data = 0;
 	cpa_data_size = 0;
