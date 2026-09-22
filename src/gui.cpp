@@ -307,7 +307,7 @@ bool GUI::transition_done(bool transition_in)
 
 //--
 
-Yes_No_GUI::Yes_No_GUI(std::string text, bool escape_cancels, util::Callback callback, void *callback_data, bool shrink_to_fit) :
+Yes_No_GUI::Yes_No_GUI(std::string text, std::string b1, std::string b2, bool escape_cancels, util::Callback callback, void *callback_data, bool shrink_to_fit) :
 	escape_cancels(escape_cancels),
 	callback(callback),
 	callback_data(callback_data),
@@ -324,8 +324,8 @@ Yes_No_GUI::Yes_No_GUI(std::string text, bool escape_cancels, util::Callback cal
 	int line_height = shim::font->get_height() + 1;
 	shim::font->draw_wrapped(shim::white, text, util::Point<int>(0, 0), window_w - WIN_BORDER*4, line_height, -1, -1, 0, true, full, num_lines, width);
 	
-	yes_button = new Widget_Text_Button("Yes");
-	no_button = new Widget_Text_Button("No");
+	yes_button = new Widget_Text_Button(b1);
+	no_button = new Widget_Text_Button(b2);
 
 	// Wrap
 	yes_button->set_left_widget(no_button);
@@ -452,7 +452,7 @@ bool Yes_No_GUI::get_escape_cancels()
 
 //--
 
-Notification_GUI::Notification_GUI(std::string text, util::Callback callback, void *callback_data, bool shrink_to_fit) :
+Notification_GUI::Notification_GUI(std::string text, std::string b1, util::Callback callback, void *callback_data, bool shrink_to_fit) :
 	callback(callback),
 	callback_data(callback_data),
 	count(0)
@@ -466,7 +466,7 @@ Notification_GUI::Notification_GUI(std::string text, util::Callback callback, vo
 	int line_height = shim::font->get_height() + 1;
 	shim::font->draw_wrapped(shim::white, text, util::Point<int>(0, 0), window_w - WIN_BORDER*4, line_height, -1, -1, 0, true, full, num_lines, width);
 	
-	ok_button = new Widget_Text_Button("OK");
+	ok_button = new Widget_Text_Button(b1);
 
 	if (shrink_to_fit) {
 		window_w = MIN(window_w, MAX(ok_button->get_width(), width) + WIN_BORDER * 4);
@@ -695,7 +695,7 @@ static void yes_no_cb(void *data)
 	yes_no_popup_result = d->choice;
 }
 
-int popup(std::string caption, std::string text, Popup_Type type)
+int popup(std::string caption, std::string text, Popup_Type type, std::string b1, std::string b2)
 {
 	glm::mat4 _mv, _proj;
 	gfx::get_matrices(_mv, _proj);
@@ -721,10 +721,20 @@ int popup(std::string caption, std::string text, Popup_Type type)
 	caption = "#FFD800" + caption;
 	text = "#FFFFFF" + text;
 	if (type == YESNO) {
-		gui = new Yes_No_GUI(caption+" "+text, true, yes_no_cb, 0, true);
+		if (b1 == "") {
+			b1 = "Yes";
+		}
+		if (b2 == "") {
+			b2 = "No";
+		}
+
+		gui = new Yes_No_GUI(caption+" "+text, b1, b2, true, yes_no_cb, 0, true);
 	}
 	else {
-		gui = new Notification_GUI(caption+" "+text, 0, 0, true);
+		if (b1 == "") {
+			b1 = "OK";
+		}
+		gui = new Notification_GUI(caption+" "+text, b1, 0, 0, true);
 	}
 	shim::guis.push_back(gui);
 

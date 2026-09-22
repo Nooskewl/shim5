@@ -94,7 +94,7 @@ protected:
 class Yes_No_GUI : public GUI
 {
 public:
-	Yes_No_GUI(std::string text, bool escape_cancels, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
+	Yes_No_GUI(std::string text, std::string b1, std::string b2, bool escape_cancels, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
 	virtual ~Yes_No_GUI();
 
 	void update();
@@ -126,7 +126,7 @@ public:
 		void *userdata;
 	};
 
-	Notification_GUI(std::string text, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
+	Notification_GUI(std::string text, std::string b1, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
 	virtual ~Notification_GUI();
 
 	void update();
@@ -147,7 +147,7 @@ enum Popup_Type {
 };
 
 // Functions
-int SHIM5_EXPORT popup(std::string caption, std::string text, Popup_Type type);
+int SHIM5_EXPORT popup(std::string caption, std::string text, Popup_Type type, std::string b1 = "", std::string b2 = "");
 int SHIM5_EXPORT fatalerror(std::string caption, std::string text, Popup_Type type, bool do_exit = false);
 
 } // End namespace gui
