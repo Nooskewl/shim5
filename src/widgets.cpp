@@ -983,7 +983,7 @@ void Widget_Window::draw()
 	magenta.g = 0;
 	magenta.b = 216;
 	magenta.a = 255;
-	gfx::draw_rectangle(magenta, util::Point<float>(calculated_x+1.5f, calculated_y+1.5f), util::Size<int>(calculated_w-3.0f, calculated_h-3.0f));
+	gfx::draw_rectangle(magenta, util::Point<float>(calculated_x+2.0f, calculated_y+2.0f), util::Size<int>(calculated_w-4.0f, calculated_h-4.0f));
 }
 	
 void Widget_Window::set_image(gfx::Image *image)
