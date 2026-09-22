@@ -641,6 +641,8 @@ static void yes_no_cb(void *data)
 
 int popup(std::string caption, std::string text, std::string b1, std::string b2, std::string b3)
 {
+	gfx::screen_shake(0, 0);
+
 	glm::mat4 _mv, _proj;
 	gfx::get_matrices(_mv, _proj);
 	gfx::Shader *old_shader = shim::current_shader;

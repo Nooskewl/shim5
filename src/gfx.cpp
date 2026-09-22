@@ -2564,6 +2564,11 @@ void screen_shake(float amount, Uint32 length)
 {
 	screen_shake_amount = amount;
 	screen_shake_end = SDL_GetTicks() + length;
+	if (amount == 0 && length == 0 && shim::using_screen_shake) {
+		shim::using_screen_shake = false;
+		gfx::set_matrices(screen_shake_mv, screen_shake_p);
+		gfx::update_projection();
+	}
 }
 
 void set_cursor_pos(util::Point<int> pos)
