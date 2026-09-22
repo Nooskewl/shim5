@@ -925,7 +925,6 @@ static void load_fonts()
 
 	try {
 		shim::font = new TTF("C:/WINDOWS/FONTS/ARIAL.TTF", shim::font_size, sheet_size, true);
-		shim::font->cache_glyphs("0123456789"); // For FPS
 	}
 	catch (util::Error &e) {
 		try {
