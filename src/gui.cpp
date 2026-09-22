@@ -429,7 +429,7 @@ void Multi_Button_GUI::update()
 	else if (wb3 && wb3->pressed()) {
 		if (callback) {
 			Multi_Button_GUI_Callback_Data d;
-			d.choice = 1;
+			d.choice = 2;
 			d.cancelled = false;
 			d.userdata = callback_data;
 			callback(&d);
