@@ -459,7 +459,7 @@ Notification_GUI::Notification_GUI(std::string text, util::Callback callback, vo
 {
 	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
 
-	int window_w = 200;
+	int window_w = 375;
 
 	bool full;
 	int num_lines, width;
