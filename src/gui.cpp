@@ -718,6 +718,8 @@ int popup(std::string caption, std::string text, Popup_Type type)
 	std::vector<GUI *> guis = shim::guis;
 	shim::guis.clear();
 	GUI *gui;
+	caption = "#FFD800" + caption;
+	text = "#FFFFFF" + text;
 	if (type == YESNO) {
 		gui = new Yes_No_GUI(caption+" "+text, true, yes_no_cb, 0, true);
 	}
