@@ -10,8 +10,8 @@ namespace noo {
 
 namespace gui {
 
-struct Yes_No_GUI_Callback_Data {
-	bool choice;
+struct Multi_Button_GUI_Callback_Data {
+	int choice;
 	bool cancelled;
 	void *userdata;
 };
@@ -91,25 +91,23 @@ protected:
 	float slide_save;
 };
 
-class Yes_No_GUI : public GUI
+class Multi_Button_GUI : public GUI
 {
 public:
-	Yes_No_GUI(std::string text, std::string b1, std::string b2, bool escape_cancels, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
-	virtual ~Yes_No_GUI();
+	Multi_Button_GUI(std::string text, bool escape_cancels, std::string b1 = "OK", std::string b2 = "", std::string b3 = "", util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
+	virtual ~Multi_Button_GUI();
 
 	void update();
 	void handle_event(TGUI_Event *event);
 
-	void set_selected(bool yes_no);
-
-	void set_b1_text(std::string b1_text);
-	void set_b2_text(std::string b2_text);
+	void set_selected(int sel);
 
 	bool get_escape_cancels();
 
 private:
-	Widget_Text_Button *yes_button;
-	Widget_Text_Button *no_button;
+	Widget_Text_Button *wb1;
+	Widget_Text_Button *wb2;
+	Widget_Text_Button *wb3;
 
 	bool escape_cancels;
 
@@ -119,36 +117,9 @@ private:
 	int count;
 };
 
-class Notification_GUI : public GUI
-{
-public:
-	struct Callback_Data {
-		void *userdata;
-	};
-
-	Notification_GUI(std::string text, std::string b1, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
-	virtual ~Notification_GUI();
-
-	void update();
-	void handle_event(TGUI_Event *event);
-
-private:
-	Widget_Text_Button *ok_button;
-
-	util::Callback callback;
-	void *callback_data;
-
-	int count;
-};
-
-enum Popup_Type {
-	OK = 0,
-	YESNO = 1
-};
-
 // Functions
-int SHIM5_EXPORT popup(std::string caption, std::string text, Popup_Type type, std::string b1 = "", std::string b2 = "");
-int SHIM5_EXPORT fatalerror(std::string caption, std::string text, Popup_Type type, bool do_exit = false);
+int SHIM5_EXPORT popup(std::string caption, std::string text, std::string b1 = "OK", std::string b2 = "", std::string b3 = "");
+int SHIM5_EXPORT fatalerror(std::string caption, std::string text, bool do_exit = false);
 
 } // End namespace gui
 

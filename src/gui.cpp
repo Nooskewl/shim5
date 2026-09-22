@@ -307,13 +307,13 @@ bool GUI::transition_done(bool transition_in)
 
 //--
 
-Yes_No_GUI::Yes_No_GUI(std::string text, std::string b1, std::string b2, bool escape_cancels, util::Callback callback, void *callback_data, bool shrink_to_fit) :
+Multi_Button_GUI::Multi_Button_GUI(std::string text, bool escape_cancels, std::string b1, std::string b2, std::string b3, util::Callback callback, void *callback_data, bool shrink_to_fit) :
 	escape_cancels(escape_cancels),
 	callback(callback),
 	callback_data(callback_data),
 	count(0)
 {
-	transition = true;
+	transition = false;
 
 	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
 
@@ -324,31 +324,53 @@ Yes_No_GUI::Yes_No_GUI(std::string text, std::string b1, std::string b2, bool es
 	int line_height = shim::font->get_height() + 1;
 	shim::font->draw_wrapped(shim::white, text, util::Point<int>(0, 0), window_w - WIN_BORDER*4, line_height, -1, -1, 0, true, full, num_lines, width);
 	
-	yes_button = new Widget_Text_Button(b1);
-	no_button = new Widget_Text_Button(b2);
-
-	// Wrap
-	yes_button->set_left_widget(no_button);
-	no_button->set_right_widget(yes_button);
+	wb1 = new Widget_Text_Button(b1);
+	if (b2 == "") {
+		wb2 = nullptr;
+	}
+	else {
+		wb2 = new Widget_Text_Button(b2);
+	}
+	if (b3 == "") {
+		wb3 = nullptr;
+	}
+	else {
+		wb3 = new Widget_Text_Button(b3);
+	}
 
 	if (shrink_to_fit) {
-		window_w = MIN(window_w, MAX(yes_button->get_width() + no_button->get_width() + 2, width) + WIN_BORDER * 4);
+		if (wb3) {
+			window_w = MIN(window_w, MAX(wb1->get_width() + wb2->get_width() + wb3->get_width() + 2, width) + WIN_BORDER * 4);
+		}
+		else if (wb2) {
+			window_w = MIN(window_w, MAX(wb1->get_width() + wb2->get_width() + 2, width) + WIN_BORDER * 4);
+		}
+		else {
+			window_w = MIN(window_w, MAX(wb1->get_width(), width) + WIN_BORDER * 4);
+		}
 	}
 
 	Widget_Label *label = new Widget_Label(text, window_w - WIN_BORDER*4, shim::font);
 	label->set_centre_x(true);
 	label->set_padding(WIN_BORDER);
 
-	yes_button->set_centre_x(true);
-	yes_button->set_padding_right(2);
+	wb1->set_centre_x(true);
+	wb1->set_padding_right(2);
 
-	no_button->set_centre_x(true);
-	no_button->set_padding_left(20);
+	if (wb2) {
+		wb2->set_centre_x(true);
+		wb2->set_padding_left(20);
+	}
 
-	Widget *button_container = new Widget(1.0f, yes_button->get_height());
+	if (wb3) {
+		wb3->set_centre_x(true);
+		wb3->set_padding_left(20);
+	}
+
+	Widget *button_container = new Widget(1.0f, wb1->get_height());
 	button_container->set_float_bottom(true);
 
-	Widget_Window *window = new Widget_Window(window_w, line_height * num_lines + yes_button->get_height() + WIN_BORDER*4);
+	Widget_Window *window = new Widget_Window(window_w, line_height * num_lines + wb1->get_height() + WIN_BORDER*4);
 	window->set_centre_x(true);
 	window->set_centre_y(true);
 	window->set_parent(modal_main_widget);
@@ -359,19 +381,24 @@ Yes_No_GUI::Yes_No_GUI(std::string text, std::string b1, std::string b2, bool es
 
 	label->set_parent(pad);
 	button_container->set_parent(pad);
-	yes_button->set_parent(button_container);
-	no_button->set_parent(button_container);
+	wb1->set_parent(button_container);
+	if (wb2) {
+		wb2->set_parent(button_container);
+	}
+	if (wb3) {
+		wb3->set_parent(button_container);
+	}
 
 	gui = new TGUI(modal_main_widget, shim::screen_size.w, shim::screen_size.h);
 
-	gui->set_focus(yes_button);
+	gui->set_focus(wb1);
 }
 
-Yes_No_GUI::~Yes_No_GUI()
+Multi_Button_GUI::~Multi_Button_GUI()
 {
 }
 
-void Yes_No_GUI::update()
+void Multi_Button_GUI::update()
 {
 	GUI::update();
 
@@ -379,20 +406,30 @@ void Yes_No_GUI::update()
 		return;
 	}
 
-	if (yes_button->pressed()) {
+	if (wb1->pressed()) {
 		if (callback) {
-			Yes_No_GUI_Callback_Data d;
-			d.choice = true;
+			Multi_Button_GUI_Callback_Data d;
+			d.choice = 0;
 			d.cancelled = false;
 			d.userdata = callback_data;
 			callback(&d);
 		}
 		exit();
 	}
-	else if (no_button->pressed()) {
+	else if (wb2 && wb2->pressed()) {
 		if (callback) {
-			Yes_No_GUI_Callback_Data d;
-			d.choice = false;
+			Multi_Button_GUI_Callback_Data d;
+			d.choice = 1;
+			d.cancelled = false;
+			d.userdata = callback_data;
+			callback(&d);
+		}
+		exit();
+	}
+	else if (wb3 && wb3->pressed()) {
+		if (callback) {
+			Multi_Button_GUI_Callback_Data d;
+			d.choice = 1;
 			d.cancelled = false;
 			d.userdata = callback_data;
 			callback(&d);
@@ -401,7 +438,7 @@ void Yes_No_GUI::update()
 	}
 }
 
-void Yes_No_GUI::handle_event(TGUI_Event *event)
+void Multi_Button_GUI::handle_event(TGUI_Event *event)
 {
 	if (transitioning_in || transitioning_out) {
 		return;
@@ -412,8 +449,8 @@ void Yes_No_GUI::handle_event(TGUI_Event *event)
 		(event->type == TGUI_JOY_DOWN && event->joystick.button == TGUI_B_BACK)
 	)) {
 		if (callback) {
-			Yes_No_GUI_Callback_Data d;
-			d.choice = false;
+			Multi_Button_GUI_Callback_Data d;
+			d.choice = -1;
 			d.cancelled = true;
 			d.userdata = callback_data;
 			callback(&d);
@@ -425,115 +462,22 @@ void Yes_No_GUI::handle_event(TGUI_Event *event)
 	}
 }
 
-void Yes_No_GUI::set_selected(bool yes_no)
+void Multi_Button_GUI::set_selected(int v)
 {
-	if (yes_no) {
-		gui->set_focus(yes_button);
+	if (v == 0) {
+		gui->set_focus(wb1);
+	}
+	else if (v == 1) {
+		gui->set_focus(wb2);
 	}
 	else {
-		gui->set_focus(no_button);
+		gui->set_focus(wb3);
 	}
 }
 
-void Yes_No_GUI::set_b1_text(std::string b1_text)
-{
-	yes_button->set_text(b1_text);
-}
-
-void Yes_No_GUI::set_b2_text(std::string b2_text)
-{
-	no_button->set_text(b2_text);
-}
-
-bool Yes_No_GUI::get_escape_cancels()
+bool Multi_Button_GUI::get_escape_cancels()
 {
 	return escape_cancels;
-}
-
-//--
-
-Notification_GUI::Notification_GUI(std::string text, std::string b1, util::Callback callback, void *callback_data, bool shrink_to_fit) :
-	callback(callback),
-	callback_data(callback_data),
-	count(0)
-{
-	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
-
-	int window_w = 375;
-
-	bool full;
-	int num_lines, width;
-	int line_height = shim::font->get_height() + 1;
-	shim::font->draw_wrapped(shim::white, text, util::Point<int>(0, 0), window_w - WIN_BORDER*4, line_height, -1, -1, 0, true, full, num_lines, width);
-	
-	ok_button = new Widget_Text_Button(b1);
-
-	if (shrink_to_fit) {
-		window_w = MIN(window_w, MAX(ok_button->get_width(), width) + WIN_BORDER * 4);
-	}
-	
-	Widget_Label *label = new Widget_Label(text, window_w - WIN_BORDER*4, shim::font);
-	label->set_padding(WIN_BORDER);
-	label->set_centre_x(true);
-
-	ok_button->set_centre_x(true);
-	ok_button->set_float_bottom(true);
-
-	Widget_Window *window = new Widget_Window(window_w, line_height * num_lines + ok_button->get_height() + WIN_BORDER*4);
-	window->set_centre_x(true);
-	window->set_centre_y(true);
-	window->set_parent(modal_main_widget);
-
-	TGUI_Widget *pad = new TGUI_Widget(1.0f, 1.0f);
-	pad->set_padding(WIN_BORDER);
-	pad->set_parent(window);
-	
-	label->set_parent(pad);
-	ok_button->set_parent(pad);
-
-	gui = new TGUI(modal_main_widget, shim::screen_size.w, shim::screen_size.h);
-
-	gui->set_focus(ok_button);
-}
-
-Notification_GUI::~Notification_GUI()
-{
-}
-
-void Notification_GUI::update()
-{
-	GUI::update();
-
-	if (ok_button->pressed()) {
-		if (callback) {
-			Callback_Data d;
-			d.userdata = callback_data;
-			callback(&d);
-		}
-		exit();
-	}
-}
-
-void Notification_GUI::handle_event(TGUI_Event *event)
-{
-	if (transitioning_in || transitioning_out) {
-		return;
-	}
-
-	if (
-		(event->type == TGUI_KEY_DOWN && event->keyboard.code == TGUIK_ESCAPE) ||
-		(event->type == TGUI_JOY_DOWN && event->joystick.button == TGUI_B_BACK)
-	) {
-		if (callback) {
-			Callback_Data d;
-			d.userdata = callback_data;
-			callback(&d);
-		}
-		exit();
-	}
-	else {
-		gui::GUI::handle_event(event);
-	}
 }
 
 //--
@@ -687,15 +631,15 @@ static void gui_loop(gui::GUI *gui, gfx::Image *img)
 	}
 }
 
-static bool yes_no_popup_result;
+static int multi_popup_result;
 
 static void yes_no_cb(void *data)
 {
-	Yes_No_GUI_Callback_Data *d = (Yes_No_GUI_Callback_Data *)data;
-	yes_no_popup_result = d->choice;
+	Multi_Button_GUI_Callback_Data *d = (Multi_Button_GUI_Callback_Data *)data;
+	multi_popup_result = d->choice;
 }
 
-int popup(std::string caption, std::string text, Popup_Type type, std::string b1, std::string b2)
+int popup(std::string caption, std::string text, std::string b1, std::string b2, std::string b3)
 {
 	glm::mat4 _mv, _proj;
 	gfx::get_matrices(_mv, _proj);
@@ -720,22 +664,7 @@ int popup(std::string caption, std::string text, Popup_Type type, std::string b1
 	GUI *gui;
 	caption = "#FFD800" + caption;
 	text = "#FFFFFF" + text;
-	if (type == YESNO) {
-		if (b1 == "") {
-			b1 = "Yes";
-		}
-		if (b2 == "") {
-			b2 = "No";
-		}
-
-		gui = new Yes_No_GUI(caption+" "+text, b1, b2, true, yes_no_cb, 0, true);
-	}
-	else {
-		if (b1 == "") {
-			b1 = "OK";
-		}
-		gui = new Notification_GUI(caption+" "+text, b1, 0, 0, true);
-	}
+	gui = new Multi_Button_GUI(caption+" "+text, true, b1, b2, b3, yes_no_cb, 0, true);
 	shim::guis.push_back(gui);
 
 	shim::convert_directions_to_focus_events = true;
@@ -771,7 +700,7 @@ int popup(std::string caption, std::string text, Popup_Type type, std::string b1
 	SDL_SetWindowResizable(gfx::internal::gfx_context.window, true);
 
 	delete img;
-	return yes_no_popup_result ? 1 : 0;
+	return multi_popup_result;
 /*
 	UINT native_type;
 	if (type == OK) {
@@ -813,7 +742,7 @@ static void delete_shim_args()
        shim::argv = NULL;
 }
 
-int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_exit)
+int fatalerror(std::string caption, std::string text, bool do_exit)
 {
 	delete_shim_args();
 	shim::argc = 3;
@@ -834,7 +763,7 @@ int fatalerror(std::string caption, std::string text, Popup_Type type, bool do_e
 	
 	SDL_Delay(250);
 
-	int ret = popup(caption, text, type);
+	int ret = popup(caption, text);
 	if (do_exit) {
 		exit(1);
 	}
