@@ -98,6 +98,17 @@ void Widget::draw()
 	}
 }
 
+bool Widget::is_focussed()
+{
+	if (shim::guis.size() == 0) {
+		return false;
+	}
+	if (gui != shim::guis.back()->gui) {
+		return false;
+	}
+	return gui->get_focus() == this;
+}
+
 //--
 
 DevSettings_List::DevSettings_List() :
@@ -570,6 +581,419 @@ void DevSettings_Label::set_text(std::string text)
 std::string DevSettings_Label::get_text()
 {
 	return text;
+}
+
+//--
+
+Widget_Button::Widget_Button(int w, int h) :
+	Widget(w, h)
+{
+	start();
+}
+
+Widget_Button::Widget_Button(float w, float h) :
+	Widget(w, h)
+{
+	start();
+}
+
+Widget_Button::Widget_Button(int w, float h) :
+	Widget(w, h)
+{
+	start();
+}
+
+Widget_Button::Widget_Button(float w, int h) :
+	Widget(w, h)
+{
+	start();
+}
+
+void Widget_Button::start()
+{
+	_pressed = false;
+	_released = false;
+	_hover = false;
+	gotten = true;
+	sound_enabled = true;
+	accepts_focus = true;
+	mouse_only = false;
+}
+
+Widget_Button::~Widget_Button()
+{
+}
+
+void Widget_Button::handle_event(TGUI_Event *event)
+{
+	if (mouse_only && (event->type == TGUI_KEY_DOWN || event->type == TGUI_KEY_UP || event->type == TGUI_JOY_DOWN || event->type == TGUI_JOY_UP)) {
+		return;
+	}
+
+	int x, y;
+
+	if (use_relative_position) {
+		x = relative_x;
+		y = relative_y;
+	}
+	else {
+		x = calculated_x;
+		y = calculated_y;
+	}
+
+	if (event->type == TGUI_MOUSE_AXIS) {
+		if (event->mouse.x >= x && event->mouse.x < x+calculated_w && event->mouse.y >= y && event->mouse.y < y+calculated_h) {
+			_hover = true;
+		}
+		else {
+			_hover = false;
+		}
+	}
+	if (accepts_focus && gui->get_event_owner(event) == this) {
+		if (event->type == TGUI_KEY_DOWN && event->keyboard.is_repeat == false) {
+			if (event->keyboard.code == TGUIK_RETURN) {
+				if (gotten) {
+					_pressed = true;
+					_hover = true;
+				}
+			}
+			else {
+				_pressed = false;
+				_hover = false;
+			}
+		}
+		else if (event->type == TGUI_JOY_DOWN && event->joystick.is_repeat == false) {
+			if (event->joystick.button == TGUI_B_A) {
+				if (gotten) {
+					_pressed = true;
+					_hover = true;
+				}
+			}
+			else {
+				_pressed = false;
+				_hover = false;
+			}
+		}
+		else if (event->type == TGUI_MOUSE_DOWN && event->mouse.is_repeat == false) {
+			if (event->mouse.button == 1) {
+				if (gotten) {
+					_pressed = true;
+				}
+			}
+			else {
+				_pressed = false;
+			}
+			_hover = true;
+		}
+		else if (event->type == TGUI_KEY_UP && event->keyboard.is_repeat == false) {
+			if (_pressed && event->keyboard.code == TGUIK_RETURN) {
+				if (gotten) {
+					gotten = false;
+					_released = true;
+					_hover = false;
+					if (sound_enabled) {
+					}
+				}
+			}
+			else {
+				_pressed = false;
+				_hover = false;
+			}
+		}
+		else if (event->type == TGUI_JOY_UP && event->joystick.is_repeat == false) {
+			if (_pressed && (event->joystick.button == TGUI_B_A)) {
+				if (gotten) {
+					gotten = false;
+					_released = true;
+					_hover = false;
+					if (sound_enabled) {
+					}
+				}
+			}
+			else {
+				_pressed = false;
+				_hover = false;
+			}
+		}
+		else if (event->type == TGUI_MOUSE_UP && event->mouse.is_repeat == false) {
+			if (_pressed && (event->mouse.button == 1)) {
+				if (gotten) {
+					gotten = false;
+					_released = true;
+					if (sound_enabled) {
+					}
+				}
+			}
+			else {
+				_pressed = false;
+			}
+		}
+	}
+	else {
+		if (event->type == TGUI_KEY_UP) {
+			_pressed = false;
+			_hover = false;
+		}
+		else if (event->type == TGUI_JOY_UP) {
+			_pressed = false;
+			_hover = false;
+		}
+		else if (event->type == TGUI_MOUSE_UP && event->mouse.is_repeat == false) {
+			_pressed = false;
+			_hover = false;
+		}
+		else if ((event->type == TGUI_MOUSE_DOWN || event->type == TGUI_MOUSE_AXIS) && event->mouse.is_repeat == false) {
+			_hover = false;
+		}
+	}
+}
+
+bool Widget_Button::pressed()
+{
+	bool r = _released;
+	if (_released) {
+		_pressed = _released = false;
+	}
+	gotten = true;
+	return r;
+}
+
+void Widget_Button::set_sound_enabled(bool enabled)
+{
+	sound_enabled = enabled;
+}
+
+void Widget_Button::set_pressed(bool pressed)
+{
+	this->_pressed = this->_released = pressed;
+}
+
+void Widget_Button::set_mouse_only(bool mouse_only)
+{
+	this->mouse_only = mouse_only;
+}
+
+Widget_Text_Button::Widget_Text_Button(std::string text) :
+	Widget_Button(0, 0),
+	text(text)
+{
+	enabled = true;
+	set_size();
+}
+
+Widget_Text_Button::~Widget_Text_Button()
+{
+}
+
+void Widget_Text_Button::draw()
+{
+	bool focussed = is_focussed();
+
+	int x, y;
+
+	if (use_relative_position) {
+		x = relative_x;
+		y = relative_y;
+	}
+	else {
+		x = calculated_x;
+		y = calculated_y;
+	}
+
+	SDL_Color colour;
+
+	SDL_Color defcol;
+	defcol.r = 128;
+	defcol.g = 128;
+	defcol.b = 128;
+	defcol.a = 255;
+
+	if (focussed) {
+		SDL_Color c1 = shim::white;
+		SDL_Color c2 = defcol;
+		int dr = int(c2.r) - int(c1.r);
+		int dg = int(c2.g) - int(c1.g);
+		int db = int(c2.b) - int(c1.b);
+		int da = int(c2.a) - int(c1.a);
+		Uint32 t = SDL_GetTicks() % 1000;
+		float p;
+		if (t < 500) {
+			p = t / 500.0f;
+		}
+		else {
+			p = 1.0f - ((t - 500) / 500.0f);
+		}
+		p = sin(p * M_PI / 2.0f);
+		colour.r = c1.r + dr * p;
+		colour.g = c1.g + dg * p;
+		colour.b = c1.b + db * p;
+		colour.a = c1.a + da * p;
+	}
+	else{
+		colour = defcol;
+	}
+
+	shim::font->draw(colour, text, util::Point<float>(x, y) + (_pressed && _hover ? util::Point<int>(1, 1) : util::Point<int>(0, 0)));
+
+	if (focussed && gui == shim::guis.back()->gui) {
+		SDL_Color yellow;
+		yellow.r = 255;
+		yellow.g = 216;
+		yellow.b = 0;
+		yellow.a = 255;
+		y += shim::font->get_height() / 2.0f;
+		gfx::draw_filled_triangle(yellow, util::Point<float>(x - 8.0f, y - 4.0f), util::Point<float>(x - 8.0f, y + 4.0f), util::Point<float>(x, y));
+	}
+}
+
+void Widget_Text_Button::set_size()
+{
+	w = shim::font->get_text_width(text);
+	h = shim::font->get_height();
+}
+
+void Widget_Text_Button::set_enabled(bool enabled)
+{
+	this->enabled = enabled;
+	if (enabled == true) {
+		accepts_focus = true;
+	}
+	else {
+		accepts_focus = false;
+	}
+}
+
+bool Widget_Text_Button::is_enabled()
+{
+	return enabled;
+}
+
+void Widget_Text_Button::set_text(std::string text)
+{
+	this->text = text;
+	set_size();
+}
+
+void Widget_Label::start()
+{
+}
+
+Widget_Label::Widget_Label(std::string text, int max_w, gfx::Font *font) :
+	Widget(0, 0)
+{
+	this->font = (font == NULL) ? shim::font : font;
+
+	start();
+
+	if (max_w < 0) {
+		this->max_w = INT_MAX;
+	}
+	else {
+		this->max_w = max_w;
+	}
+
+	set_text(text);
+}
+
+Widget_Label::~Widget_Label()
+{
+}
+
+void Widget_Label::draw()
+{
+	bool full;
+	int num_lines, width;
+
+	font->draw_wrapped(shim::white, text, util::Point<int>(calculated_x, calculated_y), max_w, font->get_height()+1, -1, -1, 0, false, full, num_lines, width);
+}
+
+void Widget_Label::set_text(std::string text)
+{
+	this->text = text;
+	bool full;
+	int num_lines, width;
+	int line_height = font->get_height()-1;
+	font->draw_wrapped(shim::white, text, util::Point<int>(calculated_x, calculated_y), max_w, line_height, -1, -1, 0, true, full, num_lines, width);
+	w = width;
+	h = line_height * num_lines;
+}
+
+void Widget_Label::set_max_width(int width)
+{
+	max_w = width;
+	set_text(text); // readjust w
+}
+
+std::string Widget_Label::get_text()
+{
+	return text;
+}
+
+Widget_Window::Widget_Window(int w, int h) :
+	Widget(w, h)
+{
+	start();
+}
+
+Widget_Window::Widget_Window(float percent_w, float percent_h) :
+	Widget(percent_w, percent_h)
+{
+	start();
+}
+
+Widget_Window::Widget_Window(int w, float percent_h) :
+	Widget(w, percent_h)
+{
+	start();
+}
+
+Widget_Window::Widget_Window(float percent_w, int h) :
+	Widget(percent_w, h)
+{
+	start();
+}
+
+Widget_Window::Widget_Window(TGUI_Widget::Fit fit, int other) :
+	Widget(fit, other)
+{
+	start();
+}
+
+Widget_Window::Widget_Window(TGUI_Widget::Fit fit, float percent_other) :
+	Widget(fit, percent_other)
+{
+	start();
+}
+
+void Widget_Window::start()
+{
+	image = nullptr;
+	alpha = 1.0f;
+}
+
+Widget_Window::~Widget_Window()
+{
+}
+
+void Widget_Window::draw()
+{
+	gfx::draw_filled_rectangle(shim::black, util::Point<int>(calculated_x, calculated_y), util::Size<int>(calculated_w, calculated_h));
+	SDL_Color magenta;
+	magenta.r = 255;
+	magenta.g = 0;
+	magenta.b = 216;
+	magenta.a = 255;
+	gfx::draw_rectangle(magenta, util::Point<float>(calculated_x+1.5f, calculated_y+1.5f), util::Size<int>(calculated_w-3.0f, calculated_h-3.0f));
+}
+	
+void Widget_Window::set_image(gfx::Image *image)
+{
+	this->image = image;
+}
+
+void Widget_Window::set_alpha(float alpha)
+{
+	this->alpha = alpha;
 }
 
 } // End namespace gui

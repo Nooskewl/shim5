@@ -4,10 +4,17 @@
 #include "shim5/main.h"
 #include "shim5/shim.h"
 #include "shim5/translation.h"
+#include "shim5/widgets.h"
 
 namespace noo {
 
 namespace gui {
+
+struct Yes_No_GUI_Callback_Data {
+	bool choice;
+	bool cancelled;
+	void *userdata;
+};
 
 EXPORT_CLASS_ALIGN(GUI, 16) {
 public:
@@ -82,6 +89,56 @@ protected:
 	float last_transition_p;
 	int transition_duration;
 	float slide_save;
+};
+
+class Yes_No_GUI : public GUI
+{
+public:
+	Yes_No_GUI(std::string text, bool escape_cancels, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
+	virtual ~Yes_No_GUI();
+
+	void update();
+	void handle_event(TGUI_Event *event);
+
+	void set_selected(bool yes_no);
+
+	void set_b1_text(std::string b1_text);
+	void set_b2_text(std::string b2_text);
+
+	bool get_escape_cancels();
+
+private:
+	Widget_Text_Button *yes_button;
+	Widget_Text_Button *no_button;
+
+	bool escape_cancels;
+
+	util::Callback callback;
+	void *callback_data;
+	
+	int count;
+};
+
+class Notification_GUI : public GUI
+{
+public:
+	struct Callback_Data {
+		void *userdata;
+	};
+
+	Notification_GUI(std::string text, util::Callback callback = 0, void *callback_data = 0, bool shrink_to_fit = true);
+	virtual ~Notification_GUI();
+
+	void update();
+	void handle_event(TGUI_Event *event);
+
+private:
+	Widget_Text_Button *ok_button;
+
+	util::Callback callback;
+	void *callback_data;
+
+	int count;
 };
 
 enum Popup_Type {

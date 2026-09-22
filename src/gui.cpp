@@ -15,6 +15,8 @@
 
 using namespace noo;
 
+const int WIN_BORDER = 10;
+
 namespace noo {
 
 namespace gui {
@@ -305,8 +307,460 @@ bool GUI::transition_done(bool transition_in)
 
 //--
 
+Yes_No_GUI::Yes_No_GUI(std::string text, bool escape_cancels, util::Callback callback, void *callback_data, bool shrink_to_fit) :
+	escape_cancels(escape_cancels),
+	callback(callback),
+	callback_data(callback_data),
+	count(0)
+{
+	transition = true;
+
+	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
+
+	int window_w = int(shim::screen_size.w * 0.75f);
+
+	bool full;
+	int num_lines, width;
+	int line_height = shim::font->get_height() + 1;
+	shim::font->draw_wrapped(shim::white, text, util::Point<int>(0, 0), window_w - WIN_BORDER*4, line_height, -1, -1, 0, true, full, num_lines, width);
+	
+	yes_button = new Widget_Text_Button("Yes");
+	no_button = new Widget_Text_Button("No");
+
+	// Wrap
+	yes_button->set_left_widget(no_button);
+	no_button->set_right_widget(yes_button);
+
+	if (shrink_to_fit) {
+		window_w = MIN(window_w, MAX(yes_button->get_width() + no_button->get_width() + 2, width) + WIN_BORDER * 4);
+	}
+
+	Widget_Label *label = new Widget_Label(text, window_w - WIN_BORDER*4, shim::font);
+	label->set_centre_x(true);
+	label->set_padding(WIN_BORDER);
+
+	yes_button->set_centre_x(true);
+	yes_button->set_padding_right(2);
+
+	no_button->set_centre_x(true);
+	no_button->set_padding_left(20);
+
+	Widget *button_container = new Widget(1.0f, yes_button->get_height());
+	button_container->set_float_bottom(true);
+
+	Widget_Window *window = new Widget_Window(window_w, line_height * num_lines + yes_button->get_height() + WIN_BORDER*4);
+	window->set_centre_x(true);
+	window->set_centre_y(true);
+	window->set_parent(modal_main_widget);
+
+	TGUI_Widget *pad = new TGUI_Widget(1.0f, 1.0f);
+	pad->set_padding(WIN_BORDER);
+	pad->set_parent(window);
+
+	label->set_parent(pad);
+	button_container->set_parent(pad);
+	yes_button->set_parent(button_container);
+	no_button->set_parent(button_container);
+
+	gui = new TGUI(modal_main_widget, shim::screen_size.w, shim::screen_size.h);
+
+	gui->set_focus(yes_button);
+}
+
+Yes_No_GUI::~Yes_No_GUI()
+{
+}
+
+void Yes_No_GUI::update()
+{
+	GUI::update();
+
+	if (transitioning_in || transitioning_out) {
+		return;
+	}
+
+	if (yes_button->pressed()) {
+		if (callback) {
+			Yes_No_GUI_Callback_Data d;
+			d.choice = true;
+			d.cancelled = false;
+			d.userdata = callback_data;
+			callback(&d);
+		}
+		exit();
+	}
+	else if (no_button->pressed()) {
+		if (callback) {
+			Yes_No_GUI_Callback_Data d;
+			d.choice = false;
+			d.cancelled = false;
+			d.userdata = callback_data;
+			callback(&d);
+		}
+		exit();
+	}
+}
+
+void Yes_No_GUI::handle_event(TGUI_Event *event)
+{
+	if (transitioning_in || transitioning_out) {
+		return;
+	}
+
+	if (escape_cancels && (
+		(event->type == TGUI_KEY_DOWN && event->keyboard.code == TGUIK_ESCAPE) ||
+		(event->type == TGUI_JOY_DOWN && event->joystick.button == TGUI_B_BACK)
+	)) {
+		if (callback) {
+			Yes_No_GUI_Callback_Data d;
+			d.choice = false;
+			d.cancelled = true;
+			d.userdata = callback_data;
+			callback(&d);
+		}
+		exit();
+	}
+	else {
+		GUI::handle_event(event);
+	}
+}
+
+void Yes_No_GUI::set_selected(bool yes_no)
+{
+	if (yes_no) {
+		gui->set_focus(yes_button);
+	}
+	else {
+		gui->set_focus(no_button);
+	}
+}
+
+void Yes_No_GUI::set_b1_text(std::string b1_text)
+{
+	yes_button->set_text(b1_text);
+}
+
+void Yes_No_GUI::set_b2_text(std::string b2_text)
+{
+	no_button->set_text(b2_text);
+}
+
+bool Yes_No_GUI::get_escape_cancels()
+{
+	return escape_cancels;
+}
+
+//--
+
+Notification_GUI::Notification_GUI(std::string text, util::Callback callback, void *callback_data, bool shrink_to_fit) :
+	callback(callback),
+	callback_data(callback_data),
+	count(0)
+{
+	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
+
+	int window_w = 200;
+
+	bool full;
+	int num_lines, width;
+	int line_height = shim::font->get_height() + 1;
+	shim::font->draw_wrapped(shim::white, text, util::Point<int>(0, 0), window_w - WIN_BORDER*4, line_height, -1, -1, 0, true, full, num_lines, width);
+	
+	ok_button = new Widget_Text_Button("OK");
+
+	if (shrink_to_fit) {
+		window_w = MIN(window_w, MAX(ok_button->get_width(), width) + WIN_BORDER * 4);
+	}
+	
+	Widget_Label *label = new Widget_Label(text, window_w - WIN_BORDER*4, shim::font);
+	label->set_padding(WIN_BORDER);
+	label->set_centre_x(true);
+
+	ok_button->set_centre_x(true);
+	ok_button->set_float_bottom(true);
+
+	Widget_Window *window = new Widget_Window(window_w, line_height * num_lines + ok_button->get_height() + WIN_BORDER*4);
+	window->set_centre_x(true);
+	window->set_centre_y(true);
+	window->set_parent(modal_main_widget);
+
+	TGUI_Widget *pad = new TGUI_Widget(1.0f, 1.0f);
+	pad->set_padding(WIN_BORDER);
+	pad->set_parent(window);
+	
+	label->set_parent(pad);
+	ok_button->set_parent(pad);
+
+	gui = new TGUI(modal_main_widget, shim::screen_size.w, shim::screen_size.h);
+
+	gui->set_focus(ok_button);
+}
+
+Notification_GUI::~Notification_GUI()
+{
+}
+
+void Notification_GUI::update()
+{
+	GUI::update();
+
+	if (ok_button->pressed()) {
+		if (callback) {
+			Callback_Data d;
+			d.userdata = callback_data;
+			callback(&d);
+		}
+		exit();
+	}
+}
+
+void Notification_GUI::handle_event(TGUI_Event *event)
+{
+	if (transitioning_in || transitioning_out) {
+		return;
+	}
+
+	if (
+		(event->type == TGUI_KEY_DOWN && event->keyboard.code == TGUIK_ESCAPE) ||
+		(event->type == TGUI_JOY_DOWN && event->joystick.button == TGUI_B_BACK)
+	) {
+		if (callback) {
+			Callback_Data d;
+			d.userdata = callback_data;
+			callback(&d);
+		}
+		exit();
+	}
+	else {
+		gui::GUI::handle_event(event);
+	}
+}
+
+//--
+
+static void gui_loop(gui::GUI *gui, gfx::Image *img)
+{
+	// These keep the logic running at 60Hz and drawing at refresh rate is possible
+	// NOTE: screen refresh rate has to be 60Hz or higher for this to work.
+	Uint32 start = SDL_GetTicks();
+	int logic_frames = 0;
+	int drawing_frames = 0;
+	bool can_draw = true;
+	bool can_logic = true;
+	int curr_logic_rate = shim::logic_rate;
+
+	bool quit = false;
+
+	while (quit == false) {
+		if (shim::guis.back() != gui) {
+			break;
+		}
+		// EVENTS
+		while (true) {
+			SDL_Event sdl_event;
+			TGUI_Event *e = nullptr;
+
+			bool all_done = false;
+
+			if (!SDL_PollEvent(&sdl_event)) {
+				e = shim::pop_pushed_event();
+				if (e == nullptr) {
+					all_done = true;
+				}
+			}
+
+			if (all_done) {
+				break;
+			}
+
+			if (e == nullptr) {
+				if (sdl_event.type == SDL_EVENT_QUIT) {
+					if (can_logic == false) {
+						shim::handle_event(&sdl_event);
+						quit = true;
+						break;
+					}
+				}
+			}
+
+			TGUI_Event *event;
+
+			if (e) {
+				event = e;
+			}
+			else {
+				if (sdl_event.type == SDL_EVENT_QUIT) {
+					static TGUI_Event quit_event;
+					quit_event.type = TGUI_QUIT;
+					event = &quit_event;
+				}
+				else {
+					event = shim::handle_event(&sdl_event);
+				}
+			}
+
+			//handle_event(event);
+			if (quit) {
+				break;
+			}
+		}
+
+		if (quit) {
+			break;
+		}
+
+		// Logic rate can change in devsettings
+		if (shim::logic_rate != curr_logic_rate) {
+			curr_logic_rate = shim::logic_rate;
+			logic_frames = 0;
+			drawing_frames = 0;
+			start = SDL_GetTicks();
+		}
+
+		// TIMING
+		float ms_per_logic_frame = 1000 / shim::logic_rate;
+		Uint32 now = SDL_GetTicks();
+		int diff = now - start;
+		bool skip_drawing = false;
+		int logic_reps = diff / ms_per_logic_frame;
+
+		if (logic_reps > 0) {
+			start += ms_per_logic_frame * logic_reps;
+		}
+
+		for (int logic = 0; logic < logic_reps; logic++) {
+			can_draw = shim::update();
+
+			// Generate a timer tick event (TGUI_TICK)
+			SDL_Event sdl_event;
+			sdl_event.type = shim::timer_event_id;
+			TGUI_Event *event = shim::handle_event(&sdl_event);
+			//handle_event(event);
+			if (quit) {
+				break;
+			}
+
+			//call_timer_callbacks(prg);
+
+			//std::vector<Token> tmp;
+			//call_function(prg, "run", tmp);
+
+			//mouse_wheel_y = 0;
+
+			logic_frames++;
+		}
+
+		if (quit) {
+			break;
+		}
+
+		// LOGIC
+		if (can_logic) {
+			for (int logic = 0; logic < logic_reps; logic++) {
+				gfx::update_animations();
+				// logic
+			}
+		}
+
+		// DRAWING
+		if (skip_drawing == false && can_draw) {
+			glDisable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glDisable(GL_SCISSOR_TEST)\n");
+			gfx::clear_buffers();
+			glEnable_ptr(GL_SCISSOR_TEST);
+			PRINT_GL_ERROR("glEnable(GL_SCISSOR_TEST)\n");
+
+			SDL_Color tint;
+			tint.r = 96;
+			tint.g = 96;
+			tint.b = 96;
+			tint.a = 96;
+			img->draw_tinted(tint, util::Point<int>(0, 0), gfx::Image::FLIP_V);
+
+			gfx::draw_guis();
+			gfx::draw_notifications();
+
+			gfx::flip();
+		}
+
+		drawing_frames++;
+	}
+}
+
+static bool yes_no_popup_result;
+
+static void yes_no_cb(void *data)
+{
+	Yes_No_GUI_Callback_Data *d = (Yes_No_GUI_Callback_Data *)data;
+	yes_no_popup_result = d->choice;
+}
+
 int popup(std::string caption, std::string text, Popup_Type type)
 {
+	glm::mat4 _mv, _proj;
+	gfx::get_matrices(_mv, _proj);
+	gfx::Shader *old_shader = shim::current_shader;
+	shim::current_shader = shim::default_shader;
+	shim::current_shader->use();
+	util::Size<int> bak = shim::screen_size;
+	int w2 = shim::real_screen_size.w;
+	int h2 = shim::real_screen_size.h;
+	double aspect = (double)w2/h2;
+	gfx::set_min_aspect_ratio(aspect-0.001f);
+	gfx::set_max_aspect_ratio(aspect+0.001f);
+	gfx::set_scaled_size({w2, h2});
+	gfx::update_projection();
+
+	int w, h;
+	unsigned char *bytes = gfx::Image::read_backbuffer(true, &w, &h);
+	gfx::Image *img = new gfx::Image((Uint8 *)bytes, util::Size<int>(w, h), true);
+
+	std::vector<GUI *> guis = shim::guis;
+	shim::guis.clear();
+	GUI *gui;
+	if (type == YESNO) {
+		gui = new Yes_No_GUI(caption+" "+text, true, yes_no_cb, 0, true);
+	}
+	else {
+		gui = new Notification_GUI(caption+" "+text, 0, 0, true);
+	}
+	shim::guis.push_back(gui);
+
+	shim::convert_directions_to_focus_events = true;
+	int fsk = shim::fullscreen_key;
+	shim::fullscreen_key = -1;
+	SDL_SetWindowResizable(gfx::internal::gfx_context.window, false);
+	bool rel = SDL_GetWindowRelativeMouseMode(gfx::internal::gfx_context.window);
+	SDL_SetWindowRelativeMouseMode(gfx::internal::gfx_context.window, false);
+	bool test = gfx::is_depth_test_enabled();
+	bool write = gfx::is_depth_write_enabled();
+	gfx::enable_depth_test(false);
+	gfx::enable_depth_write(false);
+
+	gui_loop(gui, img);
+
+	shim::guis = guis;
+			
+	gfx::enable_depth_test(test);
+	gfx::enable_depth_write(write);
+	shim::current_shader = old_shader;
+	shim::current_shader->use();
+	w2 = bak.w;
+	h2 = bak.h;
+	aspect = (double)w2/h2;
+	gfx::set_min_aspect_ratio(aspect-0.001f);
+	gfx::set_max_aspect_ratio(aspect+0.001f);
+	gfx::set_scaled_size(bak);
+	gfx::set_matrices(_mv, _proj);
+	gfx::update_projection();
+	SDL_SetWindowRelativeMouseMode(gfx::internal::gfx_context.window, rel);
+	shim::convert_directions_to_focus_events = false;
+	shim::fullscreen_key = fsk;
+	SDL_SetWindowResizable(gfx::internal::gfx_context.window, true);
+
+	delete img;
+	return yes_no_popup_result ? 1 : 0;
+/*
 	UINT native_type;
 	if (type == OK) {
 		native_type = MB_OK;
@@ -334,6 +788,7 @@ int popup(std::string caption, std::string text, Popup_Type type)
 		result = -1;
 	}
 	return result;
+	*/
 }
 
 static void delete_shim_args()

@@ -925,6 +925,7 @@ static void load_fonts()
 
 	try {
 		shim::font = new TTF("C:/WINDOWS/FONTS/ARIAL.TTF", shim::font_size, sheet_size, true);
+		shim::font->cache_glyphs("0123456789"); // For FPS
 	}
 	catch (util::Error &e) {
 		try {
@@ -1633,16 +1634,27 @@ void flip()
 		if (show_fps && shim::font != 0) {
 			glm::mat4 _mv, _proj;
 			gfx::get_matrices(_mv, _proj);
+			gfx::Shader *old_shader = shim::current_shader;
+			shim::current_shader = shim::default_shader;
+			shim::current_shader->use();
 			gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 			gfx::update_projection();
+			bool t = is_depth_test_enabled();
+			bool w = is_depth_write_enabled();
+			enable_depth_test(false);
+			enable_depth_write(false);
 			for (float y = 0; y < 4; y++) {
 				for (float x = 0; x < 4; x++) {
 					shim::font->draw(shim::white, util::itos(fps), {x, y});
 				}
 			}
 			shim::font->draw(shim::black, util::itos(fps), {2, 2});
+			shim::current_shader = old_shader;
+			shim::current_shader->use();
 			gfx::set_matrices(_mv, _proj);
 			gfx::update_projection();
+			enable_depth_test(t);
+			enable_depth_write(w);
 		}
 	}
 
