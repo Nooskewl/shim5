@@ -167,11 +167,11 @@ static void load_mml()
 		Uint8 *bytes;
 		SDL_IOStream *file;
 		std::string str;
-		str = "@PO0 = { 0 50 }\nA @TYPE3 >> @PO0 g64 @PO0\n";
+		str = "@PO0 = { 0 50 }\n@VAS0 = { 0 255 255 255 0 }\nA @TYPE3 >> @PO0 @VAS0 g64 @VAS0 @PO0";
 		bytes = (Uint8 *)str.c_str();
 		file = SDL_IOFromMem(bytes, str.length());
 		widget_sfx = new audio::MML(file); // this closes the file
-		str = "@PO0 = { 0 10 0 10 0 25 }\nA @TYPE3 @PO0 g64 @PO0\n";
+		str = "@PO0 = { 0 -25 }\n@VAS0 = { 0 }\nA @TYPE3 @PO0 @VAS0 g80 @VAS0 @PO0";
 		bytes = (Uint8 *)str.c_str();
 		file = SDL_IOFromMem(bytes, str.length());
 		button_sfx = new audio::MML(file); // this closes the file
