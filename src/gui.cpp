@@ -28,7 +28,8 @@ GUI::GUI() :
 	gui(0),
 	focus(0),
 	transition_duration(250),
-	slide_save(0.0f)
+	slide_save(0.0f),
+	done_transition_in(false)
 {
 	transition = false; // set this true to do transitions
 	transitioning_in = true;
@@ -313,7 +314,8 @@ Multi_Button_GUI::Multi_Button_GUI(std::string text, bool escape_cancels, std::s
 	callback_data(callback_data),
 	count(0)
 {
-	transition = false;
+	transition = true;
+	transition_is_enlarge = true;
 
 	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
 
@@ -400,6 +402,12 @@ Multi_Button_GUI::~Multi_Button_GUI()
 
 void Multi_Button_GUI::update()
 {
+	if (transitioning_in == false && done_transition_in == false) {
+		transition_is_enlarge = false;
+		transition_is_shrink = true;
+		done_transition_in = true;
+	}
+
 	GUI::update();
 
 	if (transitioning_in || transitioning_out) {

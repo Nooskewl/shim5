@@ -84,6 +84,7 @@ protected:
 	bool transition_is_shrink;
 	bool transition_is_slide;
 	bool transition_is_slide_vertical;
+	bool done_transition_in;
 	glm::mat4 mv_backup;
 	glm::mat4 p_backup;
 	float last_transition_p;
