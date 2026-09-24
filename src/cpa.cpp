@@ -42,50 +42,7 @@ SDL_IOStream *CPA::open(std::string filename, int *sz, bool data_only)
 				*sz = size;
 			}
 		}
-		if (file == 0) {
-			return 0;
-		}
-		// Read the whole file into a memory buffer because reads are slow on Android
-		Uint8 *buf = new Uint8[size];
-		if (buf) {
-			int remain = size;
-			while (remain >= 8192) {
-				int result = (int)SDL_ReadIO(file, buf+(size-remain), 8192);
-				if (result != 8192) {
-					break;
-				}
-				remain -= 8192;
-			}
-			if (remain > 0) {
-				int result = (int)SDL_ReadIO(file, buf+(size-remain), remain);
-				if (result == remain) {
-					remain = 0;
-				}
-			}
-			SDL_CloseIO(file);
-			if (data_only) {
-				return (SDL_IOStream *)buf;
-			}
-			if (remain == 0) {
-				SDL_IOStream *memfile = SDL_IOFromMem(buf, size);
-				if (memfile) {
-					bytes[memfile] = buf;
-					return memfile;
-				}
-				else {
-					delete[] buf;
-					return 0;
-				}
-			}
-			else {
-				delete[] buf;
-				return 0;
-			}
-		}
-		else {
-			SDL_CloseIO(file);
-			return 0;
-		}
+		return file;
 	}
 
 	if (!exists(filename)) {
