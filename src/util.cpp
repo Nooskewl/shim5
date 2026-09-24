@@ -297,40 +297,14 @@ void SDL_fprintf(SDL_IOStream *file, const char *fmt, ...)
 
 SDL_IOStream *open_file(std::string filename, int *sz, bool data_only, bool load_from_filesystem)
 {
-	SDL_IOStream *file;
-	if (load_from_filesystem) {
+	SDL_IOStream *file = nullptr;
+	if (load_from_filesystem || shim::cpa == nullptr) {
 		file = SDL_IOFromFile(filename.c_str(), "rb");
 	}
 	else if (shim::cpa) {
 		file = shim::cpa->open(filename, sz, data_only);
 	}
-	else {
-		const char *base = SDL_GetBasePath();
-		filename = std::string(base) + "data/" + filename;
-		file = SDL_IOFromFile(filename.c_str(), "rb");
-		if (file && sz) {
-			*sz = (int)SDL_GetIOSize(file);
-			if (data_only) {
-				Uint8 *buf = new Uint8[*sz];
-				int count = 0;
-				const int chunk_size = 32768;
-				while (true) {
-					size_t read;
-					size_t to_read = MIN(*sz-count, chunk_size);
-					if ((read = (int)SDL_ReadIO(file, buf+count, to_read)) < to_read) {
-						break;
-					}
-					count += read;
-					if (count == *sz) {
-						break;
-					}
-				}
-				SDL_CloseIO(file);
-				return (SDL_IOStream *)buf;
-			}
-		}
-	}
-	if (file == 0) {
+	if (file == nullptr) {
 		throw FileNotFoundError(filename);
 	}
 	return file;
@@ -888,6 +862,10 @@ std::string load_text_from_filesystem(std::string filename)
 	std::string text;
 	std::string line;
 	std::ifstream f(filename);
+
+	if (f.is_open() == false) {
+		throw LoadError(filename);
+	}
 
 	while (std::getline(f, line)) {
 		text += line + "\n";
