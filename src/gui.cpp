@@ -28,30 +28,10 @@ GUI::GUI() :
 	slide_save(0.0f),
 	done_transition_in(false)
 {
-	transition = shim::gui_transition_in_type != TRANSITION_NONE;
+	transition = shim::gui_transition_in_type;
 	transitioning_in = true;
 	transitioning_out = false;
-	transition_is_enlarge = false;
-	transition_is_shrink = false;
-	transition_is_slide = false;
-	transition_is_slide_vertical = false;
 	transition_start_time = SDL_GetTicks();
-
-	switch (shim::gui_transition_in_type) {
-		case TRANSITION_ENLARGE:
-			transition_is_enlarge = true;
-			break;
-		case TRANSITION_SHRINK:
-			transition_is_shrink = true;
-			break;
-		case TRANSITION_SLIDE:
-			transition_is_slide = true;
-			break;
-		case TRANSITION_SLIDE_VERTICAL:
-			transition_is_slide_vertical = true;
-			break;
-
-	}
 }
 
 GUI::~GUI()
@@ -73,7 +53,7 @@ void GUI::handle_event(TGUI_Event *event) {
 
 void GUI::draw_back()
 {
-	if (transition == false) {
+	if (transition == TRANSITION_NONE) {
 		transitioning_in = false; // for guis that don't transition in (otherwise out looks like in)
 		return;
 	}
@@ -108,7 +88,7 @@ void GUI::draw()
 
 void GUI::draw_fore()
 {
-	if (transition == false) {
+	if (transition == TRANSITION_NONE) {
 		return;
 	}
 
@@ -129,7 +109,7 @@ bool GUI::is_fullscreen()
 
 bool GUI::is_transition_out_finished() {
 	if (transitioning_out) {
-		if (transition == false) {
+		if (transition == TRANSITION_NONE) {
 			return true;
 		}
 		else {
@@ -156,9 +136,9 @@ void GUI::exit()
 void GUI::transition_start(float p)
 {
 	if (transitioning_in) {
-		if (transition_is_enlarge || transition_is_shrink) {
+		if (transition == TRANSITION_ENLARGE || transition == TRANSITION_SHRINK) {
 			float scale;
-			if (transition_is_enlarge) {
+			if (transition == TRANSITION_ENLARGE) {
 				scale = 1.0f + (1.0f - p) * (MAX_FADE_SCALE-1);
 			}
 			else {
@@ -166,17 +146,23 @@ void GUI::transition_start(float p)
 			}
 			scale_transition(scale);
 		}
-		else if (transition_is_slide) {
+		else if (transition == TRANSITION_SLIDE) {
 			slide_transition(p-1.0f);
 		}
-		else if (transition_is_slide_vertical) {
+		else if (transition == TRANSITION_SLIDE_VERTICAL) {
 			slide_vertical_transition(p-1.0f);
+		}
+		else if (transition == TRANSITION_SLIDE_REVERSE) {
+			slide_transition(1.0f-p);
+		}
+		else if (transition == TRANSITION_SLIDE_VERTICAL_REVERSE) {
+			slide_vertical_transition(1.0f-p);
 		}
 	}
 	else {
-		if (transition_is_enlarge || transition_is_shrink) {
+		if (transition == TRANSITION_ENLARGE || transition == TRANSITION_SHRINK) {
 			float scale;
-			if (transition_is_enlarge) {
+			if (transition == TRANSITION_ENLARGE) {
 				scale = 1.0f + p * (MAX_FADE_SCALE-1);
 			}
 			else {
@@ -184,24 +170,33 @@ void GUI::transition_start(float p)
 			}
 			scale_transition(scale);
 		}
-		else if (transition_is_slide) {
+		else if (transition == TRANSITION_SLIDE) {
 			slide_transition(p);
 		}
-		else if (transition_is_slide_vertical) {
+		else if (transition == TRANSITION_SLIDE_VERTICAL) {
 			slide_vertical_transition(p);
+		}
+		else if (transition == TRANSITION_SLIDE_REVERSE) {
+			slide_transition(-p);
+		}
+		else if (transition == TRANSITION_SLIDE_VERTICAL_REVERSE) {
+			slide_vertical_transition(-p);
 		}
 	}
 }
 
 void GUI::transition_end()
 {
-	if (transition_is_enlarge || transition_is_shrink) {
+	if (transition == TRANSITION_ENLARGE || transition == TRANSITION_SHRINK) {
 		glm::mat4 mv, p;
 		gfx::get_matrices(mv, p);
 		gfx::set_matrices(mv_backup, p);
 		gfx::update_projection();
 	}
-	else if (transition_is_slide || transition_is_slide_vertical) {
+	else if (
+		transition == TRANSITION_SLIDE || transition == TRANSITION_SLIDE_VERTICAL ||
+		transition == TRANSITION_SLIDE_REVERSE ||
+		transition == TRANSITION_SLIDE_VERTICAL_REVERSE) {
 		gfx::set_default_projection(shim::screen_size, shim::screen_offset, shim::scale);
 		gfx::update_projection();
 	}
@@ -247,26 +242,6 @@ void GUI::slide_vertical_transition(float p)
 	gfx::update_projection();
 }
 
-void GUI::use_enlarge_transition(bool onoff)
-{
-	transition_is_enlarge = onoff;
-}
-
-void GUI::use_shrink_transition(bool onoff)
-{
-	transition_is_shrink = onoff;
-}
-
-void GUI::use_slide_transition(bool onoff)
-{
-	transition_is_slide = onoff;
-}
-
-void GUI::use_slide_vertical_transition(bool onoff)
-{
-	transition_is_slide_vertical = onoff;
-}
-
 void GUI::lost_device()
 {
 }
@@ -278,11 +253,6 @@ void GUI::found_device()
 void GUI::transition_in_done()
 {
 	slide_save = 0.0f;
-}
-
-void GUI::set_transition(bool transition)
-{
-	this->transition = transition;
 }
 
 void GUI::pre_draw()
@@ -302,37 +272,7 @@ bool GUI::is_transitioning_out()
 void GUI::update()
 {
 	if (transitioning_in == false && done_transition_in == false) {
-		switch (shim::gui_transition_in_type) {
-			case TRANSITION_ENLARGE:
-				transition_is_enlarge = false;
-				break;
-			case TRANSITION_SHRINK:
-				transition_is_shrink = false;
-				break;
-			case TRANSITION_SLIDE:
-				transition_is_slide = false;
-				break;
-			case TRANSITION_SLIDE_VERTICAL:
-				transition_is_slide_vertical = false;
-				break;
-
-		}
-		switch (shim::gui_transition_out_type) {
-			case TRANSITION_ENLARGE:
-				transition_is_enlarge = true;
-				break;
-			case TRANSITION_SHRINK:
-				transition_is_shrink = true;
-				break;
-			case TRANSITION_SLIDE:
-				transition_is_slide = true;
-				break;
-			case TRANSITION_SLIDE_VERTICAL:
-				transition_is_slide_vertical = true;
-				break;
-
-		}
-		transition = shim::gui_transition_out_type != TRANSITION_NONE;
+		transition = shim::gui_transition_out_type;
 		done_transition_in = true;
 	}
 }

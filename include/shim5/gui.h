@@ -24,7 +24,9 @@ public:
 		TRANSITION_ENLARGE,
 		TRANSITION_SHRINK,
 		TRANSITION_SLIDE,
-		TRANSITION_SLIDE_VERTICAL
+		TRANSITION_SLIDE_VERTICAL,
+		TRANSITION_SLIDE_REVERSE,
+		TRANSITION_SLIDE_VERTICAL_REVERSE
 	};
 
 	TGUI *gui;
@@ -59,22 +61,12 @@ public:
 	virtual void transition_start(float p);
 	virtual void transition_end();
 
-	// normally a fade is done if transitions are enabled, but these can be used instead
-	void use_enlarge_transition(bool onoff);
-	void use_shrink_transition(bool onoff);
-	void use_slide_transition(bool onoff);
-	void use_slide_vertical_transition(bool onoff);
-
 	void exit(); // call this to exit this GUI and remove it from shim::guis after transition and update()
 
 	virtual void lost_device();
 	virtual void found_device();
 
 	virtual void transition_in_done(); // called when transition in is done (only if transition is true)
-
-	void set_transition(bool transition);
-
-	// For 16 byte alignment to make glm::mat4 able to use SIMD
 
 protected:
 	static const int MAX_FADE_SCALE = 10;
@@ -85,13 +77,9 @@ protected:
 	void slide_transition(float x);
 	void slide_vertical_transition(float y);
 
-	bool transition;
+	Transition_Type transition;
 	bool transitioning_in;
 	bool transitioning_out;
-	bool transition_is_enlarge;
-	bool transition_is_shrink;
-	bool transition_is_slide;
-	bool transition_is_slide_vertical;
 	bool done_transition_in;
 	glm::mat4 mv_backup;
 	glm::mat4 p_backup;
