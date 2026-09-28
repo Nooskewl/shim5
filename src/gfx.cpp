@@ -1,3 +1,4 @@
+#include "shim5/shim.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
 #include "shim5/image.h"
@@ -6,7 +7,6 @@
 #include "shim5/pixel_font.h"
 #include "shim5/primitives.h"
 #include "shim5/shader.h"
-#include "shim5/shim.h"
 #include "shim5/sprite.h"
 #include "shim5/tilemap.h"
 #include "shim5/ttf.h"

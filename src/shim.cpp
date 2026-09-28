@@ -123,6 +123,8 @@ int error_level = 9999;
 int error_level = 1;
 #endif
 util::JSON *shim_json;
+gui::GUI::Transition_Type gui_transition_in_type = gui::GUI::TRANSITION_ENLARGE;
+gui::GUI::Transition_Type gui_transition_out_type = gui::GUI::TRANSITION_SHRINK;
 
 static void handle_resize(SDL_Event *event)
 {

@@ -1,10 +1,10 @@
+#include "shim5/shim.h"
 #include "shim5/font.h"
 #include "shim5/gfx.h"
 #include "shim5/gui.h"
 #include "shim5/image.h"
 #include "shim5/mml.h"
 #include "shim5/shader.h"
-#include "shim5/shim.h"
 #include "shim5/sprite.h"
 #include "shim5/translation.h"
 #include "shim5/util.h"
@@ -21,9 +21,6 @@ namespace noo {
 
 namespace gui {
 
-bool GUI::started_transition_timer = false;
-Uint32 GUI::transition_start_time = 0;
-
 GUI::GUI() :
 	gui(0),
 	focus(0),
@@ -31,21 +28,35 @@ GUI::GUI() :
 	slide_save(0.0f),
 	done_transition_in(false)
 {
-	transition = false; // set this true to do transitions
+	transition = shim::gui_transition_in_type != TRANSITION_NONE;
 	transitioning_in = true;
 	transitioning_out = false;
 	transition_is_enlarge = false;
 	transition_is_shrink = false;
 	transition_is_slide = false;
 	transition_is_slide_vertical = false;
+	transition_start_time = SDL_GetTicks();
+
+	switch (shim::gui_transition_in_type) {
+		case TRANSITION_ENLARGE:
+			transition_is_enlarge = true;
+			break;
+		case TRANSITION_SHRINK:
+			transition_is_shrink = true;
+			break;
+		case TRANSITION_SLIDE:
+			transition_is_slide = true;
+			break;
+		case TRANSITION_SLIDE_VERTICAL:
+			transition_is_slide_vertical = true;
+			break;
+
+	}
 }
 
 GUI::~GUI()
 {
 	delete gui;
-	if (shim::guis.size() == 0) {
-		started_transition_timer = false;
-	}
 }
 
 void GUI::handle_event(TGUI_Event *event) {
@@ -139,7 +150,6 @@ bool GUI::is_transition_out_finished() {
 void GUI::exit()
 {
 	transitioning_out = true;
-
 	transition_start_time = SDL_GetTicks();
 }
 
@@ -277,10 +287,6 @@ void GUI::set_transition(bool transition)
 
 void GUI::pre_draw()
 {
-	if (started_transition_timer == false) {
-		transition_start_time = SDL_GetTicks();
-		started_transition_timer = true;
-	}
 }
 
 bool GUI::is_transitioning_in()
@@ -295,6 +301,40 @@ bool GUI::is_transitioning_out()
 
 void GUI::update()
 {
+	if (transitioning_in == false && done_transition_in == false) {
+		switch (shim::gui_transition_in_type) {
+			case TRANSITION_ENLARGE:
+				transition_is_enlarge = false;
+				break;
+			case TRANSITION_SHRINK:
+				transition_is_shrink = false;
+				break;
+			case TRANSITION_SLIDE:
+				transition_is_slide = false;
+				break;
+			case TRANSITION_SLIDE_VERTICAL:
+				transition_is_slide_vertical = false;
+				break;
+
+		}
+		switch (shim::gui_transition_out_type) {
+			case TRANSITION_ENLARGE:
+				transition_is_enlarge = true;
+				break;
+			case TRANSITION_SHRINK:
+				transition_is_shrink = true;
+				break;
+			case TRANSITION_SLIDE:
+				transition_is_slide = true;
+				break;
+			case TRANSITION_SLIDE_VERTICAL:
+				transition_is_slide_vertical = true;
+				break;
+
+		}
+		transition = shim::gui_transition_out_type != TRANSITION_NONE;
+		done_transition_in = true;
+	}
 }
 
 void GUI::update_background()
@@ -314,9 +354,6 @@ Multi_Button_GUI::Multi_Button_GUI(std::string text, bool escape_cancels, std::s
 	callback_data(callback_data),
 	count(0)
 {
-	transition = true;
-	transition_is_enlarge = true;
-
 	Widget *modal_main_widget = new Widget(1.0f, 1.0f);
 
 	int window_w = int(shim::screen_size.w * 0.75f);
@@ -402,12 +439,6 @@ Multi_Button_GUI::~Multi_Button_GUI()
 
 void Multi_Button_GUI::update()
 {
-	if (transitioning_in == false && done_transition_in == false) {
-		transition_is_enlarge = false;
-		transition_is_shrink = true;
-		done_transition_in = true;
-	}
-
 	GUI::update();
 
 	if (transitioning_in || transitioning_out) {

@@ -2,6 +2,7 @@
 #define NOO_WIDGETS_H
 
 #include "shim5/main.h"
+#include "shim5/font.h"
 #include "shim5/json.h"
 
 namespace noo {

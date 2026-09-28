@@ -2,6 +2,7 @@
 #define NOO_DEVSETTINGS_H
 
 #include "shim5/main.h"
+#include "shim5/shim.h"
 #include "shim5/gui.h"
 
 namespace noo {

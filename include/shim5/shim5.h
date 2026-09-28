@@ -2,7 +2,7 @@
 #define SHIM5_H
 
 #include "shim5/main.h"
-
+#include "shim5/shim.h"
 #include "shim5/a_star.h"
 #include "shim5/achievements.h"
 #include "shim5/audio.h"
@@ -20,7 +20,6 @@
 #include "shim5/pixel_font.h"
 #include "shim5/primitives.h"
 #include "shim5/sample.h"
-#include "shim5/shim.h"
 #include "shim5/shader.h"
 #include "shim5/sprite.h"
 #include "shim5/tilemap.h"

@@ -3,6 +3,7 @@
 
 #include "shim5/main.h"
 #include "shim5/shim.h"
+#include "shim5/gfx.h"
 #include "shim5/translation.h"
 #include "shim5/widgets.h"
 
@@ -18,6 +19,14 @@ struct Multi_Button_GUI_Callback_Data {
 
 EXPORT_CLASS_ALIGN(GUI, 16) {
 public:
+	enum Transition_Type {
+		TRANSITION_NONE = 0,
+		TRANSITION_ENLARGE,
+		TRANSITION_SHRINK,
+		TRANSITION_SLIDE,
+		TRANSITION_SLIDE_VERTICAL
+	};
+
 	TGUI *gui;
 	TGUI_Widget *focus; // backup focus
 
@@ -33,7 +42,7 @@ public:
 	virtual void update();
 	virtual void update_background(); // called when the GUI is not the foremost
 
-	void pre_draw(); // special stuff (starts transition timer)
+	void pre_draw();
 
 	virtual void draw_back();
 	virtual void draw();
@@ -70,8 +79,7 @@ public:
 protected:
 	static const int MAX_FADE_SCALE = 10;
 	
-	static bool started_transition_timer;
-	static Uint32 transition_start_time;
+	Uint32 transition_start_time;
 
 	void scale_transition(float scale);
 	void slide_transition(float x);

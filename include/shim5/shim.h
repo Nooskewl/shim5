@@ -3,6 +3,7 @@
 
 #include "shim5/main.h"
 #include "shim5/a_star.h"
+#include "shim5/gui.h"
 
 namespace noo {
 
@@ -156,6 +157,8 @@ extern SHIM5_EXPORT bool use_cwd;
 extern SHIM5_EXPORT bool log_tags;
 extern SHIM5_EXPORT int error_level; // 0=none, 1=errors, 2=info, 3=debug/opengl
 extern SHIM5_EXPORT util::JSON *shim_json;
+extern SHIM5_EXPORT gui::GUI::Transition_Type gui_transition_in_type;
+extern SHIM5_EXPORT gui::GUI::Transition_Type gui_transition_out_type;
 
 } // End namespace shim
 

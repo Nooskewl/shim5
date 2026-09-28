@@ -1,9 +1,8 @@
 #include <zlib.h>
 
+#include "shim5/shim.h"
 #include "shim5/cpa.h"
 #include "shim5/gui.h"
-#include "shim5/shim.h"
-#include "shim5/util.h"
 #include "shim5/util.h"
 
 using namespace noo;
