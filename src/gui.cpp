@@ -736,7 +736,9 @@ int popup(std::string caption, std::string text, std::string b1, std::string b2,
 	gfx::set_matrices(_mv, _proj);
 	gfx::update_projection();
 	SDL_SetWindowRelativeMouseMode(gfx::internal::gfx_context.window, rel);
-	shim::convert_directions_to_focus_events = false;
+	if (shim::guis.size() == 0) {
+		shim::convert_directions_to_focus_events = false;
+	}
 	shim::fullscreen_key = fsk;
 	SDL_SetWindowResizable(gfx::internal::gfx_context.window, true);
 
