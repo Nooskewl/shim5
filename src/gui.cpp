@@ -28,7 +28,10 @@ GUI::GUI() :
 	slide_save(0.0f),
 	done_transition_in(false)
 {
-	transition = shim::gui_transition_in_type;
+	in_transition_type = shim::gui_transition_in_type;
+	out_transition_type = shim::gui_transition_out_type;
+
+	transition = in_transition_type;
 	transitioning_in = true;
 	transitioning_out = false;
 	transition_start_time = SDL_GetTicks();
@@ -139,10 +142,10 @@ void GUI::transition_start(float p)
 		if (transition == TRANSITION_GROW || transition == TRANSITION_SHRINK) {
 			float scale;
 			if (transition == TRANSITION_GROW) {
-				scale = 1.0f + (1.0f - p) * (MAX_FADE_SCALE-1);
+				scale = p;
 			}
 			else {
-				scale = p;
+				scale = 1.0f + (1.0f - p) * (MAX_FADE_SCALE-1);
 			}
 			scale_transition(scale);
 		}
@@ -272,7 +275,7 @@ bool GUI::is_transitioning_out()
 void GUI::update()
 {
 	if (transitioning_in == false && done_transition_in == false) {
-		transition = shim::gui_transition_out_type;
+		transition = out_transition_type;
 		done_transition_in = true;
 	}
 }

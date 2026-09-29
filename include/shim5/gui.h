@@ -86,6 +86,8 @@ protected:
 	float last_transition_p;
 	int transition_duration;
 	float slide_save;
+	Transition_Type in_transition_type;
+	Transition_Type out_transition_type;
 };
 
 class Multi_Button_GUI : public GUI
