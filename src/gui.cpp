@@ -136,9 +136,9 @@ void GUI::exit()
 void GUI::transition_start(float p)
 {
 	if (transitioning_in) {
-		if (transition == TRANSITION_ENLARGE || transition == TRANSITION_SHRINK) {
+		if (transition == TRANSITION_GROW || transition == TRANSITION_SHRINK) {
 			float scale;
-			if (transition == TRANSITION_ENLARGE) {
+			if (transition == TRANSITION_GROW) {
 				scale = 1.0f + (1.0f - p) * (MAX_FADE_SCALE-1);
 			}
 			else {
@@ -160,9 +160,9 @@ void GUI::transition_start(float p)
 		}
 	}
 	else {
-		if (transition == TRANSITION_ENLARGE || transition == TRANSITION_SHRINK) {
+		if (transition == TRANSITION_GROW || transition == TRANSITION_SHRINK) {
 			float scale;
-			if (transition == TRANSITION_ENLARGE) {
+			if (transition == TRANSITION_GROW) {
 				scale = 1.0f + p * (MAX_FADE_SCALE-1);
 			}
 			else {
@@ -187,7 +187,7 @@ void GUI::transition_start(float p)
 
 void GUI::transition_end()
 {
-	if (transition == TRANSITION_ENLARGE || transition == TRANSITION_SHRINK) {
+	if (transition == TRANSITION_GROW || transition == TRANSITION_SHRINK) {
 		glm::mat4 mv, p;
 		gfx::get_matrices(mv, p);
 		gfx::set_matrices(mv_backup, p);
