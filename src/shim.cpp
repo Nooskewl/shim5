@@ -264,12 +264,17 @@ bool static_start(int sdl_init_flags)
 		shim_json = new util::JSON("shim5.json", false);
 	}
 	catch (util::Error &e) {
-		// Use a default file
-		std::string json = "{}";
-		SDL_IOStream *file = SDL_IOFromMem((void *)json.c_str(), 2);
-		assert(file);
-		shim_json = new util::JSON(file);
-		SDL_CloseIO(file);
+		try {
+			shim_json = new util::JSON("shim5.json", true);
+		}
+		catch (util::Error &e) {
+			// Use a default file
+			std::string json = "{}";
+			SDL_IOStream *file = SDL_IOFromMem((void *)json.c_str(), 2);
+			assert(file);
+			shim_json = new util::JSON(file);
+			SDL_CloseIO(file);
+		}
 	}
 
 	util::JSON::Node *root = shim_json->get_root();
