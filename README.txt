@@ -4,7 +4,7 @@ This includes:
 	Music and sound support
 	Datafile archives
 	Pixel and TrueType fonts
-	Direct3D 9 and OpenGL backends
+	OpenGL backend
 	GUI system built on TGUI6
 	Images
 	Sprites
