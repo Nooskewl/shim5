@@ -224,7 +224,7 @@ bool TTF::cache_glyphs(std::string text)
 				delete glyph_image;
 				return false;
 			}
-			render_glyph(glyph,  glyph_image);
+			render_glyph(glyph, glyph_image);
 			delete glyph_image;
 		}
 	}
@@ -240,14 +240,12 @@ void TTF::set_smooth(bool smooth)
 {
 	this->smooth = smooth;
 
-	/*
 	if (smooth) {
 		TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
 	}
 	else {
 		TTF_SetFontHinting(font, TTF_HINTING_NONE);
 	}
-	*/
 }
 
 } // End namespace gfx
