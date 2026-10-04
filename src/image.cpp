@@ -1006,7 +1006,12 @@ Image::Image(SDL_Surface *surface) :
 		internal = new Internal(pixels, size);
 	}
 	catch (util::Error &) {
-		if (tmp) SDL_DestroySurface(tmp);
+		if (tmp) {
+			SDL_DestroySurface(tmp);
+		}
+		if (packed) {
+			delete[] packed;
+		}
 		throw;
 	}
 
