@@ -456,6 +456,7 @@ bool start_all(int scaled_gfx_w, int scaled_gfx_h, bool force_integer_scaling, i
 
 void static_end()
 {
+	delete shim_json;
 	SDL_Quit();
 }
 
