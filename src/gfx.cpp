@@ -181,7 +181,9 @@ static SDL_DisplayID to_display_id(int adapter)
 {
 	int count;
 	SDL_DisplayID *disp = SDL_GetDisplays(&count);
-	return adapter >= count ? disp[0] : disp[adapter];
+	SDL_DisplayID id = adapter >= count ? disp[0] : disp[adapter];
+	SDL_free(disp);
+	return id;
 }
 
 namespace noo {

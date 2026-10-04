@@ -257,6 +257,7 @@ static void check_joysticks()
 		}
 		//gfx::show_mouse_cursor(joysticks.size() == 0);
 	}
+	SDL_free(ids);
 }
 
 namespace noo {
@@ -291,9 +292,9 @@ void reset()
 {
 	for (size_t i = 0; i < joysticks.size(); i++) {
 		Joystick &j = joysticks[i];
-			if (j.haptic) {
-			       SDL_CloseHaptic(j.haptic);
-			}
+		if (j.haptic) {
+		       SDL_CloseHaptic(j.haptic);
+		}
 		if (j.gc) {
 			SDL_CloseGamepad(j.gc);
 		}
