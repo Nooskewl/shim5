@@ -39,6 +39,7 @@ public:
 	};
 
 	static void static_start();
+	static void static_end();
 	static void release_all(bool include_managed = false);
 	static void reload_all(bool include_managed = false);
 	static int get_unfreed_count();

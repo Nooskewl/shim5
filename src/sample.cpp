@@ -23,6 +23,11 @@ void Sample::register_sample_loader(std::string ext, sample_loader func)
 	sample_loaders[ext] = func;
 }
 
+void Sample::static_end()
+{
+	sample_loaders.clear();
+}
+
 void Sample::stop_instance(Sample_Instance *s)
 {
 	audio::lock_mutex();

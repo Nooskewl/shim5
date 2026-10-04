@@ -1023,6 +1023,7 @@ bool static_start()
 
 void static_end()
 {
+	gfx::Image::static_end();
 	SDL_DestroyMutex(internal::gfx_context.draw_mutex);
 }
 

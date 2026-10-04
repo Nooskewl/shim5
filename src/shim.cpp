@@ -373,7 +373,7 @@ static LONG WINAPI CrashHandler(EXCEPTION_POINTERS *ExceptionInfo)
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
-bool static_start_all(int sdl_init_flags)
+bool static_start_all(int sdl_init_flags, bool gfx)
 {
 	if (static_start(sdl_init_flags) == false) {
 		return false;
@@ -387,7 +387,7 @@ bool static_start_all(int sdl_init_flags)
 	if (audio::static_start() == false) {
 		return false;
 	}
-	if (gfx::static_start() == false) {
+	if (gfx && gfx::static_start() == false) {
 		return false;
 	}
 
@@ -457,12 +457,15 @@ bool start_all(int scaled_gfx_w, int scaled_gfx_h, bool force_integer_scaling, i
 void static_end()
 {
 	delete shim_json;
+	delete cpa;
 	SDL_Quit();
 }
 
-void static_end_all()
+void static_end_all(bool gfx)
 {
-	gfx::static_end();
+	if (gfx) {
+		gfx::static_end();
+	}
 	static_end();
 	util::static_end();
 }
@@ -474,8 +477,6 @@ void end()
 	}
 
 	destroy_mml();
-
-	delete cpa;
 
 	delete tgui_event;
 	delete focus_event;

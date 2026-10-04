@@ -448,7 +448,8 @@ void end()
 	music_buf = nullptr;
 	sfx_buf = nullptr;
 
-	MML::static_stop();
+	MML::static_end();
+	Sample::static_end();
 
 	SDL_DestroyMutex(mutex);
 }

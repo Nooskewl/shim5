@@ -30,10 +30,10 @@ namespace shim {
 
 // Must be called first thing
 bool SHIM5_EXPORT static_start(int sdl_init_flags = 0);
-bool SHIM5_EXPORT static_start_all(int sdl_init_flags = 0);
+bool SHIM5_EXPORT static_start_all(int sdl_init_flags = 0, bool gfx = true);
 
 void SHIM5_EXPORT static_end();
-void SHIM5_EXPORT static_end_all();
+void SHIM5_EXPORT static_end_all(bool gfx = true);
 
 // Call either start and end (if you init subsystems individually) or start_all and end_all
 
@@ -81,7 +81,6 @@ extern SHIM5_EXPORT std::string window_title; // set this first thing to change 
 extern SHIM5_EXPORT gfx::Shader *current_shader;
 extern SHIM5_EXPORT gfx::Shader *default_shader;
 extern SHIM5_EXPORT gfx::Shader *model_shader;
-extern SHIM5_EXPORT gfx::Shader *appear_shader;
 extern SHIM5_EXPORT int tile_size;
 extern SHIM5_EXPORT util::Size<int> screen_size; // before scaling
 extern SHIM5_EXPORT util::Size<int> real_screen_size; // actual window size

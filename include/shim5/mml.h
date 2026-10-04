@@ -74,7 +74,7 @@ public:
 	};
 
 	static void static_start();
-	static void static_stop();
+	static void static_end();
 	static int mix(float *buf, int samples);
 
 	MML(SDL_IOStream *f, bool load_from_filesystem = false);

@@ -101,6 +101,12 @@ void Image::static_start()
 	save_palettes = root->get_nested_bool("shim>gfx>image>save_palettes", &save_palettes, true);
 }
 
+void Image::static_end()
+{
+	image_savers.clear();
+	image_loaders.clear();
+}
+
 void Image::release_all(bool include_managed)
 {
 	util::infomsg("Releasing %d textures...\n", loaded_images.size());

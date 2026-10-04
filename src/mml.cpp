@@ -158,7 +158,7 @@ void MML::static_start()
 	audio::unlock_mutex();
 }
 
-void MML::static_stop()
+void MML::static_end()
 {
 	delete[] tmp;
 }

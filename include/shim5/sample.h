@@ -45,6 +45,8 @@ public:
 	static void set_finished_callback(Sample_Instance *s, util::Callback callback, void *callback_data);
 
 	static void register_sample_loader(std::string ext, sample_loader func);
+	
+	static void static_end();
 
 	Sample(std::string filename, bool load_from_filesystem = false);
 	// S16LE constructor
