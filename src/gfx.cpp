@@ -1192,9 +1192,7 @@ void end()
 	delete_mouse_cursors();
 
 	destroy_fonts();
-#ifdef USE_TTF
 	TTF_Quit();
-#endif
 
 	end_video();
 
