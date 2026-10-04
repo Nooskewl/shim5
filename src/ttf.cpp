@@ -169,10 +169,10 @@ gfx::Image *TTF::load_glyph_image(Uint32 ch)
 	SDL_Surface *surface;
 
 	if (smooth) {
-		surface = TTF_RenderGlyph_Blended(font, (Uint16)ch, shim::white);
+		surface = TTF_RenderGlyph_Blended(font, ch, shim::white);
 	}
 	else {
-		surface = TTF_RenderGlyph_Solid(font, (Uint16)ch, shim::white);
+		surface = TTF_RenderGlyph_Solid(font, ch, shim::white);
 	}
 
 	if (surface == 0) {
