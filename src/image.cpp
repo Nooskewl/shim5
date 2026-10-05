@@ -1220,13 +1220,24 @@ bool Image::save(std::string filename)
 
 void Image::set_target()
 {
-	bound_fbo = internal->fbo;
-	glBindFramebuffer_ptr(GL_FRAMEBUFFER, internal->fbo);
-	glViewport_ptr(0, 0, size.w, size.h);
-	glDisable_ptr(GL_SCISSOR_TEST);
+	Image *parent;
+	util::Point<int> offset = internal->offset;
+	util::Size<int> sz = size;
+
+	parent = this;
+	while (parent->internal->parent) {
+		offset += parent->internal->parent->internal->offset;
+		parent = parent->internal->parent;
+	}
+
+	bound_fbo = parent->internal->fbo;
+	glBindFramebuffer_ptr(GL_FRAMEBUFFER, parent->internal->fbo);
+
+	glViewport_ptr(offset.x, parent->size.h-sz.h-offset.y, sz.w, sz.h);
+	glScissor_ptr(offset.x, parent->size.h-sz.h-offset.y, sz.w, sz.h);
 
 	glm::mat4 modelview = glm::mat4();
-	glm::mat4 proj = glm::ortho(0.0f, (float)size.w, (float)size.h, 0.0f);
+	glm::mat4 proj = glm::ortho(0.0f, (float)sz.w, (float)sz.h, 0.0f);
 	set_matrices(modelview, proj);
 	update_projection();
 }
