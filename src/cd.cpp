@@ -228,6 +228,10 @@ bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1
 
 	glm::vec3 ray = glm::normalize(point2 - point1);
 
+	float min_dist = FLT_MAX;
+	bool found = false;
+	glm::vec3 coll_pt;
+
 	for (int i = 0; i < nt; i++) {
 		glm::vec4 pt[3];
 		for (int vert = 0; vert < 3; vert++) {
@@ -244,20 +248,24 @@ bool model_line_segment(gfx::Model *model, glm::mat4 transform, glm::vec3 point1
 			pt3[j] = glm::vec3(pt[j]);
 		}
 
-		if (ray_collides(point1, ray, pt3[0], pt3[1], pt3[2], out)) {
+		if (ray_collides(point1, ray, pt3[0], pt3[1], pt3[2], coll_pt)) {
 			float d = glm::distance(out, point1);
 			if (d <= glm::distance(point1, point2)) {
-				return true;
+				if (d < min_dist) {
+					found = true;
+					out = coll_pt;
+					min_dist = d;
+				}
 			}
 		}
 	}
 
-	if (model_point(model, transform, point1) && model_point(model, transform, point2)) {
+	if (found == false && model_point(model, transform, point1) && model_point(model, transform, point2)) {
 		// Line segment is contained within the model
 		return true;
 	}
 
-	return false;
+	return found;
 }
 
 } // End namespace cd
