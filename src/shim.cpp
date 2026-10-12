@@ -76,6 +76,7 @@ util::Point<int> cursor_hotspot;
 bool scale_mouse_cursor;
 bool multisampling;
 int aa_samples;
+int adapter;
 audio::MML *widget_sfx;
 audio::MML *button_sfx;
 int key_l;

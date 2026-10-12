@@ -102,6 +102,7 @@ extern SHIM5_EXPORT bool using_screen_shake;
 extern SHIM5_EXPORT bool scale_mouse_cursor;
 extern SHIM5_EXPORT bool multisampling;
 extern SHIM5_EXPORT int aa_samples;
+extern SHIM5_EXPORT int adapter;
 // audio
 extern SHIM5_EXPORT audio::MML *widget_sfx;
 extern SHIM5_EXPORT audio::MML *button_sfx;

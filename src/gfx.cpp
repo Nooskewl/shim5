@@ -455,6 +455,25 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 
 	internal::gfx_context.windowid = SDL_GetWindowID(internal::gfx_context.window);
 
+	int index;
+	if ((index = util::check_args(shim::argc, shim::argv, "+adapter")) >= 0) {
+		shim::adapter = atoi(shim::argv[index+1]);
+	}
+	else {
+		shim::adapter = 0;
+	}
+
+	int num_displays;
+	SDL_DisplayID *displays = SDL_GetDisplays(&num_displays);
+	if (shim::adapter >= 0 && shim::adapter < num_displays) {
+		SDL_Rect bounds;
+		SDL_GetDisplayBounds(displays[shim::adapter], &bounds);
+		int x = bounds.x + (bounds.w - window_w) / 2 * 0.75f;
+		int y = bounds.y + (bounds.h - window_h) / 2;
+		SDL_SetWindowPosition(internal::gfx_context.window, x, y);
+	}
+	SDL_free(displays);
+
 	int w = 0;
 	int h = 0;
     
