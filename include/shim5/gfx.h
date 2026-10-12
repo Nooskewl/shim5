@@ -166,6 +166,7 @@ gfx::Image SHIM5_EXPORT *gen_plasma(int seed, float alpha1, float alpha2, SDL_Co
 
 void SHIM5_EXPORT screen_shake(float amount, Uint32 length);
 void SHIM5_EXPORT apply_screen_shake();
+void SHIM5_EXPORT end_screen_shake();
 
 enum Letterbox_Type {
 	LETTERBOX_TOP,

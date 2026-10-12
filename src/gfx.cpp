@@ -1597,6 +1597,16 @@ void apply_screen_shake()
 	}
 }
 
+void end_screen_shake()
+{
+	if (shim::using_screen_shake) {
+		screen_shake_end = 0;
+		shim::using_screen_shake = false;
+		gfx::set_matrices(screen_shake_mv, screen_shake_p);
+		gfx::update_projection();
+	}
+}
+
 void flip()
 {
 	if (shim::take_screenshot) {
