@@ -445,7 +445,7 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	}
 
 	internal::gfx_context.window = SDL_CreateWindow(shim::window_title.c_str(), window_w, window_h, flags);
-	
+
 	// I guess on Android the window IS 0
 	if (internal::gfx_context.window == 0) {
 		throw util::Error("SDL_CreateWindow failed (" + std::string(SDL_GetError()) + ")");
@@ -454,14 +454,6 @@ static void create_window(int scaled_w, int scaled_h, bool force_integer_scaling
 	internal::gfx_context.hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(internal::gfx_context.window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 
 	internal::gfx_context.windowid = SDL_GetWindowID(internal::gfx_context.window);
-
-	int index;
-	if ((index = util::check_args(shim::argc, shim::argv, "+adapter")) >= 0) {
-		shim::adapter = atoi(shim::argv[index+1]);
-	}
-	else {
-		shim::adapter = 0;
-	}
 
 	int num_displays;
 	SDL_DisplayID *displays = SDL_GetDisplays(&num_displays);
@@ -1059,6 +1051,10 @@ bool start(int scaled_w, int scaled_h, bool force_integer_scaling, int window_w,
 	shim::refresh_rate = root->get_nested_int("shim>gfx>refresh_rate", &shim::refresh_rate, 0);
 	if ((index = util::check_args(shim::argc, shim::argv, "+refresh-rate")) >= 0) {
 		shim::refresh_rate = atoi(shim::argv[index+1]);
+	}
+	shim::adapter = root->get_nested_int("shim>gfx>adapter", &shim::adapter, 0);
+	if ((index = util::check_args(shim::argc, shim::argv, "+adapter")) >= 0) {
+		shim::adapter = atoi(shim::argv[index+1]);
 	}
 
 	::create_depth_buffer = shim::create_depth_buffer;
