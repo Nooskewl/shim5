@@ -42,7 +42,7 @@ Pixel_Font::Pixel_Font(std::string name, bool load_from_filesystem)
 
 	size = 10; // default
 
-	bool wide = false;
+	int wide = 0;
 
 	while ((line = t.next()) != "") {
 		util::trim(line);
@@ -61,7 +61,7 @@ Pixel_Font::Pixel_Font(std::string name, bool load_from_filesystem)
 		}
 	}
 
-	int size_w = size * (wide ? 2 : 1);
+	int size_w = size * (wide + 1);
 
 	int glyphs_wide = sheets[0]->size.w / ((size_w + PAD*2));
 

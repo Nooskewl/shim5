@@ -149,8 +149,8 @@ int main(void)
 	int wmul = 1;
 	if (*info_txt != 0) {
 		info_txt++;
-		bool WIDE = atoi((const char *)info_txt);
-		wmul = WIDE ? 2 : 1;
+		int WIDE = atoi((const char *)info_txt);
+		wmul = WIDE + 1;
 	}
 
 	ttf = al_load_font("font.ttf", SIZE, ALLEGRO_TTF_MONOCHROME | ALLEGRO_TTF_NO_KERNING | ALLEGRO_TTF_NO_AUTOHINT);
