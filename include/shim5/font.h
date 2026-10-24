@@ -58,7 +58,6 @@ protected:
 
 	std::vector<Image *> sheets;
 
-	int size_w;
 	int size;
 
 	std::map<int, Image *> extra_glyphs;

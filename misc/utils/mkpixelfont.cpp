@@ -120,8 +120,6 @@ int main(void)
 	al_init_ttf_addon();
 	al_init_image_addon();
 
-	ttf = al_load_font("font.ttf", 12, ALLEGRO_TTF_MONOCHROME | ALLEGRO_TTF_NO_KERNING | ALLEGRO_TTF_NO_AUTOHINT);
-
 	ALLEGRO_FILE *f = al_fopen("glyphs.utf8", "rb");
 	int sz;
 	unsigned char *glyphs = slurp_from_file(f, &sz, true, false);
@@ -144,7 +142,7 @@ int main(void)
 		exit(1);
 	}
 	info_txt++;
-	int SIZE = 12;//al_get_font_line_height(ttf);//atoi((const char *)info_txt);
+	int SIZE = atoi((const char *)info_txt);
 	while (*info_txt != '=' && *info_txt != 0) {
 		info_txt++;
 	}
@@ -155,7 +153,9 @@ int main(void)
 		wmul = WIDE ? 2 : 1;
 	}
 
-	ALLEGRO_BITMAP *bmp = al_create_bitmap((half * (SIZE*wmul + PAD*2)) * 3, half * (SIZE + PAD*2));
+	ttf = al_load_font("font.ttf", SIZE, ALLEGRO_TTF_MONOCHROME | ALLEGRO_TTF_NO_KERNING | ALLEGRO_TTF_NO_AUTOHINT);
+
+	ALLEGRO_BITMAP *bmp = al_create_bitmap((half * (SIZE*wmul + PAD*2)), half * (SIZE + PAD*2));
 
 	al_set_target_bitmap(bmp);
 	al_clear_to_color(al_map_rgba(0, 0, 0, 0));
@@ -174,99 +174,8 @@ int main(void)
 		al_draw_text(
 			ttf,
 			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + xo),
-			y * (SIZE + PAD*2) + 3, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		int w = (SIZE*wmul + PAD*2);
-		// drop shadow
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w + 1 + xo),
-			y * (SIZE + PAD*2) + 3, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w + 1 + xo),
-			y * (SIZE + PAD*2) + 3 + 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w + xo),
-			y * (SIZE + PAD*2) + 3 + 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		// full shadow
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 + 1 + xo),
-			y * (SIZE + PAD*2) + 3, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 - 1 + xo),
-			y * (SIZE + PAD*2) + 3, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 + xo),
-			y * (SIZE + PAD*2) + 3 + 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 + xo),
-			y * (SIZE + PAD*2) + 3 - 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 + 1 + xo),
-			y * (SIZE + PAD*2) + 3 + 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 - 1 + xo),
-			y * (SIZE + PAD*2) + 3 - 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 + 1 + xo),
-			y * (SIZE + PAD*2) + 3 - 1, // extra +2 for first row
-			0,
-			s.c_str()
-		);
-		al_draw_text(
-			ttf,
-			al_map_rgb(255, 255, 255),
-			((x * (SIZE*wmul + PAD*2)) * 3 + 2 + w*2 - 1 + xo),
-			y * (SIZE + PAD*2) + 3 + 1, // extra +2 for first row
+			((x * (SIZE*wmul + PAD*2)) + PAD + xo),
+			y * (SIZE + PAD*2) + PAD, // extra +2 for first row
 			0,
 			s.c_str()
 		);

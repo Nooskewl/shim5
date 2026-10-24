@@ -13,7 +13,7 @@ class Image;
 class SHIM5_EXPORT Pixel_Font : public Font
 {
 public:
-	Pixel_Font(std::string name);
+	Pixel_Font(std::string name, bool load_from_filesystem = false);
 	virtual ~Pixel_Font();
 
 	bool cache_glyphs(std::string text);

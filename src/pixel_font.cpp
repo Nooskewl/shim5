@@ -12,13 +12,26 @@ namespace noo {
 
 namespace gfx {
 
-Pixel_Font::Pixel_Font(std::string name)
+Pixel_Font::Pixel_Font(std::string name, bool load_from_filesystem)
 {
-	std::string dirname = "gfx/fonts/" + name + "/";
+	std::string dirname;
+       
+	if (load_from_filesystem) {
+		dirname = name + "/";
+	}
+	else {
+		dirname = "gfx/fonts/" + name + "/";
+	}
 
 	bool old_keep_data = gfx::Image::keep_data;
 	gfx::Image::keep_data = true;
-	gfx::Image *sheet = new gfx::Image(dirname + "font.tga", true);
+	gfx::Image *sheet;
+       	try {
+		sheet = new gfx::Image(dirname + "font.tga", true);
+	}
+	catch (util::Error &) {
+		sheet = new gfx::Image(dirname + "font.png", true);
+	}
 	sheets.push_back(sheet);
 	gfx::Image::keep_data = old_keep_data;
 
@@ -48,9 +61,9 @@ Pixel_Font::Pixel_Font(std::string name)
 		}
 	}
 
-	size_w = size * 2;
+	int size_w = size * (wide ? 2 : 1);
 
-	int glyphs_wide = sheets[0]->size.w / ((size_w + PAD*2)*3);
+	int glyphs_wide = sheets[0]->size.w / ((size_w + PAD*2));
 
 	unsigned char *loaded_data = sheets[0]->get_loaded_data();
 
@@ -62,7 +75,8 @@ Pixel_Font::Pixel_Font(std::string name)
 		int x = count % glyphs_wide;
 		int y = count / glyphs_wide;
 		Glyph *glyph = new Glyph;
-		glyph->position = {x * ((size_w + PAD*2)*3) + PAD, y * (size + PAD*2) + PAD};
+		glyph->sheet = 0;
+		glyph->position = {x * ((size_w + PAD*2)) + PAD, y * (size + PAD*2) + PAD};
 		glyph->size.h = size;
 		int max_x;
 		if (ch == ' ') {
